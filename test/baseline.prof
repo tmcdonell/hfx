@@ -1,0 +1,138 @@
+	Thu Mar 12 10:58 2009 Time and Allocation Profiling Report  (Final)
+
+	   sequest +RTS -P -h -RTS data/test.dta data/sampledb.fasta
+
+	total time  =        1.54 secs   (77 ticks @ 20 ms)
+	total alloc = 2,734,859,376 bytes  (excludes profiling overheads)
+
+COST CENTRE                    MODULE               %time %alloc  ticks     bytes
+
+bin                            Main                  81.8   81.0     63 554133434
+bin                            DTAParse              14.3   10.9     11  74382200
+makey'                         DTAParse               1.3    0.7      1   4832607
+calcIntn                       DTAParse               1.3    0.7      1   4466000
+calcIntn                       Main                   1.3    4.9      1  33528000
+
+
+                                                                                               individual    inherited
+COST CENTRE              MODULE                                               no.    entries  %time %alloc   %time %alloc  ticks     bytes
+
+MAIN                     MAIN                                                   1           0   0.0    0.0   100.0  100.0      0       264
+  main                   Main                                                 377           0   0.0    0.0     0.0    0.0      0        12
+   readFasta             Bio.Sequence.Fasta                                   398           0   0.0    0.0     0.0    0.0      0        12
+ CAF                     Main                                                 330          61   0.0    0.0    83.1   87.1      0     16604
+  show_a7yl              Main                                                 441           5   0.0    0.0     0.0    0.0      0     71224
+  makeBmNHIons           Main                                                 439           0   0.0    0.0     0.0    0.0      0        12
+  makeBmH2OIons          Main                                                 438           0   0.0    0.0     0.0    0.0      0        12
+  makeYp1Ions            Main                                                 437           0   0.0    0.0     0.0    0.0      0        12
+  makeYm1Ions            Main                                                 436           0   0.0    0.0     0.0    0.0      0        12
+  makeBp1Ions            Main                                                 435           0   0.0    0.0     0.0    0.0      0        12
+  makeYmNHIons           Main                                                 434           0   0.0    0.0     0.0    0.0      0        12
+  makeBm1Ions            Main                                                 430           0   0.0    0.0     0.0    0.0      0        12
+  calcMassY              Main                                                 420           0   0.0    0.0     0.0    0.0      0        12
+   getAAMass             Main                                                 421           1   0.0    0.0     0.0    0.0      0         0
+  makeSpectrum           Main                                                 417           0   0.0    0.0     0.0    0.0      0        12
+   calcMassY             Main                                                 418           1   0.0    0.0     0.0    0.0      0      1276
+    getAAMass            Main                                                 422          15   0.0    0.0     0.0    0.0      0         0
+  vectorise              Main                                                 413           0   0.0    0.0     0.0    0.0      0         8
+  calcXCorr              Main                                                 409           0   0.0    0.0     0.0    0.0      0        12
+  makeStdSpec            Main                                                 407        1999   0.0    0.0     0.0    0.0      0    295980
+  sortFinal              Main                                                 380           0   0.0    0.0     0.0    0.0      0         8
+   getXcorr              Main                                                 381           2   0.0    0.0     0.0    0.0      0         0
+  getAAMass              Main                                                 354           0   0.0    0.0     0.0    0.0      0       240
+  calcMassParent         Main                                                 352           0   0.0    0.0     0.0    0.0      0         0
+   getAAMass             Main                                                 353           1   0.0    0.0     0.0    0.0      0         0
+  doSimpleDigest'        Main                                                 351           0   0.0    0.0     0.0    0.0      0         8
+  digestProtein          Main                                                 349           0   0.0    0.0     0.0    0.0      0        92
+   calcMassParent        Main                                                 350           1   0.0    0.0     0.0    0.0      0       344
+    getAAMass            Main                                                 355           6   0.0    0.0     0.0    0.0      0         0
+  doSimpleDigest         Main                                                 342           1   0.0    0.0     0.0    0.0      0      7132
+   doSimpleDigest'       Main                                                 343        2902   0.0    0.0     0.0    0.0      0    287424
+  main                   Main                                                 336           1   0.0    0.0    83.1   87.1      0    330424
+   getSpec               DTAParse                                             384           1   0.0    0.0     0.0    0.0      0         0
+   sortFinal             Main                                                 379           1   0.0    0.0     0.0    0.0      0      2108
+    getXcorr             Main                                                 440          46   0.0    0.0     0.0    0.0      0         0
+   runSequest            Main                                                 378           1   0.0    0.0    83.1   86.2      0       632
+    runSequest'          Main                                                 382          10   0.0    0.1    83.1   86.2      0   1441040
+     makeSpectrum        Main                                                 415          10   0.0    0.0     0.0    0.0      0     13028
+      calcMassY          Main                                                 423         165   0.0    0.0     0.0    0.0      0    107712
+       getAAMass         Main                                                 424        1287   0.0    0.0     0.0    0.0      0         0
+      addIons            Main                                                 416         508   0.0    0.0     0.0    0.0      0     83688
+       makeBmH2OIons     Main                                                 433         166   0.0    0.0     0.0    0.0      0     10624
+       makeBmNHIons      Main                                                 432         166   0.0    0.0     0.0    0.0      0     10624
+       makeBp1Ions       Main                                                 431         166   0.0    0.0     0.0    0.0      0     10624
+       makeBm1Ions       Main                                                 429         166   0.0    0.0     0.0    0.0      0     10624
+       makeBIons         Main                                                 428         166   0.0    0.0     0.0    0.0      0     10624
+       makeYmNHIons      Main                                                 427         166   0.0    0.0     0.0    0.0      0      7968
+       makeYp1Ions       Main                                                 426         166   0.0    0.0     0.0    0.0      0      7968
+       makeYm1Ions       Main                                                 425         166   0.0    0.0     0.0    0.0      0      7968
+     makeStdSpec         Main                                                 406          10   0.0    0.0    83.1   86.0      0   1120320
+      calcIntn           Main                                                 414       20000   1.3    4.9    83.1   86.0      1 134112000
+       bin               Main                                                 419     2988000  81.8   81.0    81.8   81.0     63 2216533736
+     vectorise           Main                                                 405          10   0.0    0.0     0.0    0.0      0    880000
+     calcXCorr           Main                                                 383          20   0.0    0.1     0.0    0.1      0   1920348
+   getParent             DTAParse                                             370           1   0.0    0.0     0.0    0.0      0         0
+   filterHits            Main                                                 356           1   0.0    0.0     0.0    0.3      0    190236
+    calcMassParent       Main                                                 371        7914   0.0    0.3     0.0    0.3      0   9360824
+     getAAMass           Main                                                 372      119420   0.0    0.0     0.0    0.0      0         0
+   digestDB              Main                                                 338          18   0.0    0.0     0.0    0.6      0    142300
+    digestProtein        Main                                                 341          17   0.0    0.0     0.0    0.6      0    707364
+     seqheader           Bio.Sequence.SeqData                                 442           4   0.0    0.0     0.0    0.0      0         0
+     doSimpleDigest      Main                                                 375           0   0.0    0.0     0.0    0.1      0     74280
+      doSimpleDigest'    Main                                                 376       32049   0.0    0.1     0.0    0.1      0   3179176
+     calcMassParent      Main                                                 373        5782   0.0    0.3     0.0    0.3      0   7476868
+      getAAMass          Main                                                 374       95641   0.0    0.0     0.0    0.0      0         0
+     addMissedCleavage   Main                                                 348          17   0.0    0.0     0.0    0.0      0   1181548
+     seqdata             Bio.Sequence.SeqData                                 345          17   0.0    0.0     0.0    0.0      0         0
+     toStr               Bio.Sequence.SeqData                                 344          21   0.0    0.1     0.0    0.1      0   3391448
+   readFasta             Bio.Sequence.Fasta                                   337           2   0.0    0.0     0.0    0.0      0    149576
+    mkSeqs               Bio.Sequence.Fasta                                   339           1   0.0    0.0     0.0    0.0      0      1020
+     mkSeq               Bio.Sequence.Fasta                                   346          17   0.0    0.0     0.0    0.0      0     52944
+     blocks              Bio.Sequence.Fasta                                   340           1   0.0    0.0     0.0    0.0      0     52224
+ CAF                     Data.Typeable                                        328           1   0.0    0.0     0.0    0.0      0       316
+ CAF                     GHC.IOBase                                           306           3   0.0    0.0     0.0    0.0      0      1308
+ CAF                     GHC.Float                                            303          10   0.0    0.0     0.0    0.0      0     18992
+ CAF                     Data.HashTable                                       283           2   0.0    0.0     0.0    0.0      0        96
+ CAF                     GHC.Handle                                           281           6   0.0    0.0     0.0    0.0      0      1588
+  main                   Main                                                 362           0   0.0    0.0     0.0    0.0      0        24
+ CAF                     GHC.Conc                                             280           1   0.0    0.0     0.0    0.0      0        32
+ CAF                     DTAParse                                             251          37   0.0    0.0    16.9   12.9      0       296
+  makey'                 DTAParse                                             412           0   0.0    0.0     0.0    0.0      0        12
+  norm                   DTAParse                                             411           0   0.0    0.0     0.0    0.0      0        12
+  xcorrSpec              DTAParse                                             410           1   0.0    0.0     0.0    0.0      0        52
+  shiftSpec              DTAParse                                             404           0   0.0    0.0     0.0    0.0      0     48000
+  xcorrSpec'             DTAParse                                             401           0   0.0    0.0     0.0    0.0      0     54036
+  remLow                 DTAParse                                             392           0   0.0    0.0     0.0    0.0      0        16
+  processSpec            DTAParse                                             388           0   0.0    0.0     0.0    0.0      0        32
+   sqrtNorm              DTAParse                                             395           1   0.0    0.0     0.0    0.0      0        48
+   remRight              DTAParse                                             393           1   0.0    0.0     0.0    0.0      0        36
+  makeStdSpec            DTAParse                                             386        1999   0.0    0.0     0.0    0.0      0    295980
+  separator              DTAParse                                             365           2   0.0    0.0     0.0    0.0      0       140
+  naturalOrFloat         DTAParse                                             363           1   0.0    0.0     0.0    0.0      0         0
+   lexer                 DTAParse                                             364           0   0.0    0.0     0.0    0.0      0      2004
+  lexer                  DTAParse                                             360           1   0.0    0.0     0.0    0.0      0      1660
+  float                  DTAParse                                             359           1   0.0    0.0     0.0    0.0      0         0
+   lexer                 DTAParse                                             361           0   0.0    0.0     0.0    0.0      0       772
+  vals                   DTAParse                                             358           1   0.0    0.0     0.0    0.0      0       184
+  parseSpec              DTAParse                                             357           1   0.0    0.0    16.9   12.8      0     19976
+   processSpec           DTAParse                                             369           1   0.0    0.0    16.9   12.6      0     56676
+    sqrtNorm             DTAParse                                             397         199   0.0    0.0     0.0    0.0      0      9552
+    remRight             DTAParse                                             394         810   0.0    0.0     0.0    0.0      0     29160
+    remLow               DTAParse                                             391           1   0.0    0.0     0.0    0.0      0    427196
+    xcorrSpec            DTAParse                                             389        2000   0.0    0.0     1.3    1.0      0    767980
+     xcorrSpec'          DTAParse                                             400           1   0.0    0.0     1.3    1.0      0      4864
+      makey'             DTAParse                                             402         152   1.3    0.7     1.3    1.0      1  19330416
+       shiftSpec         DTAParse                                             403         151   0.0    0.3     0.0    0.3      0   8527500
+    normSpec             DTAParse                                             387          11   0.0    0.0     0.0    0.0      0    456400
+     norm                DTAParse                                             399        2000   0.0    0.0     0.0    0.0      0     99200
+    makeStdSpec          DTAParse                                             385           1   0.0    0.0    15.6   11.5      0    112032
+     calcIntn            DTAParse                                             390        2000   1.3    0.7    15.6   11.5      1  17864000
+      bin                DTAParse                                             396      400000  14.3   10.9    14.3   10.9     11 297528800
+   separator             DTAParse                                             368         811   0.0    0.0     0.0    0.0      0    184880
+   vals                  DTAParse                                             366           0   0.0    0.0     0.0    0.2      0    149240
+    lexer                DTAParse                                             367           0   0.0    0.2     0.0    0.2      0   5597512
+ CAF                     Text.ParserCombinators.Parsec.Char                   249           1   0.0    0.0     0.0    0.0      0       156
+ CAF                     Text.ParserCombinators.Parsec.Token                  244           6   0.0    0.0     0.0    0.0      0      4716
+ CAF                     Data.ByteString.Lazy                                 230           2   0.0    0.0     0.0    0.0      0        40
+ CAF                     Bio.Sequence.Fasta                                   169           2   0.0    0.0     0.0    0.0      0        28
+  mkSeq                  Bio.Sequence.Fasta                                   347           0   0.0    0.0     0.0    0.0      0       800
