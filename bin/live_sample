@@ -1,0 +1,19 @@
+#!/bin/sh
+
+function redraw()
+{
+    head -`grep -F -n END_SAMPLE $1.hp | tail -1 | cut -d : -f 1` $1.hp \
+        | hp2ps -c -p \
+        | pstopdf -i -o $1.pdf
+}
+
+sample=`pwd`/$1
+
+redraw $sample
+open $sample.pdf
+
+while [ 1 ]; do
+    sleep 10
+    redraw $sample
+done
+
