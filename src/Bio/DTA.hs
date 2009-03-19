@@ -11,10 +11,16 @@
  - only a single MS/MS sample set.
  -}
 
-module MS2.DTA where
+module Bio.DTA
+    (
+      Spectrum(..),                     -- Data structures
+      getPrecur, getParent, getSpec,    -- Accessor functions
+      readDTA                           -- File formats
+    ) where
 
 import Numeric
-import ApplicativeParsec
+import Control.Monad (liftM2)
+import Text.ParserCombinators.Parsec
 
 
 --------------------------------------------------------------------------------
@@ -27,7 +33,7 @@ import ApplicativeParsec
 --
 data Spectrum = Spec
         Double                  -- The singly protonated peptide mass
-        Int                     -- Peptide charge state
+        Double                  -- Peptide charge state
         [(Double, Double)]      -- The actual mass/charge ratio intensity measurements
     deriving (Eq, Show)
 
@@ -40,20 +46,24 @@ data Spectrum = Spec
 -- The DTA file contains at least one line, each of which is terminated by an
 -- end-of-line character (eol)
 --
-dtaFile = endBy line eol
+dtaFile :: GenParser Char st [(Double, Double)]
+dtaFile =  endBy line eol
 
 -- 
 -- Each line contains exactly two data values, separated by white space. These
--- are returned as a pair of (mass/charge ratio, intensity) values
+-- are returned as a pair of (mass/charge ratio, intensity) values. Detecting
+-- signed values isn't really necessary, but is done for completeness.
 --
-line = liftA2 (,) fval fval
-    where fval = fst . head . readSigned readFloat <$> value
+line :: GenParser Char st (Double, Double)
+line =  liftM2 (,) fval fval
+    where fval = (fst . head . readSigned readFloat) `fmap` value
 
 --
--- Each value is a (possibly signed) floating point number. Discard any leading
--- white space encountered
+-- Each value is a floating point number. Discard any leading white space
+-- encountered.
 --
-value = skipMany (oneOf " \t") >> getValue
+value :: GenParser Char st [Char]
+value =  skipMany (oneOf " \t") >> getValue
     where getValue =  many1 (oneOf (['0'..'9']++"-."))
                   <?> "floating-point number"
 
@@ -61,48 +71,44 @@ value = skipMany (oneOf " \t") >> getValue
 -- The end of line character. Different operating systems use different
 -- characters to mark the end-of-line, so just look for all combinations
 --
+eol :: GenParser Char st String
 eol =  try (string "\n\r")
    <|> try (string "\r\n")
    <|> string "\r"
    <|> string "\n"
    <?> "end of line"
 
---
--- Parse the input file
---
-parseDTA       :: [Char] -> Either ParseError [(Double, Double)]
-parseDTA input =  parse dtaFile "(unknown)" input
-
 
 --------------------------------------------------------------------------------
 -- Spectrum
 --------------------------------------------------------------------------------
 
+--
+-- Encase the values read from the DTA file into a Spectrum data structure
+--
+mkSpec                  :: [(Double, Double)] -> Either String Spectrum
+mkSpec []               =  Left "Error: empty spectrum"
+mkSpec ((m,c):ss)
+    | truncate' c /= c  =  Left "Error: invalid peptide charge state\nexpecting integer"
+    | otherwise         =  Right (Spec m c ss)
+    where
+        truncate' = fromInteger . truncate
 
+getPrecur (Spec p c _) = (p + c - 1) / c
+getParent (Spec p _ _) = p
+getSpec   (Spec _ _ s) = s
 
 --------------------------------------------------------------------------------
 -- File I/O
 --------------------------------------------------------------------------------
 
-readDTA   :: FilePath -> Spectrum
-readDTA _ =  error "not implemented yet"
+--
+-- Read the given file and return either an error of the Spectrum data.
+--
+readDTA      :: FilePath -> IO (Either String Spectrum)
+readDTA name =  do
+    dta <- parseFromFile dtaFile name
+    case dta of
+        Left  e -> return (Left ("Error parsing file: " ++ show e))
+        Right s -> return (mkSpec s)
 
-{-
-    doReadFile ::  FilePath -> (Handle -> IO c) -> IO c
-    doReadFile filename readHandler=
-        bracket (openFile filename ReadMode) hClose readHandler
-
-    --
-    -- Read the spectrum data from a MS experiment results file.
-    --
-    --readDTA :: FilePath -> IO Spectrum
-    readDTA filename = do
-        hdl <- openFile filename ReadMode
-        top <- hGetLine hdl
-        bot <- hGetContents hdl
-
-        case parse dtaFile "" bot of
-            Left  e -> error ("Error parsing input: " ++ show e)
-    --        Right s -> liftM2 (,) (many1 val) (many1 val)
-            Right s -> mapM_ print s --return Spec mass charge spectrum
--}
