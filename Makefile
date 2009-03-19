@@ -9,7 +9,7 @@ OUTDIR		 = $(BUILD_ROOT)/build
 MAKEFLAGS	+= -I$(SRC_ROOT) --no-print-directory
 
 TARGET		 = sequest
-SRC_MAIN	 = $(SRC_ROOT)/sequest.hs
+SRC_MAIN	 = $(SRC_ROOT)/Main.hs
 
 GHC		 = $(shell which ghc)
 GHC_PACKAGES	 = 
