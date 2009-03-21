@@ -13,29 +13,15 @@
 
 module Bio.DTA
     (
-      Spectrum(..),                     -- Data structures
-      getPrecur, getParent, getSpec,    -- Accessor functions
+      module Bio.Spectrum,              -- Data structure
       readDTA                           -- File formats
     ) where
+
+import Bio.Spectrum (Spectrum(..))
 
 import Numeric
 import Control.Monad (liftM2)
 import Text.ParserCombinators.Parsec
-
-
---------------------------------------------------------------------------------
--- Data Structures
---------------------------------------------------------------------------------
-
---
--- The mass spectroscopy data generated from a protein identification
--- experiment. It consists of:
---
-data Spectrum = Spec
-        Double                  -- The singly protonated peptide mass
-        Double                  -- Peptide charge state
-        [(Double, Double)]      -- The actual mass/charge ratio intensity measurements
-    deriving (Eq, Show)
 
 
 --------------------------------------------------------------------------------
@@ -93,10 +79,6 @@ mkSpec ((m,c):ss)
     | otherwise         =  Right (Spec m c ss)
     where
         truncate' = fromInteger . truncate
-
-getPrecur (Spec p c _) = (p + c - 1) / c
-getParent (Spec p _ _) = p
-getSpec   (Spec _ _ s) = s
 
 --------------------------------------------------------------------------------
 -- File I/O
