@@ -15,10 +15,10 @@
  -     Spectrometry, 5(11):976-989, November 1994.
  -}
 
-module Bio.Sequest where
+module Sequest where
 
-import Bio.Spectrum
-import Bio.AminoAcid
+import Spectrum
+import AminoAcid
 
 import Bio.Sequence (Sequence(..), fromStr, toStr, seqdata, seqheader)
 import Data.List

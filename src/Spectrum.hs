@@ -2,7 +2,7 @@
  - Data structure to store results of a mass spectroscopy experiment
  -}
 
-module Bio.Spectrum where
+module Spectrum where
 
 import Data.Array.Unboxed
 

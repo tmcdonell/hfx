@@ -11,13 +11,13 @@
  - only a single MS/MS sample set.
  -}
 
-module Bio.DTA
+module DTA
     (
-      module Bio.Spectrum,              -- Data structure
+      module Spectrum,                  -- Data structure
       readDTA                           -- File formats
     ) where
 
-import Bio.Spectrum
+import Spectrum
 
 import Numeric
 import Control.Monad (liftM2)

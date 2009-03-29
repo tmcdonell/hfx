@@ -7,8 +7,8 @@ module Main where
 --
 -- Custom libraries
 --
-import Bio.DTA
-import Bio.Sequest
+import DTA
+import Sequest
 
 --
 -- System libraries

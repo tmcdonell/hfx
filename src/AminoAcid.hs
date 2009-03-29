@@ -2,7 +2,7 @@
  - Utilities for proteins sequences and their amino acids
  -}
 
-module Bio.AminoAcid where
+module AminoAcid where
 
 --
 -- Return the monoisotopic (ground state) mass of a peptide in atomic mass
