@@ -16,7 +16,6 @@ import Bio.Sequest
 import Bio.Sequence (readFasta)
 import System.Environment (getArgs)
 
-
 --------------------------------------------------------------------------------
 -- Main
 --------------------------------------------------------------------------------
@@ -31,6 +30,7 @@ main = do
     database    <- readFasta fasta
 
     case spectrum of
-	Left  e -> putStrLn e
-	Right s -> return ()
+        Left  err -> putStrLn err
+        Right ms2 -> printResults $ take 5 $
+            findMatch (getParentMass ms2) (mkXCorrSpec (getData ms2)) database
 

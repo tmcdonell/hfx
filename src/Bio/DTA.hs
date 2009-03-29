@@ -17,7 +17,7 @@ module Bio.DTA
       readDTA                           -- File formats
     ) where
 
-import Bio.Spectrum (Spectrum(..))
+import Bio.Spectrum
 
 import Numeric
 import Control.Monad (liftM2)
@@ -70,13 +70,13 @@ eol =  try (string "\n\r")
 --------------------------------------------------------------------------------
 
 --
--- Encase the values read from the DTA file into a Spectrum data structure
+-- Encase the values read from the DTA file into a data structure
 --
-mkSpec                  :: [(Double, Double)] -> Either String Spectrum
+mkSpec                  :: [(Double, Double)] -> Either String MS2Data
 mkSpec []               =  Left "Error: empty spectrum"
 mkSpec ((m,c):ss)
     | truncate' c /= c  =  Left "Error: invalid peptide charge state\nexpecting integer"
-    | otherwise         =  Right (Spec m c ss)
+    | otherwise         =  Right (MS2 m c ss)
     where
         truncate' = fromInteger . truncate
 
@@ -85,9 +85,9 @@ mkSpec ((m,c):ss)
 --------------------------------------------------------------------------------
 
 --
--- Read the given file and return either an error of the Spectrum data.
+-- Read the given file and return either an error or the MS/MS spectrum data.
 --
-readDTA      :: FilePath -> IO (Either String Spectrum)
+readDTA      :: FilePath -> IO (Either String MS2Data)
 readDTA name =  do
     dta <- parseFromFile dtaFile name
     case dta of

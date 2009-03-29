@@ -5,20 +5,16 @@
 module Bio.AminoAcid where
 
 --
--- Return the mass of the peptide, which is the sum of the amino acid residue
--- masses plus the mass of the water molecule released in forming the peptide
--- bond (plus one)
---
-getPeptideMass :: String -> Double
-getPeptideMass =  foldl (flip $ (+) . getAAMass) 19.017804
-
-
---
 -- Return the monoisotopic (ground state) mass of a peptide in atomic mass
 -- units, for the given short abbreviation.
 --
 -- This is corresponds to the mass of the residue, where the mass of the
 -- peptide/protein is the mass of the residue plus the mass of water.
+--
+-- Chemical modifications to amino acids can be considered in the search by
+-- changing the amino acid masses used to calculate the masses of the peptides
+-- (specifically, reading alterations from file, and defaulting to these
+-- values).
 --
 getAAMass     :: Char -> Double
 getAAMass 'A' =   71.037114         -- Alanine              Alg     C3H5NO
@@ -44,11 +40,13 @@ getAAMass 'W' =  186.079313         -- Tryptophan           Trp     C11H10N2O
 getAAMass 'Y' =  163.06332          -- Tyrosine             Tyr     C9H9NO2
 getAAMass 'V' =   99.068414         -- Valine               Val     C5H9NO
 
-getAAMass _   = error "Unknown peptide abbreviation"
-
-
 --
--- Chemical modifications to amino acids can be considered in this search by
--- changing the amino acid masses used to calculate the masses of the peptides.
+-- Ambiguous amino acids
 --
+getAAMass 'B' =  114.10272          -- Aspargine            Asx     C4H8N2O3
+getAAMass 'J' =  113.16472          -- Leucine              Xle     C6H13NO2
+getAAMass 'Z' =  128.12472          -- Glutamine            Glx     C5H10N2O3
+getAAMass 'X' = 0                   -- Unknown              Xaa
+
+getAAMass  x  = error $ "Unknown peptide abbreviation: " ++ [x]
 
