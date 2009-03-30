@@ -20,11 +20,14 @@ module Sequest where
 import Spectrum
 import AminoAcid
 
-import Bio.Sequence (Sequence(..), fromStr, toStr, seqdata, seqheader)
-import Data.List
-import Data.List.Split
-import Data.Array.Unboxed
+import Bio.Sequence hiding ((!))
 import Text.Printf
+import Data.List
+import Data.Array.Unboxed
+import Data.ByteString.Internal (w2c)
+import Data.ByteString.Lazy.Internal (ByteString(..))
+import qualified Data.ByteString.Lazy as L
+
 
 --------------------------------------------------------------------------------
 -- Amino acid sequences
@@ -35,8 +38,8 @@ import Text.Printf
 -- masses plus the mass of the water molecule released in forming the peptide
 -- bond (plus one; from Eq. 1 of Eng.[1])
 --
-getPeptideMass :: String -> Double
-getPeptideMass =  foldl (flip $ (+) . getAAMass) (18.017804 + 1.0)
+getPeptideMass :: SeqData -> Double
+getPeptideMass =  L.foldl (flip $ (+) . getAAMass . w2c) (18.017804 + 1.0)
 
 --
 -- Scan a sequence from the database for linear combinations of amino acids,
@@ -49,22 +52,30 @@ getPeptideMass =  foldl (flip $ (+) . getAAMass) (18.017804 + 1.0)
 -- (atomic mass units)
 --
 digestProtein     :: String -> Sequence -> [Sequence]
-digestProtein c s =  map (\x -> Seq name (fromStr x) Nothing) $ seqs s
+digestProtein c s =  map (\x -> Seq name x Nothing) $ seqs s
     where
         name = seqheader s
-        seqs = filter (\x -> getPeptideMass x >= 400) . addCleave . simpleDigest c . toStr . seqdata
+        seqs = filter (\x -> getPeptideMass x >= 400) . addCleave . simpleDigest (`elem` c) . seqdata
 
 --
 -- Split at the given amino acids
 --
-simpleDigest :: (Eq a) => [a] -> [a] -> [[a]]
-simpleDigest =  split . keepDelimsR . oneOf
+simpleDigest         :: (Char -> Bool) -> SeqData -> [SeqData]
+simpleDigest _ Empty =  []
+simpleDigest p cs    =
+    case L.findIndex (p . w2c) cs of
+        Nothing                     -> [cs]
+        Just n | n+1 == L.length cs -> [cs]
+               | otherwise          -> let (a,b) = L.splitAt (n+1) cs in a : simpleDigest p b
 
 --
 -- Include the possibility of one missed cleavage
 --
-addCleave   :: [[a]] -> [[a]]
-addCleave l =  l ++ zipWith (++) l (tail l)
+addCleave   :: [SeqData] -> [SeqData]
+addCleave l =  l ++ zipper l (tail l)
+    where
+        zipper (a:as) (b:bs) = L.append a b : zipper as bs
+        zipper _      _      = []
 
 
 --------------------------------------------------------------------------------
@@ -77,11 +88,10 @@ addCleave l =  l ++ zipWith (++) l (tail l)
 -- ions and a magnitude component.
 --
 mkAASpec         :: (Int, Int) -> (Double -> Int) -> Sequence -> Spectrum
-mkAASpec bnds fn =  mkSpectrum bnds . bin . buildSeq . extract
+mkAASpec bnds fn =  mkSpectrum bnds . bin . buildSeq . seqdata
     where
-        extract  = toStr . seqdata
-        buildSeq = addIons . (map (\s -> (getPeptideMass s, 1.0))) . tails
         bin      = map (\(x,y) -> (fn x,y))
+        buildSeq = addIons . (map (\s -> (getPeptideMass s, 1.0))) . L.tails
 
 --
 -- The factors that contributed to the collision induced dissociation (CID)
@@ -125,7 +135,7 @@ addIons s =  s ++
 findCandidates      :: Double -> [Sequence] -> [Sequence]
 findCandidates mass =  filterDB . concatMap (digestProtein "KR")
     where
-        filterDB = filter (limit . getPeptideMass . toStr . seqdata)
+        filterDB = filter (limit . getPeptideMass . seqdata)
         limit x  = (mass - det) <= x && x <= (mass + det)
         det      = max 3 (0.05 / 100 * mass)
 
