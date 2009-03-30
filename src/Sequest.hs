@@ -39,7 +39,7 @@ import qualified Data.ByteString.Lazy as L
 -- bond (plus one; from Eq. 1 of Eng.[1])
 --
 getPeptideMass :: SeqData -> Double
-getPeptideMass =  L.foldl (flip $ (+) . getAAMass . w2c) (18.017804 + 1.0)
+getPeptideMass =  L.foldr ((+) . getAAMass . w2c) (18.017804 + 1.0)
 
 --
 -- Scan a sequence from the database for linear combinations of amino acids,
@@ -185,7 +185,7 @@ mkXCorrSpec msdata =  mkSpectrum bnds . zip mz $ zipWith (-) itn rt
         --      = y_0 - rt
         --
         shiftl _ _ []     = []
-        shiftl n f (x:xs) = foldl f x (take n xs) : shiftl n f xs
+        shiftl n f (x:xs) = foldr f x (take n xs) : shiftl n f xs
         shiftr n f        = reverse . shiftl n f . reverse
 
         rt                = zipWith (\x y -> (x+y)/150) (shiftl 75 (+) itn) (shiftr 75 (+) itn)
