@@ -24,9 +24,7 @@ import Bio.Sequence hiding ((!))
 import Text.Printf
 import Data.List
 import Data.Array.Unboxed
-import Data.ByteString.Internal (w2c)
-import Data.ByteString.Lazy.Internal (ByteString(..))
-import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy.Char8 as L
 
 
 --------------------------------------------------------------------------------
@@ -39,7 +37,7 @@ import qualified Data.ByteString.Lazy as L
 -- bond (plus one; from Eq. 1 of Eng.[1])
 --
 getPeptideMass :: SeqData -> Double
-getPeptideMass =  L.foldr ((+) . getAAMass . w2c) (18.017804 + 1.0)
+getPeptideMass =  L.foldr ((+) . getAAMass) (18.017804 + 1.0)
 
 --
 -- Scan a sequence from the database for linear combinations of amino acids,
@@ -61,9 +59,10 @@ digestProtein c s =  map (\x -> Seq name x Nothing) $ seqs s
 -- Split at the given amino acids
 --
 simpleDigest         :: (Char -> Bool) -> SeqData -> [SeqData]
-simpleDigest _ Empty =  []
-simpleDigest p cs    =
-    case L.findIndex (p . w2c) cs of
+simpleDigest p cs
+    | L.null cs         = []
+    | otherwise         =
+    case L.findIndex p cs of
         Nothing                     -> [cs]
         Just n | n+1 == L.length cs -> [cs]
                | otherwise          -> let (a,b) = L.splitAt (n+1) cs in a : simpleDigest p b
