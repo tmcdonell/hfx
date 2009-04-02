@@ -139,9 +139,11 @@ findCandidates mass =  filterDB . concatMap (digestProtein "KR")
         det      = max 3 (0.05 / 100 * mass)
 
 
-findMatch           :: Double -> Spectrum -> [Sequence] -> [(Double, Sequence)]
-findMatch mass spec =  finish . map sequest . findCandidates mass
+findMatch     :: MS2Data -> [Sequence] -> [(Double, Sequence)]
+findMatch ms2 =  finish . map sequest . findCandidates mass
     where
+        mass      = getParentMass ms2
+        spec      = mkXCorrSpec (getData ms2)
         bnds      = bounds spec
         finish    = sortBy (\(x,_) (y,_) -> compare y x)
         sequest p = (score p, p)
