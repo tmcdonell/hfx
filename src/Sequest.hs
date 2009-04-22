@@ -211,7 +211,7 @@ mkHist fn =  sortx . reduce . sorty . bin
     where
         bin      = map (\(x,y) -> (fn x, sqrt y))
         sortx    = sortBy (\(x1,_) (x2,_) -> compare x1 x2)     -- increasing
-        sorty    = sortBy (\(y1,_) (y2,_) -> compare y2 y1)     -- decreasing
+        sorty    = sortBy (\(_,y1) (_,y2) -> compare y2 y1)     -- decreasing
         reduce   = take 200
 
 --
