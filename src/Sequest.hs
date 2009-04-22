@@ -107,20 +107,20 @@ mkAASpec bnds fn =  mkSpectrum bnds . bin . buildSeq . seqdata
 addIons   :: [(Double, Double)] -> [(Double, Double)]
 addIons s =  s ++
     concatMap (\fn -> map fn s)            [mkIonYm1, mkIonYp1, mkIonYmNH] ++
-    concatMap (\fn -> map (fn (head s)) s) [mkIonB, mkIonBm1, mkIonBp1, mkIonBmH2O, mkIonBmNH, mkIonA]
+    concatMap (\fn -> map (fn (head s)) s) [mkIonB, mkIonBm1, mkIonBp1, mkIonBmH2O, mkIonBmNH {-, mkIonA-}]
 
     where
-        mkIonYm1   (mz, _) = (mz - 1.0,     0.5)
-        mkIonYp1   (mz, _) = (mz + 1.0,     0.5)
-        mkIonYmNH  (mz, _) = (mz - 17.0278, 0.2)
+        mkIonYm1   (mz, _) = (mz - 1.0,     0.25)
+        mkIonYp1   (mz, _) = (mz + 1.0,     0.25)
+        mkIonYmNH  (mz, _) = (mz - 17.0278, 0.10)
 
         mkIonB     (mz, i) (mz', _) = (mz - mz' + 1.0074,           i)
-        mkIonBm1   (mz, _) (mz', _) = (mz - mz' + 1.0074 - 1.0,     0.5)
-        mkIonBp1   (mz, _) (mz', _) = (mz - mz' + 1.0074 + 1.0,     0.5)
-        mkIonBmH2O (mz, _) (mz', _) = (mz - mz' + 1.0074 - 18.0105, 0.2)
-        mkIonBmNH  (mz, _) (mz', _) = (mz - mz' + 1.0074 - 17.0278, 0.2)
+        mkIonBm1   (mz, _) (mz', _) = (mz - mz' + 1.0074 - 1.0,     0.25)
+        mkIonBp1   (mz, _) (mz', _) = (mz - mz' + 1.0074 + 1.0,     0.25)
+        mkIonBmH2O (mz, _) (mz', _) = (mz - mz' + 1.0074 - 18.0105, 0.10)
+        mkIonBmNH  (mz, _) (mz', _) = (mz - mz' + 1.0074 - 17.0278, 0.10)
 
-        mkIonA     (mz, _) (mz', _) = (mz - mz' + 1.0074 - 27.9949, 0.2)
+--        mkIonA     (mz, _) (mz', _) = (mz - mz' + 1.0074 - 27.9949, 0.10)
 
 
 --------------------------------------------------------------------------------
@@ -216,8 +216,8 @@ normItn (lo,hi) msdata =  concat $ zipWith clamp limits windows
         minmax  ((_,x):xs)    = foldl' minmax' (x, x) xs
         minmax' (mn,mx) (_,x) = (min x mn, max x mx)
 
-        clamp lim             = map (\(x,y) -> (x, clamp' lim y))
-        clamp' (l,u) v        = (v-l) / (u-l)
+        clamp (l,u)           = map (\(x,y) -> (x, clamp' (l,2*u) y))
+        clamp' (l,u) v        = (v-l) / (u-l + 1E-12)
 
 --
 -- Split a list by repeatedly applying 'span' for each of the given splitting
