@@ -207,11 +207,12 @@ mkXCorrSpec msdata =  mkSpectrum bnds . zip mz $ zipWith (-) itn rt
 -- is the first pre-processing step.
 --
 mkHist    :: (Double -> Int) -> [(Double, Double)] -> [(Int, Double)]
-mkHist fn =  reduce . sort' . bin'
+mkHist fn =  sortx . reduce . sorty . bin
     where
-        bin'     = map (\(x,y) -> (fn x, sqrt y))
-        sort'    = sortBy (\(x,_) (y,_) -> compare x y)
-        reduce l = drop (length l - 200) l
+        bin      = map (\(x,y) -> (fn x, sqrt y))
+        sortx    = sortBy (\(x1,_) (x2,_) -> compare x1 x2)     -- increasing
+        sorty    = sortBy (\(y1,_) (y2,_) -> compare y2 y1)     -- decreasing
+        reduce   = take 200
 
 --
 -- Normalise the intensity measurements in ten equal windows across the
