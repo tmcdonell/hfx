@@ -50,3 +50,15 @@ getAAMass 'X' = 0                   -- Unknown              Xaa
 
 getAAMass  x  = error $ "Unknown peptide abbreviation: " ++ [x]
 
+
+{-
+-- Explicitly building an unboxed-array for the lookup-table leads to
+-- complicated core, which isn't actually any faster...
+--
+getAAMass   :: Char -> Double
+getAAMass x =  amino ! (fromEnum x)
+    where
+        amino :: Array Int Double
+        amino = listArray (fromEnum 'A', fromEnum 'Z') 
+            [71.037114, 114.10272, 103.009185+57.0, 115.026943, 129.042593, 147.068414, 57.021464, 137.058912, 113.084064, 113.16472, 128.094963, 113.084064, 131.040485, 114.042927, 255.15829, 97.052764, 128.058578, 156.101111, 87.032028, 101.047679, 168.053, 99.068414, 186.079313, 0, 163.06332, 128.12472]
+ -}

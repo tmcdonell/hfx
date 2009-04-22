@@ -91,6 +91,15 @@ mkAASpec bnds fn =  mkSpectrum bnds . bin . buildSeq . seqdata
         bin      = map (\(x,y) -> (fn x,y))
         buildSeq = addIons . (map (\s -> (getPeptideMass s, 1.0))) . L.tails
 
+--        This is a scan, but converting to a list to perform the scan operation
+--        seems to take even longer than all of these redundant operations on
+--        byte strings. Unfortunately there is no generic
+--          L.scan :: (a -> Word8 -> a) -> a -> ByteString -> [a]
+--        (and I don't yet understand byte strings well enough to write one...)
+--
+--        buildSeq = addIons . tail . (\a -> zip a (repeat 1.0)) . scanl (flip $ (+) . getAAMass) (18.017804 + 1.0) . toStr
+--        buildSeq = addIons . tail . scanl (\(a,_) b -> (a + getAAMass b, 1.0)) (19.017804,1.0) . toStr 
+
 --
 -- The factors that contributed to the collision induced dissociation (CID)
 -- process of peptide fragmentation in a tandem-MS experiment are not completely
