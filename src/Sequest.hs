@@ -195,11 +195,15 @@ mkXCorrSpec msdata =  mkSpectrum bnds . zip mz $ zipWith (-) itn rt
 -- Generate a histogram-like representation of the input spectrum. Values that
 -- fall into the same bin have not yet been combined.
 --
+-- Retain only the 200 most intense peaks from the experimental spectrum, this
+-- is the first pre-processing step.
+--
 mkHist    :: (Double -> Int) -> [(Double, Double)] -> [(Int, Double)]
-mkHist fn =  sort' . bin'
+mkHist fn =  reduce . sort' . bin'
     where
-        bin'    = map (\(x,y) -> (fn x, sqrt y))
-        sort'   = sortBy (\(x,_) (y,_) -> compare x y)
+        bin'     = map (\(x,y) -> (fn x, sqrt y))
+        sort'    = sortBy (\(x,_) (y,_) -> compare x y)
+        reduce l = drop (length l - 200) l
 
 --
 -- Normalise the intensity measurements in ten equal windows across the
