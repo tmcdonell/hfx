@@ -9,6 +9,7 @@ module Main where
 --
 import DTA
 import Sequest
+import Utils
 
 --
 -- System libraries

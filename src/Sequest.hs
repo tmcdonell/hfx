@@ -21,7 +21,6 @@ import Spectrum
 import AminoAcid
 
 import Bio.Sequence hiding ((!))
-import Text.Printf
 import Data.List
 import Data.Array.Unboxed
 import qualified Data.ByteString.Lazy.Char8 as L
@@ -231,20 +230,4 @@ mkWin                 ::  (a -> t -> Bool) -> [t] -> [a] -> [[a]]
 mkWin _ _  []         =  []
 mkWin _ [] ls         =  [ls]
 mkWin p (n:ns) ls     =  let (xs,ys) = span (`p` n) ls in xs : mkWin p ns ys
-
-
---------------------------------------------------------------------------------
--- Results
---------------------------------------------------------------------------------
-
--- 
--- Dumb print wrapper (i.e. doesn't calculate optimum column widths, etc)
---
-printResults :: [(Double, Sequence)] -> IO ()
-printResults =  mapM_ printMatch 
-    where
-        printMatch (score, match) = printf "%7.3f  %20s  %s\n"
-            score
-            (toStr (seqdata match))
-            (toStr (seqheader match))
 
