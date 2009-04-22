@@ -26,4 +26,5 @@ all:
 
 clean:
 	$(RM) -r $(OUTDIR) $(TARGET)
+	$(RM) -r .hpc $(TARGET).{aux,hp,prof,ps,tix}
 
