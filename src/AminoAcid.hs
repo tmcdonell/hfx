@@ -5,16 +5,11 @@
 module AminoAcid where
 
 --
--- Return the monoisotopic (ground state) mass of a peptide in atomic mass
--- units, for the given short abbreviation.
+-- Return the monoisotopic (ground state) mass of an amino acid residue in
+-- atomic mass units, for the given short abbreviation.
 --
--- This is corresponds to the mass of the residue, where the mass of the
+-- This corresponds to the mass of the residue, where the mass of the
 -- peptide/protein is the mass of the residue plus the mass of water.
---
--- Chemical modifications to amino acids can be considered in the search by
--- changing the amino acid masses used to calculate the masses of the peptides
--- (specifically, reading alterations from file, and defaulting to these
--- values).
 --
 getAAMass     :: Char -> Double
 getAAMass 'A' =   71.037114         -- Alanine              Alg     C3H5NO
@@ -32,8 +27,8 @@ getAAMass 'K' =  128.094963         -- Lysine               Lys     C6H12N2O
 getAAMass 'M' =  131.040485         -- Methionine           Met     C5H9NOS
 getAAMass 'F' =  147.068414         -- Phenylalanine        Phe     C9H9NO
 getAAMass 'P' =   97.052764         -- Proline              Pro     C5H7NO
-getAAMass 'O' =  255.15829          -- Pyrrolysine          Pyl     C12H21N3O3
-getAAMass 'U' =  168.053            -- Selenocysteine       Sec     C3H5NOSe
+getAAMass 'O' =  114.07931          -- Pyrrolysine          Pyl     C12H21N3O3
+getAAMass 'U' =  150.04344          -- Selenocysteine       Sec     C3H5NOSe
 getAAMass 'S' =   87.032028         -- Serine               Ser     C3H5NO2
 getAAMass 'T' =  101.047679         -- Threonine            Thr     C4H7NO2
 getAAMass 'W' =  186.079313         -- Tryptophan           Trp     C11H10N2O
@@ -43,12 +38,12 @@ getAAMass 'V' =   99.068414         -- Valine               Val     C5H9NO
 --
 -- Ambiguous amino acids
 --
-getAAMass 'B' =  114.10272          -- Aspargine            Asx     C4H8N2O3
+getAAMass 'B' =  114.53494          -- Aspargine            Asx     C4H8N2O3
 getAAMass 'J' =  113.16472          -- Leucine              Xle     C6H13NO2
-getAAMass 'Z' =  128.12472          -- Glutamine            Glx     C5H10N2O3
-getAAMass 'X' = 0                   -- Unknown              Xaa
+getAAMass 'Z' =  128.55059          -- Glutamine            Glx     C5H10N2O3
+getAAMass 'X' =  113.08406          -- Unknown              Xaa
 
-getAAMass  x  = error $ "Unknown peptide abbreviation: " ++ [x]
+getAAMass  x  = error $ "Unknown amino acid abbreviation: " ++ [x]
 
 
 {-
