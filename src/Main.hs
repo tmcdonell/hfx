@@ -32,5 +32,5 @@ main = do
 
     case spectrum of
         Left  err -> putStrLn err
-        Right ms2 -> printResults $ take 5 $ findMatch ms2 database
+        Right ms2 -> printResults $ findMatch ms2 database
 

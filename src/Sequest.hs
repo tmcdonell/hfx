@@ -148,14 +148,18 @@ findCandidates mass =  filterDB . concatMap (digestProtein "KR")
 
 
 findMatch     :: MS2Data -> [Sequence] -> [(Double, Sequence)]
-findMatch ms2 =  finish . map sequest . findCandidates mass
+findMatch ms2 =  finish . foldl' search matches . findCandidates mass
     where
         mass      = getParentMass ms2
         spec      = mkXCorrSpec (getData ms2)
         bnds      = bounds spec
-        finish    = sortBy (\(x,_) (y,_) -> compare y x)
+        finish    = reverse
+
+        search l  = tail . (\v -> insertBy (\(x,_) (y,_) -> compare x y) v l) . sequest
         sequest p = (score p, p)
         score     = dot spec . mkAASpec bnds truncate
+
+        matches   = replicate 5 (-1/0, Seq L.empty L.empty Nothing)
 
 
 --------------------------------------------------------------------------------
