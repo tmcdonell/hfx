@@ -32,7 +32,7 @@ import Text.ParserCombinators.Parsec
 -- The DTA file contains at least one line, each of which is terminated by an
 -- end-of-line character (eol)
 --
-dtaFile :: GenParser Char st [(Double, Double)]
+dtaFile :: GenParser Char st [(Float, Float)]
 dtaFile =  endBy line eol
 
 -- 
@@ -40,7 +40,7 @@ dtaFile =  endBy line eol
 -- are returned as a pair of (mass/charge ratio, intensity) values. Detecting
 -- signed values isn't really necessary, but is done for completeness.
 --
-line :: GenParser Char st (Double, Double)
+line :: GenParser Char st (Float, Float)
 line =  liftM2 (,) fval fval
     where fval = (fst . head . readSigned readFloat) `fmap` value
 
@@ -72,13 +72,14 @@ eol =  try (string "\n\r")
 --
 -- Encase the values read from the DTA file into a data structure
 --
-mkSpec                  :: [(Double, Double)] -> Either String MS2Data
-mkSpec []               =  Left "Error: empty spectrum"
+mkSpec              :: [(Float, Float)] -> Either String Spectrum
+mkSpec []           =  Left "Error: empty spectrum"
 mkSpec ((m,c):ss)
-    | truncate' c /= c  =  Left "Error: invalid peptide charge state\nexpecting integer"
-    | otherwise         =  Right (MS2 m c ss)
+    | trunc' c /= c =  Left "Error: invalid peptide charge state\nexpecting integer"
+    | otherwise     =  Right (Spectrum pcr c ss)
     where
-        truncate' = fromInteger . truncate
+        pcr    = (m + c - 1) / c
+        trunc' = fromInteger . truncate
 
 --------------------------------------------------------------------------------
 -- File I/O
@@ -87,7 +88,7 @@ mkSpec ((m,c):ss)
 --
 -- Read the given file and return either an error or the MS/MS spectrum data.
 --
-readDTA      :: FilePath -> IO (Either String MS2Data)
+readDTA      :: FilePath -> IO (Either String Spectrum)
 readDTA name =  do
     dta <- parseFromFile dtaFile name
     case dta of
