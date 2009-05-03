@@ -1,0 +1,12 @@
+[SEQUEST]
+#
+#
+#
+foo = 1
+
+[SEQUEST_ENZYME_INFO]
+#
+#
+#
+bar = 2
+
