@@ -8,9 +8,11 @@ module Protein where
 import Utils
 import Config
 
+import Data.Int
 import Data.List
-import Bio.Sequence.SeqData (SeqData, Offset)
+import qualified Bio.Sequence as S
 import qualified Data.ByteString.Lazy.Char8 as L
+
 
 --------------------------------------------------------------------------------
 -- Data Structures
@@ -23,13 +25,18 @@ type ProteinDatabase = [Protein]
 --
 data Protein = Protein
     {
-        name        :: SeqData,         -- Name of the protein
-        description :: SeqData,         -- Description
-        chain       :: SeqData,         -- Amino acid character sequence
-        fragments   :: [Peptide]        -- Peptide fragments digested from this protein
+        header    :: L.ByteString,      -- Description of the protein
+        chain     :: L.ByteString,      -- Amino acid character sequence
+        fragments :: [Peptide]          -- Peptide fragments digested from this protein
     }
     deriving (Eq, Show)
 
+--
+-- Extract the name and full description of a protein
+--
+name, description :: Protein -> String
+name        = L.unpack . head . L.words . header
+description = L.unpack . header
 
 --
 -- A subsequence of a protein
@@ -46,7 +53,7 @@ data Peptide = Peptide
 --        parent    :: Protein,           -- Protein this fragment derives from
         mass      :: Float,             -- The total mass of this peptide
         ladder    :: [Float],           -- Sequence ladder of b-ion series
-        terminals :: (Offset, Offset)   -- Location in the parent protein of this peptide
+        terminals :: (Int64, Int64)     -- Location in the parent protein of this peptide
     }
     deriving (Eq, Show)
 
@@ -60,7 +67,7 @@ residual p =  mass p - (massH2O + 1.0)
 --
 -- Record a new protein fragment
 --
-fragment :: ConfigParams -> Protein -> (Offset, Offset) -> Peptide
+fragment :: ConfigParams -> Protein -> (Int64, Int64) -> Peptide
 fragment cp protein indices = Peptide
     {
 --        parent    = protein,
@@ -95,7 +102,7 @@ digestProtein cp protein = protein { fragments = seqs }
 --
 -- Split a protein at the given amino acid locations
 --
-simpleFragment :: ConfigParams -> Protein -> [Offset] -> [Peptide]
+simpleFragment :: ConfigParams -> Protein -> [Int64] -> [Peptide]
 simpleFragment _  _ []     = []
 simpleFragment cp p (i:is) = fragment cp p (i+1, n) : simpleFragment cp p is
     where n = if null is
