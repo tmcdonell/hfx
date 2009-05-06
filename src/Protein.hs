@@ -51,14 +51,15 @@ description = L.unpack . header
 data Peptide = Peptide
     {
 --        parent    :: Protein,           -- Protein this fragment derives from
-        mass      :: Float,             -- The total mass of this peptide
-        ladder    :: [Float],           -- Sequence ladder of b-ion series
+        residual  :: Float,             -- The sum of the residual masses of this peptide
+        ladder    :: [Float],           -- Sequence ladder of b-ion series fragments
         terminals :: (Int64, Int64)     -- Location in the parent protein of this peptide
     }
     deriving (Eq, Show)
 
-residual   :: Peptide -> Float
-residual p =  mass p - (massH2O + 1.0)
+pmass   :: Peptide -> Float
+pmass p =  residual p + (massH2O + 1.0)
+
 
 --------------------------------------------------------------------------------
 -- Protein Fragments
@@ -71,12 +72,13 @@ fragment :: ConfigParams -> Protein -> (Int64, Int64) -> Peptide
 fragment cp protein indices = Peptide
     {
 --        parent    = protein,
-        mass      = last mseq,
-        ladder    = mseq,
+        residual  = last bseq,
+        ladder    = bseq,
         terminals = indices
     }
-    where mseq = tail $
-            scanlBS (\m a -> m + getAAMass cp a) (massH2O + 1.0) indices (chain protein)
+    where
+        bseq = tail $
+            scanlBS (\m a -> m + getAAMass cp a) 0.0 indices (chain protein)
 
 
 --
@@ -92,7 +94,7 @@ digestProtein :: ConfigParams -> Protein -> Protein
 digestProtein cp protein = protein { fragments = seqs }
     where
         seqs      = filter inrange splices
-        inrange p = mass p >= minPeptideMass cp && mass p <= maxPeptideMass cp
+        inrange p = minPeptideMass cp <= pmass p && pmass p <= maxPeptideMass cp
 
         indices   = L.findIndices (digestRule cp) (chain protein)
         frags     = simpleFragment cp protein (-1:indices)
@@ -128,7 +130,7 @@ simpleSplice cp pep@(p:ps)
         n          = missedCleavages cp + 1
         splice a b = Peptide
             {
-                mass      = residual a + mass b,
+                residual  = residual a + residual b,
                 ladder    = ladder a ++ map (+residual a) (ladder b),
                 terminals = (fst (terminals a), snd (terminals b))
             }
