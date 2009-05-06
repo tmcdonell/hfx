@@ -61,9 +61,10 @@ mzRange spec =  minmax (peaks spec)
         cmp (a,_) (b,_) = (min a b, max a b)
 
 --
--- A mz/intensity spectrum array suitable for sequest cross-correlation ranking
+-- A mz/intensity spectrum array of experimental data suitable for sequest
+-- cross-correlation ranking
 --
-type XCorrSpec = Array Int Float
+type XCorrSpecExp = Array Int Float
 
 
 --------------------------------------------------------------------------------
@@ -74,8 +75,8 @@ type XCorrSpec = Array Int Float
 -- Process the observed spectral peaks and generate an array suitable for
 -- Sequest cross correlation analysis.
 --
-buildXCorrSpec    :: ConfigParams -> Spectrum -> XCorrSpec
-buildXCorrSpec cp =  calculateXCorr . normaliseByRegion . observedIntensity cp
+buildExpSpecXCorr    :: ConfigParams -> Spectrum -> XCorrSpecExp
+buildExpSpecXCorr cp =  calculateXCorr . normaliseByRegion . observedIntensity cp
 
 
 --
@@ -128,7 +129,7 @@ normaliseByRegion a = array (bounds a) [(i,norm i) | i <- indices a]
 -- Each sequest matching score is then a dot product between a theoretical input
 -- and this pre-processed spectrum.
 --
-calculateXCorr :: Array Int Float -> XCorrSpec
+calculateXCorr :: Array Int Float -> XCorrSpecExp
 calculateXCorr a = array (bounds a) [(i,xcorr i e) | (i,e) <- assocs a]
     where
         (m,n)     = bounds a
