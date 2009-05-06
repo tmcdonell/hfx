@@ -62,6 +62,22 @@ pmass p =  residual p + (massH2O + 1.0)
 
 
 --------------------------------------------------------------------------------
+-- File Handlers
+--------------------------------------------------------------------------------
+
+--
+-- Read a protein database from a Fasta formatted file
+--
+-- Each entry consists of a header (with a prefix of >) followed by a series of
+-- lines containing the sequence data.
+--
+readFasta :: FilePath -> IO ProteinDatabase
+readFasta fasta = do
+    database <- S.readFasta fasta
+    return   $  map (\(S.Seq h d _) -> Protein h d []) database
+
+
+--------------------------------------------------------------------------------
 -- Protein Fragments
 --------------------------------------------------------------------------------
 
