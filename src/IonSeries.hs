@@ -50,8 +50,12 @@ ionMZ m c = (m + massH*c) / c
 
 --
 -- Add a spectral peak for each fragment location, as well as the peaks
--- corresponding to neutral losses of H2O and NH3, for the given charge / mass
--- location
+-- corresponding to neutral losses of H2O and NH3.
+--
+-- The factors that contribute to the collision induced dissociation process
+-- used in tandem-MS experiments are not completely understood, so accurate
+-- prediction of fragment ion abundances are not possible. Magnitude components
+-- are assigned based on empirical knowledge.
 --
 addIonsAB, addIonsY :: Float -> Float -> [(Float, Float)]
 addIonsAB charge mass = addIonsA : addIonsB
@@ -64,11 +68,10 @@ addIonsAB charge mass = addIonsA : addIonsB
             (m - massNH3/charge, 10)
           ]
 
-addIonsY charge mass = addIonY
-    where
-        addIonY = let m = ionMZ (mass + massH2O) charge in
-          [
-            (m,50), (m+1,25), (m-1,25),
-            (m - massNH3/charge, 10)
-          ]
+addIonsY charge mass =
+    let m = ionMZ (mass + massH2O) charge in
+      [
+        (m,50), (m+1,25), (m-1,25),
+        (m - massNH3/charge, 10)
+      ]
 

@@ -118,7 +118,8 @@ digestProtein cp protein = protein { fragments = seqs }
 
 
 --
--- Split a protein at the given amino acid locations
+-- Split a protein at the given amino acid locations. Be sure to include the
+-- final fragment, with a dummy cleavage point at the end of the sequence.
 --
 simpleFragment :: ConfigParams -> Protein -> [Int64] -> [Peptide]
 simpleFragment _  _ []     = []

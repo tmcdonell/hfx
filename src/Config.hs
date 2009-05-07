@@ -9,6 +9,7 @@ import AminoAcid
 import Data.ConfigFile
 import Data.Array.Unboxed
 import Control.Monad.Error
+import System.Directory
 
 --------------------------------------------------------------------------------
 -- Data structures
@@ -44,10 +45,10 @@ data ConfigParams = Params
 
 
 --
--- The default configuration set
+-- The basic (almost empty) configuration set
 --
-defaultParams :: ConfigParams
-defaultParams =  Params
+baseParams :: ConfigParams
+baseParams =  Params
     {
         databasePath        = "data/uniprot_sprot_human+trypsin.fasta",
 
@@ -97,7 +98,7 @@ readParams filename =  do
 -- structure, or return an appropriate error string
 --
 parseConfig   :: ConfigParser -> Either String ConfigParams
-parseConfig _ =  Right (finish defaultParams)
+parseConfig _ =  Right (finish baseParams)
     where
         finish                = initializeAAMasses
 
