@@ -88,13 +88,10 @@ fragment :: ConfigParams -> Protein -> (Int64, Int64) -> Peptide
 fragment cp protein indices = Peptide
     {
 --        parent    = protein,
-        residual  = last bseq,
-        ladder    = bseq,
+        residual  = subFoldBS' (\m a -> m + getAAMass cp a) 0.0 (chain protein) indices,
+        ladder    = subScanBS' (\m a -> m + getAAMass cp a) 0.0 (chain protein) indices,
         terminals = indices
     }
-    where
-        bseq = tail $
-            scanlBS (\m a -> m + getAAMass cp a) 0.0 indices (chain protein)
 
 
 --

@@ -49,23 +49,28 @@ subFoldA1' f a i = subFoldA' f (a ! head i) a (tail i)
 --------------------------------------------------------------------------------
 
 --
--- A more generic byte string scan from the left. The scanning function is not
--- limited to conversions between the Char type, but as a consequence lifts the
--- result to a standard list. The limiting indices are inclusive.
+-- Strict left scan over a given subset of a lazy byte string. The scanning
+-- function is not limited to conversions between the Char type, but as a
+-- consequence lifts the result to a standard list. The limiting indices are
+-- inclusive.
 --
-scanlBS              :: (a -> Char -> a) -> a -> (Int64, Int64) -> L.ByteString -> [a]
-scanlBS f q (c,n) bs =  q : (case c <= n && c < L.length bs of
-                               False -> []
-                               True  -> scanlBS f (f q (L.index bs c)) (c+1,n) bs)
+-- The limiting indices are inclusive, and the seed element is discarded.
+--
+subScanBS' :: (a -> Char -> a) -> a -> L.ByteString -> (Int64, Int64) -> [a]
+subScanBS' f q bs (c,n) = go q [c..n]
+    where go s (i:is) = let s' = f s (L.index bs i)
+                        in  s' `seq` s' : go s' is
+          go _ []     = []
 
 --
--- Generic byte string scan from the right.
+-- Strict left fold over a given subset of a lazy byte string. The limiting
+-- indices are inclusive.
 --
-scanrBS                 :: (Char -> a -> a) -> a -> (Int64, Int64) -> L.ByteString -> [a]
-scanrBS f q0 (c,n) bs
-    | c > n || c >= L.length bs = [q0]
-    | otherwise                 = f (L.index bs c) q : qs
-                                where qs@(q:_) = scanrBS f q0 (c+1,n) bs
+-- This is (somewhat surprisingly) faster than using an index-based method
+-- similar to that above.
+--
+subFoldBS' :: (a -> Char -> a) -> a -> L.ByteString -> (Int64, Int64) -> a
+subFoldBS' f q bs (c,n) = (L.foldl' f q . L.take (n-c) . L.drop c) bs
 
 
 --------------------------------------------------------------------------------
