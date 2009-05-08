@@ -8,19 +8,6 @@ import Data.Int
 import Data.Array
 import qualified Data.ByteString.Lazy.Char8 as L
 
---------------------------------------------------------------------------------
--- Constants
---------------------------------------------------------------------------------
-
---
--- The monoisotopic mass of several elements and molecules
---
-massH2O, massNH3, massCO, massO, massH :: Float
-massH2O = 18.01056
-massNH3 = 17.02655
-massCO  = 27.9949
-massO   = 16.0013
-massH   = 1.0078246
 
 --------------------------------------------------------------------------------
 -- Arrays

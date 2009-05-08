@@ -8,7 +8,7 @@ module IonSeries where
 
 import Config
 import Protein
-import Utils
+import AminoAcid
 
 
 --------------------------------------------------------------------------------

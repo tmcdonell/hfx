@@ -7,6 +7,7 @@ module Protein where
 
 import Utils
 import Config
+import AminoAcid
 
 import Data.Int
 import Data.List
