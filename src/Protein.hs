@@ -121,7 +121,9 @@ digestProtein cp protein = protein { fragments = seqs }
 --
 simpleFragment :: ConfigParams -> Protein -> [Int64] -> [Peptide]
 simpleFragment _  _ []     = []
-simpleFragment cp p (i:is) = fragment cp p (i+1, n) : simpleFragment cp p is
+simpleFragment cp p (i:is)
+    | i+1 > n              = []
+    | otherwise            = fragment cp p (i+1, n) : simpleFragment cp p is
     where n = if null is
                 then L.length (chain p) - 1
                 else head is
