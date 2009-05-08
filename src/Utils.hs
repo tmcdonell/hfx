@@ -4,9 +4,6 @@
 
 module Utils where
 
-import Text.Printf
-import Bio.Sequence
-
 import Data.Int
 import Data.Array
 import qualified Data.ByteString.Lazy.Char8 as L
@@ -52,31 +49,34 @@ subFoldA1' f a i = subFoldA' f (a ! head i) a (tail i)
 --------------------------------------------------------------------------------
 
 --
--- A more generic byte string scan. The scanning function is not limited to
--- conversions between the Char type, but as a consequence lifts the result to a
--- standard list
+-- A more generic byte string scan from the left. The scanning function is not
+-- limited to conversions between the Char type, but as a consequence lifts the
+-- result to a standard list. The limiting indices are inclusive.
 --
-scanlBS                 :: (a -> Char -> a) -> a -> (Int64, Int64) -> L.ByteString -> [a]
-scanlBS f q (c,n) bs
-    | L.null bs         = []
-    | otherwise         =
-    q : (case c <= n && c < L.length bs of
-            False -> []
-            True  -> scanlBS f (f q (L.index bs c)) (c+1,n) bs)
+scanlBS              :: (a -> Char -> a) -> a -> (Int64, Int64) -> L.ByteString -> [a]
+scanlBS f q (c,n) bs =  q : (case c <= n && c < L.length bs of
+                               False -> []
+                               True  -> scanlBS f (f q (L.index bs c)) (c+1,n) bs)
+
+--
+-- Generic byte string scan from the right.
+--
+scanrBS                 :: (Char -> a -> a) -> a -> (Int64, Int64) -> L.ByteString -> [a]
+scanrBS f q0 (c,n) bs
+    | c > n || c >= L.length bs = [q0]
+    | otherwise                 = f (L.index bs c) q : qs
+                                where qs@(q:_) = scanrBS f q0 (c+1,n) bs
 
 
 --------------------------------------------------------------------------------
--- Results
+-- Either
 --------------------------------------------------------------------------------
 
--- 
--- Dumb print wrapper (i.e. doesn't calculate optimum column widths, etc)
 --
-printResults :: [(Double, Sequence)] -> IO ()
-printResults =  mapM_ printMatch 
-    where
-        printMatch (score, match) = printf "%7.3f  %20s  %s\n"
-            score
-            (toStr (seqdata match))
-            (toStr (seqheader match))
+-- Pulls a "Right" value out of an Either construct. If the either is a "Left",
+-- raises an exception with that string.
+--
+forceEither :: Either String a -> a
+forceEither (Left  e) = error e
+forceEither (Right x) = x
 
