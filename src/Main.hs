@@ -7,43 +7,70 @@ module Main where
 --
 -- Custom libraries
 --
-import Config
 import DTA
-import Sequest
 import Utils
+import Config
+import Protein
+import Sequest
 
 --
 -- System libraries
 --
-import Bio.Sequence (readFasta)
 import System.Environment (getArgs)
+import Text.Printf
+
 
 --------------------------------------------------------------------------------
 -- Main
 --------------------------------------------------------------------------------
-help, version :: String
-help    = "No help for you!"
-version = "2.71"
+
+search :: ConfigParams -> ProteinDatabase -> FilePath -> IO ()
+search cp proteins fp = do
+    dta         <- readDTA fp
+    let matches  = searchForMatches cp proteins (forceEither dta)
+
+    printResults        $! matches
+    printResultsDetail  $! (take (numMatchesDetail cp) matches)
+
 
 main :: IO ()
 main = do
-    [dta]    <- getArgs
-    spectrum <- readDTA dta
+    dtaFiles <- getArgs
     config   <- readParams "sequest.params"
 
     let cp    = forceEither config
-        ms    = forceEither spectrum
-        fasta = databasePath cp
+    proteins <- readFasta (databasePath cp)
 
-    database     <- readFasta fasta
-    printResults $! findMatch cp ms database
+    mapM_ (search cp proteins) dtaFiles
 
 
---
--- Pulls a "Right" value out of an Either construct. If the either is a "Left",
--- raises an exception with that string.
---
-forceEither :: Either String a -> a
-forceEither (Left  e) = error e
-forceEither (Right x) = x
+--------------------------------------------------------------------------------
+-- Pretty Print
+--------------------------------------------------------------------------------
+
+printResults   :: MatchCollection -> IO ()
+printResults m =  do
+    putStrLn "  #      Mass    deltCn  XCorr   Reference           Peptide"
+    putStrLn " ---  ---------  ------  ------  ---------           -------"
+    go (1, s0) m
+    where
+        s0 = scoreXC (head m)
+
+        go :: (Int, Float) -> MatchCollection -> IO ()
+        go _ []                         = putStrLn ""
+        go _ ((Match _ NullPeptide):_)  = putStrLn ""
+        go (n, s) ((Match score peptide):ms) = do
+            printf " %2d.  %9.4f  %6.4f  %6.4f  %-18s  %s\n" n (pmass peptide) ((s - score)/s0) score (name (parent peptide)) (slice peptide)
+            go ((n+1), score) ms
+
+
+printResultsDetail :: MatchCollection -> IO ()
+printResultsDetail = go 1
+    where
+        go :: Int -> MatchCollection -> IO ()
+        go _ [] = putStrLn ""
+        go _ ((Match _ NullPeptide):_) = putStrLn ""
+        go n ((Match _ peptide):ms) = do
+            printf " %2d.  %s\n" n (Protein.description (parent peptide))
+            go (n+1) ms
 
