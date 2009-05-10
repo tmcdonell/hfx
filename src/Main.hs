@@ -50,18 +50,18 @@ main = do
 
 printResults   :: MatchCollection -> IO ()
 printResults m =  do
-    putStrLn "  #      Mass    deltCn  XCorr   Reference           Peptide"
+    putStrLn "  #     (M+H)+   deltCn  XCorr   Reference           Peptide"
     putStrLn " ---  ---------  ------  ------  ---------           -------"
-    go (1, s0) m
+    go 1 m
     where
         s0 = scoreXC (head m)
 
-        go :: (Int, Float) -> MatchCollection -> IO ()
+        go :: Int -> MatchCollection -> IO ()
         go _ []                         = putStrLn ""
         go _ ((Match _ NullPeptide):_)  = putStrLn ""
-        go (n, s) ((Match score peptide):ms) = do
-            printf " %2d.  %9.4f  %6.4f  %6.4f  %-18s  %s\n" n (pmass peptide) ((s - score)/s0) score (name (parent peptide)) (slice peptide)
-            go ((n+1), score) ms
+        go n ((Match score peptide):ms) = do
+            printf " %2d.  %9.4f  %6.4f  %6.4f  %-18s  %s\n" n (pmass peptide) ((s0 - score)/s0) score (name (parent peptide)) (slice peptide)
+            go (n+1) ms
 
 
 printResultsDetail :: MatchCollection -> IO ()
