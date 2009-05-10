@@ -6,6 +6,7 @@ module Utils where
 
 import Data.Int
 import Data.Array
+import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as L
 
 
@@ -35,19 +36,24 @@ subFoldA1' f a i = subFoldA' f (a ! head i) a (tail i)
 -- Lazy ByteString
 --------------------------------------------------------------------------------
 
+scanlBS' :: (a -> Char -> a) -> a -> ByteString -> [a]
+scanlBS' f z = snd . L.foldl' k (z,[z])
+    where
+        k (c,acc) a = let n = f c a in (n, acc ++ [n])
+
 --
 -- Strict left scan over a given subset of a lazy byte string. The scanning
 -- function is not limited to conversions between the Char type, but as a
--- consequence lifts the result to a standard list. The limiting indices are
--- inclusive.
+-- consequence lifts the result to a standard list.
 --
 -- The limiting indices are inclusive, and the seed element is discarded.
 --
-subScanBS' :: (a -> Char -> a) -> a -> L.ByteString -> (Int64, Int64) -> [a]
+subScanBS' :: (a -> Char -> a) -> a -> ByteString -> (Int64, Int64) -> [a]
 subScanBS' f q bs (c,n) = go q [c..n]
     where go s (i:is) = let s' = f s (L.index bs i)
                         in  s' `seq` s' : go s' is
           go _ []     = []
+
 
 --
 -- Strict left fold over a given subset of a lazy byte string. The limiting
@@ -56,8 +62,8 @@ subScanBS' f q bs (c,n) = go q [c..n]
 -- This is (somewhat surprisingly) faster than using an index-based method
 -- similar to that above.
 --
-subFoldBS' :: (a -> Char -> a) -> a -> L.ByteString -> (Int64, Int64) -> a
-subFoldBS' f q bs (c,n) = (L.foldl' f q . L.take (n-c) . L.drop c) bs
+subFoldBS' :: (a -> Char -> a) -> a -> ByteString -> (Int64, Int64) -> a
+subFoldBS' f q bs (c,n) = (L.foldl' f q . L.take (n-c+1) . L.drop c) bs
 
 
 --------------------------------------------------------------------------------
