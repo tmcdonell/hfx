@@ -94,14 +94,31 @@ sequest cp spec pep = Match
 
 
 --
+-- Explicitly de-forested array dot product [P. Walder, Deforestation, 1988]
+--
+dot     :: (Ix a, Num a, Num e) => Array a e -> Array a e -> e
+dot v w =  loop m 0
+    where
+        (m,n)                  = bounds v
+        loop i acc | i > n     = acc
+                   | otherwise = loop (i+1) (v!i * w!i + acc)
+
+--
 -- Score a peptide against the observed intensity spectrum. The sequest cross
 -- correlation is the dot product between the theoretical representation and the
 -- preprocessed experimental spectra.
 --
 sequestXC :: ConfigParams -> XCorrSpecExp -> XCorrSpecThry -> Float
-sequestXC cp v sv = foldl' dotp 0 [ (bin i,e) | (i,e) <- sv, inRange (bounds v) (bin i) ]
+sequestXC cp v sv = dot v w
     where
-        dotp acc (i,e) = acc + e * (v!i)
-        bin mz         = round (mz / width)
-        width          = if aaMassTypeMono cp then 1.0005079 else 1.0011413
+        w      = accumArray max 0 (bounds v) [(bin i,e) | (i,e) <- sv, inRange (bounds v) (bin i)]
+        bin mz = round (mz / width)
+        width  = if aaMassTypeMono cp then 1.0005079 else 1.0011413
+
+
+--sequestXC cp v sv = foldl' dotp 0 [ (bin i,e) | (i,e) <- sv, inRange (bounds v) (bin i) ]
+--    where
+--        dotp acc (i,e) = acc + e * (v!i)
+--        bin mz         = round (mz / width)
+--        width          = if aaMassTypeMono cp then 1.0005079 else 1.0011413
 
