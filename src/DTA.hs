@@ -18,6 +18,7 @@ module DTA
     ) where
 
 import Spectrum
+import AminoAcid
 
 import Numeric
 import Control.Monad (liftM2)
@@ -78,7 +79,7 @@ mkSpec ((m,c):ss)
     | trunc' c /= c =  Left "Error: invalid peptide charge state\nexpecting integer"
     | otherwise     =  Right (Spectrum pcr c ss)
     where
-        pcr    = (m + c - 1) / c
+        pcr    = m / c - massH
         trunc' = fromInteger . truncate
 
 --------------------------------------------------------------------------------

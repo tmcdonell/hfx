@@ -21,6 +21,7 @@ import Config
 import Protein
 import Spectrum
 import IonSeries
+import AminoAcid
 
 import Data.List
 import Data.Array.Unboxed
@@ -75,8 +76,8 @@ findCandidates :: ConfigParams -> Spectrum -> ProteinDatabase -> ProteinDatabase
 findCandidates cp spec =
     filter (not.null.fragments) . map (\p -> p {fragments = filter inrange (fragments p)})
     where
-        inrange p = (pcr - limit) <= pmass p && pmass p <= (pcr + limit)
-        pcr       = precursor spec
+        inrange p = (mass - limit) <= pmass p && pmass p <= (mass + limit)
+        mass      = (precursor spec + massH) * charge spec
         limit     = massTolerence cp
 
 
