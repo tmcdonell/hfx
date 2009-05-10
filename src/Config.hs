@@ -9,13 +9,13 @@ import AminoAcid
 import Data.ConfigFile
 import Data.Array.Unboxed
 import Control.Monad.Error
-import System.Directory
+--import System.Directory
 
 --------------------------------------------------------------------------------
 -- Data structures
 --------------------------------------------------------------------------------
 
-data ConfigParams = Params
+data ConfigParams = ConfigParams
     {
         databasePath        :: FilePath,        -- Path to the protein database file
 
@@ -48,7 +48,7 @@ data ConfigParams = Params
 -- The basic (almost empty) configuration set
 --
 baseParams :: ConfigParams
-baseParams =  Params
+baseParams =  ConfigParams
     {
         databasePath        = "data/uniprot_sprot_human+trypsin.fasta",
 
@@ -70,6 +70,25 @@ baseParams =  Params
 --------------------------------------------------------------------------------
 -- Read/Build
 --------------------------------------------------------------------------------
+
+--
+-- Return the default configuration object
+--
+defaultConfig :: ConfigParams
+defaultConfig =  initializeAAMasses baseParams
+
+
+--
+-- Add the base residue masses for all amino acid groups to the mass table,
+-- which currently only holds user-defined modifications (if any).
+--
+initializeAAMasses :: ConfigParams -> ConfigParams
+initializeAAMasses cp = cp { aaMassTable = accum (+) (aaMassTable cp) (zip alphabet isolatedAAMass) }
+    where
+        isolatedAAMass = map aaMasses alphabet
+        aaMasses       = if aaMassTypeMono cp then getAAMassMono else getAAMassAvg
+        alphabet       = ['A'..'Z']
+
 
 --
 -- Read a configuration file in a format that resembles that of an old-style
@@ -97,20 +116,10 @@ readParams filename =  do
 -- Read values from the configuration file and populate the parameters data
 -- structure, or return an appropriate error string
 --
-parseConfig   :: ConfigParser -> Either String ConfigParams
-parseConfig _ =  Right (finish baseParams)
+parseConfig    :: ConfigParser -> Either String ConfigParams
+parseConfig _cp =  Right (finish baseParams)
     where
-        finish                = initializeAAMasses
-
-        --
-        -- Add the base residue mass to the mass table, which currently only
-        -- holds user-defined modifications (if any).
-        --
-        initializeAAMasses cp = cp { aaMassTable = accum (+) (aaMassTable cp) (zip alphabet (isolatedAAMass cp)) }
-        isolatedAAMass cp     = map (aaMasses cp) alphabet
-        aaMasses cp           = if aaMassTypeMono cp then getAAMassMono else getAAMassAvg
-        alphabet              = ['A'..'Z']
-
+        finish = initializeAAMasses
 
 --------------------------------------------------------------------------------
 -- Extracting
