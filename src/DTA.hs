@@ -13,8 +13,8 @@
 
 module DTA
     (
-      module Spectrum,                  -- Data structure
-      readDTA                           -- File formats
+      Spectrum(..),     -- Data structure
+      readDTA           -- File formats
     ) where
 
 import Spectrum
@@ -33,7 +33,7 @@ import Text.ParserCombinators.Parsec
 -- The DTA file contains at least one line, each of which is terminated by an
 -- end-of-line character (eol)
 --
-dtaFile :: GenParser Char st [(Float, Float)]
+dtaFile :: Parser [(Float, Float)]
 dtaFile =  endBy line eol
 
 -- 
@@ -41,7 +41,7 @@ dtaFile =  endBy line eol
 -- are returned as a pair of (mass/charge ratio, intensity) values. Detecting
 -- signed values isn't really necessary, but is done for completeness.
 --
-line :: GenParser Char st (Float, Float)
+line :: Parser (Float, Float)
 line =  liftM2 (,) fval fval
     where fval = (fst . head . readSigned readFloat) `fmap` value
 
@@ -49,16 +49,16 @@ line =  liftM2 (,) fval fval
 -- Each value is a floating point number. Discard any leading white space
 -- encountered.
 --
-value :: GenParser Char st [Char]
+value :: Parser String
 value =  skipMany (oneOf " \t") >> getValue
-    where getValue =  many1 (oneOf (['0'..'9']++"-."))
+    where getValue =  many1 (digit <|> char '.' <|> char '-')
                   <?> "floating-point number"
 
 --
 -- The end of line character. Different operating systems use different
 -- characters to mark the end-of-line, so just look for all combinations
 --
-eol :: GenParser Char st String
+eol :: Parser String
 eol =  try (string "\n\r")
    <|> try (string "\r\n")
    <|> string "\r"
