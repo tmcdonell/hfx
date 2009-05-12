@@ -66,7 +66,7 @@ searchForMatches cp database spec = finish $
         record l     = tail . flip (insertBy cmp) l
         cmp x y      = compare (scoreXC x) (scoreXC y)
         n            = max (numMatches cp) (numMatchesDetail cp)
-        nomatch      = replicate n (Match (-1/0) NullPeptide)
+        nomatch      = replicate n (Match (-1/0) Null)
 
 
 --

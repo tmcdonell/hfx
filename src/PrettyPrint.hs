@@ -7,37 +7,69 @@ module PrettyPrint where
 import Sequest
 import Protein
 
-import Text.Printf
+import Numeric
+import Data.List
+import Text.PrettyPrint
 
 
 --------------------------------------------------------------------------------
--- Ugly Code
+-- Results -> Render
 --------------------------------------------------------------------------------
+
+title :: [[Doc]]
+title = map (map text) [[" # ", "  (M+H)+ ", "deltCn", "XCorr", "Reference", "Peptide"],
+                        ["---", "---------", "------", "-----", "---------", "-------"]]
+
+display :: [[Doc]] -> IO ()
+display =  putStrLn . flip (++) "\n" . render . ppAsRows 1
+
+toDoc :: Int -> Float -> Match -> [Doc]
+toDoc _ _  (Match _ Null) = []
+toDoc n s0 (Match sc pep) =
+    [ space <> int n <> char '.'
+    , float' (pmass pep)
+    , float' ((s0 - sc)/s0)
+    , float' sc
+    , text  (name (parent pep))
+    , text  (slice pep)
+    ]
+    where float' = text . flip (showFFloat (Just 4)) ""
+
+toDocDetail :: Int -> Match -> [Doc]
+toDocDetail _ (Match _ Null) = []
+toDocDetail n (Match _ pep)  =
+    [ space <> int n <> char '.'
+    , text (description (parent pep))
+    ]
 
 printResults   :: MatchCollection -> IO ()
-printResults m =  do
-    putStrLn "  #     (M+H)+   deltCn  XCorr   Reference           Peptide"
-    putStrLn " ---  ---------  ------  ------  ---------           -------"
-    go 1 m
+printResults m =  display . (++) title . snd . foldr k (length m,[]) $ m
     where
-        s0 = scoreXC (head m)
+        s0           = scoreXC (head m)
+        k z (n, acc) = (n-1, toDoc n s0 z : acc)
 
-        go :: Int -> MatchCollection -> IO ()
-        go _ []                         = putStrLn ""
-        go _ ((Match _ NullPeptide):_)  = putStrLn ""
-        go n ((Match score peptide):ms) = do
-            printf " %2d.  %9.4f  %6.4f  %6.4f  %-18s  %s\n" n (pmass peptide) ((s0 - score)/s0) score (name (parent peptide)) (slice peptide)
-            go (n+1) ms
-
-
-printResultsDetail :: MatchCollection -> IO ()
-printResultsDetail = go 1
+printResultsDetail   :: MatchCollection -> IO ()
+printResultsDetail m =  display . snd . foldr k (length m,[]) $ m
     where
-        go :: Int -> MatchCollection -> IO ()
-        go _ [] = putStrLn ""
-        go _ ((Match _ NullPeptide):_) = putStrLn ""
-        go n ((Match _ peptide):ms) = do
-            printf " %2d.  %s\n" n (Protein.description (parent peptide))
-            go (n+1) ms
+        k z (n, acc) = (n-1, toDocDetail n z : acc)
 
+
+--------------------------------------------------------------------------------
+-- Pretty Print
+--------------------------------------------------------------------------------
+
+--
+-- Display the given grid of renderable data, given as either a list of rows or
+-- columns, using the minimum size required for each column. An additional
+-- parameter specifies extra space to be inserted between each column.
+--
+ppAsRows      :: Int -> [[Doc]] -> Doc
+ppAsRows q    =  ppAsColumns q . transpose
+
+ppAsColumns   :: Int -> [[Doc]] -> Doc
+ppAsColumns q =  vcat . map hsep . transpose . map (\col -> pad (width col) col)
+    where
+        len   = length . render
+        width = maximum . map len
+        pad w = map (\x -> x <> (hcat $ replicate (w - (len x) + q) space))
 
