@@ -121,9 +121,9 @@ readConfigFile fp cp = do
     -- Parse file, getting a list of actions which we then apply to the supplied 
     -- configuration record. Any unrecognised options cause an exception
     --
-    case getOpt RequireOrder options (map toOpt args) of
+    case getOpt RequireOrder (tail options) (map toOpt args) of
         (a,[],[]) -> foldl' (>>=) (return cp') a
-        (_,n,e)   -> error (unlines [unwords n, unwords e])
+        (_,n,e)   -> error . concat $ if (not.null) n then n else e
 
     where
         --
@@ -199,6 +199,9 @@ initializeAAMasses cp = cp { aaMassTable = accum (+) (aaMassTable cp) (zip alpha
 --
 -- This is given to the get-opt command, together with the command line
 -- arguments following the parameters read from file.
+--
+-- NOTE: the parameters option must remain at the head of the list, as this will
+-- be dropped when reading parameters from file to prevent silly behaviour...
 --
 options :: [ OptDescr (ConfigParams -> IO ConfigParams) ]
 options =
