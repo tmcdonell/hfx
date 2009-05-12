@@ -12,65 +12,47 @@ import Utils
 import Config
 import Protein
 import Sequest
+import PrettyPrint
 
 --
 -- System libraries
 --
 import System.Environment (getArgs)
-import Text.Printf
+
+
+--------------------------------------------------------------------------------
+-- Program Defaults
+--------------------------------------------------------------------------------
+
+defaultConfigFile :: FilePath
+defaultConfigFile =  "sequest.params"
 
 
 --------------------------------------------------------------------------------
 -- Main
 --------------------------------------------------------------------------------
 
-search :: ConfigParams -> ProteinDatabase -> FilePath -> IO ()
-search cp proteins fp = do
-    dta         <- readDTA fp
-    let matches  = searchForMatches cp proteins (forceEither dta)
-
-    printResults        $! matches
-    printResultsDetail  $! (take (numMatchesDetail cp) matches)
-
-
 main :: IO ()
 main = do
-    dtaFiles <- getArgs
-    config   <- readParams "sequest.params"
+    argv           <- getArgs
+    (cp, dtaFiles) <- sequestConfig defaultConfigFile argv
 
-    let cp    = forceEither config
-    proteins <- readFasta (databasePath cp)
+    proteins <- case databasePath cp of
+        Nothing -> error "Protein database not specified"
+        Just fp -> readFasta fp
 
     mapM_ (search cp proteins) dtaFiles
 
 
---------------------------------------------------------------------------------
--- Pretty Print
---------------------------------------------------------------------------------
+--
+-- Search the protein database for a match to the experimental spectra
+--
+search :: ConfigParams -> ProteinDatabase -> FilePath -> IO ()
+search cp proteins fp = do
+    dta         <- readDTA fp
+    let matches  = searchForMatches cp proteins (forceEitherStr dta)
 
-printResults   :: MatchCollection -> IO ()
-printResults m =  do
-    putStrLn "  #     (M+H)+   deltCn  XCorr   Reference           Peptide"
-    putStrLn " ---  ---------  ------  ------  ---------           -------"
-    go 1 m
-    where
-        s0 = scoreXC (head m)
+    printResults        $! (take (numMatches cp)       matches)
+    printResultsDetail  $! (take (numMatchesDetail cp) matches)
 
-        go :: Int -> MatchCollection -> IO ()
-        go _ []                         = putStrLn ""
-        go _ ((Match _ NullPeptide):_)  = putStrLn ""
-        go n ((Match score peptide):ms) = do
-            printf " %2d.  %9.4f  %6.4f  %6.4f  %-18s  %s\n" n (pmass peptide) ((s0 - score)/s0) score (name (parent peptide)) (slice peptide)
-            go (n+1) ms
-
-
-printResultsDetail :: MatchCollection -> IO ()
-printResultsDetail = go 1
-    where
-        go :: Int -> MatchCollection -> IO ()
-        go _ [] = putStrLn ""
-        go _ ((Match _ NullPeptide):_) = putStrLn ""
-        go n ((Match _ peptide):ms) = do
-            printf " %2d.  %s\n" n (Protein.description (parent peptide))
-            go (n+1) ms
 

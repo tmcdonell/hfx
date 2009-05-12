@@ -34,7 +34,7 @@ type XCorrSpecThry = [(Float, Float)]
 -- A-series we consider. Also, assumes a charge state of one.
 --
 buildThrySpecXCorr :: ConfigParams -> Peptide -> XCorrSpecThry
-buildThrySpecXCorr cp peptide =
+buildThrySpecXCorr _cp peptide =
     concatMap (addIonsAB 1.0) b_ions ++ concatMap (addIonsY 1.0) y_ions
     where
         b_ions = init $ ladder peptide

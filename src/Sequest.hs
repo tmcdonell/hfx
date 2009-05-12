@@ -65,7 +65,8 @@ searchForMatches cp database spec = finish $
 
         record l     = tail . flip (insertBy cmp) l
         cmp x y      = compare (scoreXC x) (scoreXC y)
-        nomatch      = replicate (numMatches cp) (Match (-1/0) NullPeptide)
+        n            = max (numMatches cp) (numMatchesDetail cp)
+        nomatch      = replicate n (Match (-1/0) NullPeptide)
 
 
 --
@@ -78,7 +79,7 @@ findCandidates cp spec =
     where
         inrange p = (mass - limit) <= pmass p && pmass p <= (mass + limit)
         mass      = (precursor spec + massH) * charge spec
-        limit     = massTolerence cp
+        limit     = massTolerance cp
 
 
 --------------------------------------------------------------------------------
@@ -114,11 +115,4 @@ sequestXC cp v sv = dot v w
         w      = accumArray max 0 (bounds v) [(bin i,e) | (i,e) <- sv, inRange (bounds v) (bin i)]
         bin mz = round (mz / width)
         width  = if aaMassTypeMono cp then 1.0005079 else 1.0011413
-
-
---sequestXC cp v sv = foldl' dotp 0 [ (bin i,e) | (i,e) <- sv, inRange (bounds v) (bin i) ]
---    where
---        dotp acc (i,e) = acc + e * (v!i)
---        bin mz         = round (mz / width)
---        width          = if aaMassTypeMono cp then 1.0005079 else 1.0011413
 

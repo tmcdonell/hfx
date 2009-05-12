@@ -74,7 +74,13 @@ subFoldBS' f q bs (c,n) = (L.foldl' f q . L.take (n-c+1) . L.drop c) bs
 -- Pulls a "Right" value out of an Either construct. If the either is a "Left",
 -- raises an exception with that string.
 --
-forceEither :: Either String a -> a
-forceEither (Left  e) = error e
-forceEither (Right x) = x
+-- Stolen from the Missing-H package.
+--
+forceEither :: (Show e) => Either e a -> a
+forceEither (Left  e) = error (show e)
+forceEither (Right a) = a
+
+forceEitherStr :: Either String a -> a
+forceEitherStr (Left  e) = error e
+forceEitherStr (Right a) = a
 

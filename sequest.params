@@ -1,12 +1,23 @@
-[SEQUEST]
 #
+# Enzyme database search parameters
 #
-#
-foo = 1
+database                = data/uniprot_sprot_human+trypsin.fasta
+mass-tolerance          = 3.0
+remove-precursor-peak   = True
+missed-cleavages        = 2
+digestion-rule          = 1
+min-peptide-mass        = 400
+max-peptide-mass        = 7200
+aa-mass-type            = Mono
 
-[SEQUEST_ENZYME_INFO]
 #
+# Static amino acid modifications
 #
+add_C                   = 57.0
+
 #
-bar = 2
+# Results display
+#
+num-matches             = 5
+num-matches-detail      = 3
 
