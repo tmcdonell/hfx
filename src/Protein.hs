@@ -110,7 +110,7 @@ digestProtein cp protein = protein { fragments = seqs }
         seqs      = filter inrange splices
         inrange p = minPeptideMass cp <= pmass p && pmass p <= maxPeptideMass cp
 
-        indices   = L.findIndices (digestionRule cp) (chain protein)
+        indices   = L.findIndices ((fst.digestionRule) cp) (chain protein)
         frags     = simpleFragment cp protein (-1:indices)
         splices   = simpleSplice cp frags
 

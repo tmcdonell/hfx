@@ -23,8 +23,8 @@ import Data.ByteString.Lazy (ByteString)
 --
 data SpectrumCollection = SpectrumCollection
     {
-        spectra     :: [Spectrum],      -- Collection of measurements
-        description :: ByteString       -- Description/header from the input file
+        spectra :: [Spectrum],          -- Collection of measurements
+        header  :: ByteString           -- Description/header from the input file
     }
     deriving (Eq, Show)
 
@@ -44,9 +44,9 @@ type Peak = (Float, Float)
 
 data Spectrum = Spectrum
     {
-        precursor :: Float,        -- The singly protonated peptide mass
-        charge    :: Float,        -- Peptide charge state
-        peaks     :: [Peak]        -- The actual mass/charge ratio intensity measurements
+        precursor :: Float,             -- The singly protonated peptide mass
+        charge    :: Float,             -- Peptide charge state
+        peaks     :: [Peak]             -- The actual mass/charge ratio intensity measurements
     }
     deriving (Eq, Show)
 

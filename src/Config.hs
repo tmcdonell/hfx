@@ -39,12 +39,12 @@ data ConfigParams = ConfigParams
         --
         -- Enzyme search parameters
         --
-        massTolerance       :: Float,           -- Search peptides within ± this value of the spectrum mass
-        removePrecursorPeak :: Bool,            -- Remove a ±5 da window surrounding the precursor mass
-        missedCleavages     :: Int,             -- Number of missed cleavage sites to consider
-        digestionRule       :: (Char -> Bool),  -- Protein fragmentation rule
-        minPeptideMass      :: Float,           -- Minimum mass of peptides to be considered
-        maxPeptideMass      :: Float,           -- Maximum peptide mass
+        massTolerance       :: Float,                    -- Search peptides within ± this value of the spectrum mass
+        removePrecursorPeak :: Bool,                     -- Remove a ±5 da window surrounding the precursor mass
+        missedCleavages     :: Int,                      -- Number of missed cleavage sites to consider
+        digestionRule       :: ((Char -> Bool), String), -- Protein fragmentation rule and description text
+        minPeptideMass      :: Float,                    -- Minimum mass of peptides to be considered
+        maxPeptideMass      :: Float,                    -- Maximum peptide mass
 
         --
         -- Allow static modifications to an amino acid mass, which affects every
@@ -165,7 +165,7 @@ baseParams =  ConfigParams
         massTolerance       = 3.0,
         removePrecursorPeak = True,
         missedCleavages     = 2,
-        digestionRule       = (`elem` "KR"),
+        digestionRule       = getDigestionRule 1, -- Trypsin
         minPeptideMass      = 400,
         maxPeptideMass      = 7200,
 
@@ -233,7 +233,7 @@ options =
         "Number of missed cleavage sites to consider"
 
     , Option "" ["digestion-rule"]
-        (ReqArg (\v cp -> return cp { digestionRule = (fst . readDigestionRule) (read v) }) "INT")
+        (ReqArg (\v cp -> return cp { digestionRule = getDigestionRule (read v) }) "INT")
         "Digestion rule number to use"
 
     , Option "" ["min-peptide-mass"]
@@ -275,25 +275,25 @@ options =
 -- as part of the help text.
 --
 digestionRuleHelp :: String
-digestionRuleHelp = unlines $ ["Digestion Rules:"] ++ (map (snd . readDigestionRule) [0..13])
+digestionRuleHelp = unlines $ ["Digestion Rules:"] ++ (map (snd . getDigestionRule) [0..13])
 
-readDigestionRule :: Int -> ((Char -> Bool), String)
-readDigestionRule 0  = ((\_ -> False)        , "  0:  No enzyme              0      -           -")
-readDigestionRule 1  = ((`elem` "KR")        , "  1.  Trypsin                1      KR          P")
-readDigestionRule 2  = ((`elem` "FWY")       , "  2.  Chymotrypsin           1      FWY         P")
-readDigestionRule 3  = ((== 'R')             , "  3.  Clostripain            1      R           -")
-readDigestionRule 4  = ((== 'M')             , "  4.  Cyanogen_Bromide       1      M           -")
-readDigestionRule 5  = ((== 'W')             , "  5.  IodosoBenzoate         1      W           -")
-readDigestionRule 6  = ((== 'P')             , "  6.  Proline_Endopept       1      P           -")
-readDigestionRule 7  = ((== 'E')             , "  7.  Staph_Protease         1      E           -")
-readDigestionRule 8  = ((== 'K')             , "  8.  Trypsin_K              1      K           P")
-readDigestionRule 9  = ((== 'R')             , "  9.  Trypsin_R              1      R           P")
-readDigestionRule 10 = ((== 'D')             , "  10. AspN                   0      D           -")
-readDigestionRule 11 = ((`elem` "FWYL")      , "  11. Cymotryp/Modified      1      FWYL        P")
-readDigestionRule 12 = ((`elem` "ALIV")      , "  12. Elastase               1      ALIV        P")
-readDigestionRule 13 = ((`elem` "ALIVKRWFY") , "  13. Elastase/Tryp/Chymo    1      ALIVKRWFY   P")
+getDigestionRule :: Int -> ((Char -> Bool), String)
+getDigestionRule 0  = ((\_ -> False)        , "  0:  No enzyme              0      -           -")
+getDigestionRule 1  = ((`elem` "KR")        , "  1.  Trypsin                1      KR          P")
+getDigestionRule 2  = ((`elem` "FWY")       , "  2.  Chymotrypsin           1      FWY         P")
+getDigestionRule 3  = ((== 'R')             , "  3.  Clostripain            1      R           -")
+getDigestionRule 4  = ((== 'M')             , "  4.  Cyanogen_Bromide       1      M           -")
+getDigestionRule 5  = ((== 'W')             , "  5.  IodosoBenzoate         1      W           -")
+getDigestionRule 6  = ((== 'P')             , "  6.  Proline_Endopept       1      P           -")
+getDigestionRule 7  = ((== 'E')             , "  7.  Staph_Protease         1      E           -")
+getDigestionRule 8  = ((== 'K')             , "  8.  Trypsin_K              1      K           P")
+getDigestionRule 9  = ((== 'R')             , "  9.  Trypsin_R              1      R           P")
+getDigestionRule 10 = ((== 'D')             , "  10. AspN                   0      D           -")
+getDigestionRule 11 = ((`elem` "FWYL")      , "  11. Cymotryp/Modified      1      FWYL        P")
+getDigestionRule 12 = ((`elem` "ALIV")      , "  12. Elastase               1      ALIV        P")
+getDigestionRule 13 = ((`elem` "ALIVKRWFY") , "  13. Elastase/Tryp/Chymo    1      ALIVKRWFY   P")
 
-readDigestionRule _  = error "readDigestionRule: unknown enzyme digestion rule"
+getDigestionRule _  = error "getDigestionRule: unknown enzyme digestion rule"
 
 
 --------------------------------------------------------------------------------
