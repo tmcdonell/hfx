@@ -29,13 +29,14 @@ displayIO =  putStrLn . flip (++) "\n" . render
 --------------------------------------------------------------------------------
 
 printConfig :: ConfigParams -> FilePath -> Spectrum -> IO ()
-printConfig cp fp spec = displayIO . ppAsRows 0 $
-    [ [text "Database"       , text "::", text (fromJust (databasePath cp))]
-    , [text "Enzyme"         , text "::", text (enzyme !! 1) <+> lparen <> text (init$enzyme !! 0) <> rparen]
-    , [text "Spectrum"       , text "::", text fp]
-    , [text "(M+H)+ Mass"    , text "::", float ((precursor spec + massH) * (charge spec)) <+> text "~" <+> float (massTolerance cp)]
+printConfig cp fp spec = displayIO . ppAsRows 0 . map (intersperse (text "::")) $
+    [ [text "Spectrum"   , text fp]
+    , [text "Database"   , text (fromJust (databasePath cp))]
+    , [text "Enzyme"     , hsep $ map text (tail enzyme)]
+    , [text "(M+H)+ Mass", float mass <+> text "~" <+> float (massTolerance cp)]
     ]
     where
+        mass   = (precursor spec + massH) * (charge spec)
         enzyme = words . snd . digestionRule $ cp
 
 --------------------------------------------------------------------------------
