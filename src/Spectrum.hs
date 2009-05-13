@@ -121,7 +121,7 @@ normaliseByRegion a = array (bounds a) [(i,norm i) | i <- indices a]
                   if  m > 1E-6 then 50 * ((a!i) / m) else 0
 
         rgn i   = i `div` sel
-        sel     = (9 + snd (bounds a)) `div` 10
+        sel     = (10 + snd (bounds a)) `div` 10
 
 
 --
