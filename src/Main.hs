@@ -50,10 +50,7 @@ main = do
 search :: ConfigParams -> ProteinDatabase -> FilePath -> IO ()
 search cp proteins fp = do
     dta         <- readDTA fp
-    let spec     = forceEitherStr dta
-        matches  = searchForMatches cp proteins spec
-
-    printConfig cp fp spec
+    let matches  = searchForMatches cp proteins (forceEitherStr dta)
 
     printResults        $! (take (numMatches cp)       matches)
     printResultsDetail  $! (take (numMatchesDetail cp) matches)
