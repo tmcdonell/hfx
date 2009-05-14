@@ -37,19 +37,20 @@ main = do
     argv           <- getArgs
     (cp, dtaFiles) <- sequestConfig defaultConfigFile argv
 
-    proteins <- case databasePath cp of
-        Nothing -> error "Protein database not specified"
-        Just fp -> readFasta fp
-
-    mapM_ (search cp proteins) dtaFiles
+    mapM_ (search cp) dtaFiles
 
 
 --
 -- Search the protein database for a match to the experimental spectra
 --
-search :: ConfigParams -> ProteinDatabase -> FilePath -> IO ()
-search cp proteins fp = do
+search :: ConfigParams -> FilePath -> IO ()
+search cp fp = do
     dta         <- readDTA fp
+
+    proteins    <- case databasePath cp of
+        Nothing -> error "Protein database not specified"
+        Just db -> readFasta db
+
     let spec     = forceEitherStr dta
         matches  = searchForMatches cp proteins spec
 
