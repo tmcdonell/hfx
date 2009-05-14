@@ -24,6 +24,7 @@ import IonSeries
 import AminoAcid
 
 import Data.List
+import Data.Maybe
 import Data.Array.Unboxed
 
 --------------------------------------------------------------------------------
@@ -61,12 +62,14 @@ searchForMatches cp database spec = finish $
     where
         experimental = buildExpSpecXCorr cp spec
         candidates   = findCandidates cp spec . map (digestProtein cp)
-        finish       = reverse
+        finish       = reverse . catMaybes
 
-        record l     = tail . flip (insertBy cmp) l
-        cmp x y      = compare (scoreXC x) (scoreXC y)
+        record l     = tail . flip (insertBy cmp) l . Just
         n            = max (numMatches cp) (numMatchesDetail cp)
-        nomatch      = replicate n (Match (-1/0) Null)
+        nomatch      = replicate n Nothing
+
+        cmp (Just x) (Just y) = compare (scoreXC x) (scoreXC y)
+        cmp _        _        = GT
 
 
 --
