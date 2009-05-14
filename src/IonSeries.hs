@@ -35,10 +35,8 @@ type XCorrSpecThry = [(Float, Float)]
 --
 buildThrySpecXCorr :: ConfigParams -> Peptide -> XCorrSpecThry
 buildThrySpecXCorr _cp peptide =
-    concatMap (addIonsAB 1.0) b_ions ++ concatMap (addIonsY 1.0) y_ions
-    where
-        b_ions = init $ ladder peptide
-        y_ions = map (\x -> residual peptide - x) b_ions
+    concatMap (addIonsAB 1.0) (bIonLadder peptide) ++
+    concatMap (addIonsY  1.0) (yIonLadder peptide)
 
 
 --
