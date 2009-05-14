@@ -15,7 +15,7 @@ SRC_MAIN	 = $(SRC_ROOT)/Main.hs
 GHC		 = $(shell which ghc)
 GHC_PACKAGES	 = 
 GHC_FLAGS	 = --make -Wall -fglasgow-exts -O2
-GHC_FLAGS_PROF	 = -prof -auto-all -fhpc
+GHC_FLAGS_PROF	 = -prof -auto-all -caf-all -fhpc
 
 GHC_FLAGS	+= $(GHC_PACKAGES:%=-package %) -hidir $(OUTDIR) -odir $(OUTDIR) -i$(SRC_ROOT)
 GHC_FLAGS_PROF  += -osuf p.o -hisuf p.hi
