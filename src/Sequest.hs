@@ -92,7 +92,7 @@ findCandidates cp spec =
 sequest :: ConfigParams -> XCorrSpecExp -> Peptide -> Match
 sequest cp spec pep = Match
     {
-        scoreXC   = (sequestXC cp spec (buildThrySpecXCorr cp pep)) / 10000,
+        scoreXC   = (sequestXC cp spec pep) / 10000,
         candidate = pep
     }
 
@@ -112,10 +112,20 @@ dot v w =  loop m 0
 -- correlation is the dot product between the theoretical representation and the
 -- preprocessed experimental spectra.
 --
-sequestXC :: ConfigParams -> XCorrSpecExp -> XCorrSpecThry -> Float
-sequestXC cp v sv = dot v w
+sequestXC :: ConfigParams -> XCorrSpecExp -> Peptide -> Float
+sequestXC cp v =
+    foldl' (\acc (mz,i) -> acc + i*(v!mz)) 0
+    . filter (\(x,_) -> inRange (bounds v) x)
+    . buildThrySpecXCorr cp
+
+--sum [ i * (v!mz) | (mz,i) <- sv, inRange (bounds v) mz ]
+--    where
+--        sv = buildThrySpecXCorr cp pep
+--
+{-
+sequestXC cp v pep = dot v w
     where
         w      = accumArray max 0 (bounds v) [(bin i,e) | (i,e) <- sv, inRange (bounds v) (bin i)]
-        bin mz = round (mz / width)
-        width  = if aaMassTypeMono cp then 1.0005079 else 1.0011413
+        sv     = buildThrySpecXCorr cp pep
+-}
 

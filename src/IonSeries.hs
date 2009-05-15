@@ -10,6 +10,8 @@ import Config
 import Protein
 import AminoAcid
 
+import Data.List
+
 
 --------------------------------------------------------------------------------
 -- Data structures
@@ -19,7 +21,7 @@ import AminoAcid
 -- The mz/intensity spectrum array for the theoretical spectrum. Keep this as a
 -- sparse array, as there are so few elements compared to the experimental data.
 --
-type XCorrSpecThry = [(Float, Float)]
+type XCorrSpecThry = [(Int, Float)]
 
 
 --------------------------------------------------------------------------------
@@ -34,9 +36,17 @@ type XCorrSpecThry = [(Float, Float)]
 -- A-series we consider. Also, assumes a charge state of one.
 --
 buildThrySpecXCorr :: ConfigParams -> Peptide -> XCorrSpecThry
-buildThrySpecXCorr _cp peptide =
-    concatMap (addIonsAB 1.0) (bIonLadder peptide) ++
-    concatMap (addIonsY  1.0) (yIonLadder peptide)
+buildThrySpecXCorr cp peptide =
+    map (maximumBy (\(_,x) (_,y) -> compare x y))
+    . groupBy (\(a,_) (b,_) -> a == b)
+    . sortBy  (\(a,_) (b,_) -> compare a b)
+    . map bin
+    $ concatMap (addIonsAB 1.0) (bIonLadder peptide) ++
+      concatMap (addIonsY  1.0) (yIonLadder peptide)
+
+    where
+        bin (mz, i) = (round (mz / width), i)
+        width       = if aaMassTypeMono cp then 1.0005079 else 1.0011413
 
 
 --
