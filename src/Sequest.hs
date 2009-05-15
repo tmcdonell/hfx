@@ -55,7 +55,7 @@ data Match = Match
 --
 searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> MatchCollection
 searchForMatches cp database spec = finish $
-    foldl' record nomatch [ sequest cp experimental peptide |
+    foldl' record nomatch [ sequest cp experimental peptide cutoff cr |
                               protein <- candidates database,
                               peptide <- fragments protein
                           ]
@@ -67,6 +67,10 @@ searchForMatches cp database spec = finish $
         record l     = tail . flip (insertBy cmp) l . Just
         n            = max (numMatches cp) (numMatchesDetail cp)
         nomatch      = replicate n Nothing
+
+        mass         = precursor spec
+        cr           = charge spec
+        cutoff       = 50 + mass * cr
 
         cmp (Just x) (Just y) = compare (scoreXC x) (scoreXC y)
         cmp _        _        = GT
@@ -89,10 +93,10 @@ findCandidates cp spec =
 -- Scoring
 --------------------------------------------------------------------------------
 
-sequest :: ConfigParams -> XCorrSpecExp -> Peptide -> Match
-sequest cp spec pep = Match
+sequest :: ConfigParams -> XCorrSpecExp -> Peptide -> Float -> Float -> Match
+sequest cp spec pep cutoff cr = Match
     {
-        scoreXC   = (sequestXC cp spec pep) / 10000,
+        scoreXC   = (sequestXC cp spec (buildThrySpecXCorr cp pep cutoff cr)) / 10000,
         candidate = pep
     }
 
@@ -112,11 +116,10 @@ dot v w =  loop m 0
 -- correlation is the dot product between the theoretical representation and the
 -- preprocessed experimental spectra.
 --
-sequestXC :: ConfigParams -> XCorrSpecExp -> Peptide -> Float
-sequestXC cp v pep = dot v w
+sequestXC :: ConfigParams -> XCorrSpecExp -> XCorrSpecThry -> Float
+sequestXC cp v sv = dot v w
     where
         w      = accumArray max 0 (bounds v) [(bin i,e) | (i,e) <- sv, inRange (bounds v) (bin i)]
-        sv     = buildThrySpecXCorr cp pep
         bin mz = round (mz / width)
         width  = if aaMassTypeMono cp then 1.0005079 else 1.0011413
 

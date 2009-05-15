@@ -76,8 +76,7 @@ type XCorrSpecExp = Array Int Float
 -- Sequest cross correlation analysis.
 --
 buildExpSpecXCorr    :: ConfigParams -> Spectrum -> XCorrSpecExp
-buildExpSpecXCorr cp =  calculateXCorr . normaliseByRegion . observedIntensity cp
-
+buildExpSpecXCorr cp =  calculateXCorr . normaliseRange . normaliseByRegion . observedIntensity cp
 
 --
 -- Generate an intensity array for the observed spectrum. The square root of the
@@ -86,20 +85,26 @@ buildExpSpecXCorr cp =  calculateXCorr . normaliseByRegion . observedIntensity c
 --
 -- The bin width index for a given mass/charge ratio is stolen from crux...(?)
 --
+-- JW: To prepare for normalisation, the range of the array is set to [0..max_mz]
+--     Precusor cutoffs are set to +/- 15 to match Crux
+--     condsqrt has been added such that values < 1 are not sqrted
+--
 observedIntensity :: ConfigParams -> Spectrum -> Array Int Float
 observedIntensity cp spec =
-    accumArray max 0 bnds [(bin x,sqrt y) | (x,y) <- filter limits (peaks spec)]
+    accumArray max 0 bnds [(bin x,condsqrt y) | (x,y) <- filter limits (peaks spec)]
     where
         bin mz = round (mz / width)
         mass   = precursor spec
         cutoff = 50 + mass * (charge spec)
-        bnds   = let (m,n) = mzRange spec in (floor m, ceiling n)
+        bnds   = let (_,n) = mzRange spec in (0, ceiling n)
 
         width  = if aaMassTypeMono cp then 1.0005079 else 1.0011413
 
         limits (x,_) = if removePrecursorPeak cp
-                       then x <= cutoff && (x < (mass-5) || (mass+5) < x)
+                       then x <= cutoff && (x < (mass-15) || (mass+15) < x)
                        else x <= cutoff
+        
+        condsqrt y = if y < 1 then y else sqrt y
 
 
 --
@@ -112,17 +117,32 @@ observedIntensity cp spec =
 -- the input array. This means that fewer values may be placed into the final
 -- bin, but all values from the input array are guaranteed to be considered.
 --
+-- JW: sel has been change to match exactly the regional selection in Crux
+--     rgn has been updated to accomodate this accordingly
+--     norm now includes and extra case where values outside of region 9
+--     are automatically set to zero.
+--
 normaliseByRegion :: Array Int Float -> Array Int Float
 normaliseByRegion a = array (bounds a) [(i,norm i) | i <- indices a]
     where
         rgn_max :: Array Int Float
         rgn_max = accumArray max 0 (0,9) [(rgn i,e) | (i,e) <- assocs a]
         norm i  = let m = rgn_max ! (rgn i) in
-                  if  m > 1E-6 then 50 * ((a!i) / m) else 0
+                  if  m > 1E-6 && i < sel * 10
+                  then 50 * ((a!i) / m)
+                  else 0
 
-        rgn i   = i `div` sel
-        sel     = (10 + snd (bounds a)) `div` 10
+        rgn i   = if i >= sel * 10
+                  then 9
+                  else i `div` sel
 
+        sel     = (snd (bounds a)) `div` 10
+
+--
+-- JW: Extends array to full range (0,2047). This is to match Crux.
+--
+normaliseRange :: Array Int Float -> Array Int Float
+normaliseRange a = array (0,2047) (assocs a ++ zip[snd (bounds a)..2047](repeat 0))
 
 --
 -- Calculate the sequest cross-correlation function for the given input array.

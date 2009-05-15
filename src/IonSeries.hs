@@ -33,10 +33,25 @@ type XCorrSpecThry = [(Float, Float)]
 -- XXX: Apparently there are different types of ions other than the B- Y- and
 -- A-series we consider. Also, assumes a charge state of one.
 --
-buildThrySpecXCorr :: ConfigParams -> Peptide -> XCorrSpecThry
-buildThrySpecXCorr _cp peptide =
-    concatMap (addIonsAB 1.0) (bIonLadder peptide) ++
-    concatMap (addIonsY  1.0) (yIonLadder peptide)
+-- JW: Cutoff removes peaks that are > 50 + mass * (charge) as in Crux
+--     For charge of 3 or 4, additional charged ions need to be added... code looks
+--     ugly but it is working...
+--
+buildThrySpecXCorr :: ConfigParams -> Peptide -> Float -> Float -> XCorrSpecThry
+buildThrySpecXCorr _cp peptide cutoff c =
+    filter (\(x,_) -> x <= cutoff) $ ionlist
+    where
+        b_ions = bIonLadder peptide
+        y_ions = yIonLadder peptide
+
+        ionlist = case c of
+                  1 -> concatMap (addIonsAB 1.0) b_ions ++ concatMap (addIonsY 1.0) y_ions
+                  2 -> concatMap (addIonsAB 1.0) b_ions ++ concatMap (addIonsY 1.0) y_ions
+                  3 -> concatMap (addIonsAB 1.0) b_ions ++ concatMap (addIonsY 1.0) y_ions
+                       ++ concatMap (addIonsAB 2.0) b_ions ++ concatMap (addIonsY 2.0) y_ions
+                  _ -> concatMap (addIonsAB 1.0) b_ions ++ concatMap (addIonsY 1.0) y_ions
+                       ++ concatMap (addIonsAB 2.0) b_ions ++ concatMap (addIonsY 2.0) y_ions
+                       ++ concatMap (addIonsAB 3.0) b_ions ++ concatMap (addIonsY 3.0) y_ions
 
 
 --
