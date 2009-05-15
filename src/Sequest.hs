@@ -113,19 +113,10 @@ dot v w =  loop m 0
 -- preprocessed experimental spectra.
 --
 sequestXC :: ConfigParams -> XCorrSpecExp -> Peptide -> Float
-sequestXC cp v =
-    foldl' (\acc (mz,i) -> acc + i*(v!mz)) 0
-    . filter (\(x,_) -> inRange (bounds v) x)
-    . buildThrySpecXCorr cp
-
---sum [ i * (v!mz) | (mz,i) <- sv, inRange (bounds v) mz ]
---    where
---        sv = buildThrySpecXCorr cp pep
---
-{-
 sequestXC cp v pep = dot v w
     where
         w      = accumArray max 0 (bounds v) [(bin i,e) | (i,e) <- sv, inRange (bounds v) (bin i)]
         sv     = buildThrySpecXCorr cp pep
--}
+        bin mz = round (mz / width)
+        width  = if aaMassTypeMono cp then 1.0005079 else 1.0011413
 
