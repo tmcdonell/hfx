@@ -81,7 +81,7 @@ findCandidates cp spec =
     filter (not.null.fragments) . map (\p -> p {fragments = filter inrange (fragments p)})
     where
         inrange p = (mass - limit) <= pmass p && pmass p <= (mass + limit)
-        mass      = (precursor spec + massH) * charge spec
+        mass      = (precursor spec * charge spec) - ((charge spec * massH) - 1)
         limit     = massTolerance cp
 
 

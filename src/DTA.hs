@@ -79,7 +79,7 @@ mkSpec ((m,c):ss)
     | trunc' c /= c =  Left "Error: invalid peptide charge state\nexpecting integer"
     | otherwise     =  Right (Spectrum pcr c ss)
     where
-        pcr    = m / c - massH
+        pcr    = (m - 1) / c + massH
         trunc' = fromInteger . truncate
 
 --------------------------------------------------------------------------------

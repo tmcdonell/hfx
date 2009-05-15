@@ -57,7 +57,7 @@ data Peptide = Peptide
 -- from Eq. 1 of Eng.[1])
 --
 pmass   :: Peptide -> Float
-pmass p =  residual p + (massH2O + 1.0)
+pmass p =  residual p + (massH2O + massH)
 
 --
 -- Lyse the parent to extract the amino acid sequence of this peptide

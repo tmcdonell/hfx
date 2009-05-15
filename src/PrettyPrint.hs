@@ -36,7 +36,7 @@ printConfig cp fp spec = displayIO . ppAsRows 0 . map (intersperse (text "::")) 
     , [text "(M+H)+ Mass", float mass <+> text "~" <+> float (massTolerance cp)]
     ]
     where
-        mass   = (precursor spec + massH) * (charge spec)
+        mass   = (precursor spec * charge spec) - ((charge spec * massH) - 1)
         enzyme = words . snd . digestionRule $ cp
 
 --------------------------------------------------------------------------------

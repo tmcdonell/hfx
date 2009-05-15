@@ -44,7 +44,7 @@ type Peak = (Float, Float)
 
 data Spectrum = Spectrum
     {
-        precursor :: Float,             -- The singly protonated peptide mass
+        precursor :: Float,             -- The precursor mass; (M+zH)/z
         charge    :: Float,             -- Peptide charge state
         peaks     :: [Peak]             -- The actual mass/charge ratio intensity measurements
     }
