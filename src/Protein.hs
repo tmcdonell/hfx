@@ -82,10 +82,10 @@ massLadder cp = L.foldl fn (0,[0]) . seqextract
                       in  n `seq` (n, ll++[n])
 
 bIonLadder :: Peptide -> [Float]
-bIonLadder =  tail . ladder
+bIonLadder =  init . tail . ladder
 
 yIonLadder   :: Peptide -> [Float]
-yIonLadder p =  (init . map (\x -> residual p - x) . bIonLadder) p
+yIonLadder p =  (map (\x -> residual p - x) . bIonLadder) p
 
 
 --------------------------------------------------------------------------------
