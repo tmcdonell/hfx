@@ -57,7 +57,7 @@ mzRange      :: Spectrum -> (Float, Float)
 mzRange spec =  minmax (peaks spec)
     where
         minmax []       = error "Spectrum.mzRange: empty list"
-        minmax (x:xs)   = foldl' cmp x xs
+        minmax (x:xs)   = foldl cmp x xs
         cmp (a,_) (b,_) = (min a b, max a b)
 
 --
