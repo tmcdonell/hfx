@@ -109,7 +109,7 @@ observedIntensity cp spec =
         width  = if aaMassTypeMono cp then 1.0005079 else 1.0011413
 
         limits (x,_) = if removePrecursorPeak cp
-                       then x <= cutoff && (x < (mass-15) || (mass+15) < x)
+                       then x <= cutoff && (x <= (mass-15) || (mass+15) <= x)
                        else x <= cutoff
 
 --
