@@ -145,5 +145,5 @@ calculateXCorr a = array (bounds a) [(i,xcorr i e) | (i,e) <- assocs a]
     where
         (m,n)     = bounds a
         xcorr i e = e - (subFoldA1' (+) a (xrange i)) / 150
-        xrange i  = [(max m (i-75))..(i-1)] ++ [(i+1)..(min n (i+75))]
+        xrange i  = [(max m (i-75)) .. (min n (i+75))]
 
