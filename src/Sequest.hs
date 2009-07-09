@@ -55,22 +55,24 @@ data Match = Match
 --
 searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> MatchCollection
 searchForMatches cp database spec = finish $
-    foldl' record nomatch [ sequest cp experimental peptide cutoff cr |
+    foldl' record nomatch [ score peptide |
                               protein <- candidates database,
                               peptide <- fragments protein
                           ]
     where
-        experimental = buildExpSpecXCorr cp spec
-        candidates   = findCandidates cp spec . map (digestProtein cp)
-        finish       = reverse . catMaybes
+        specExp    = buildExpSpecXCorr  cp spec
+        specThry   = buildThrySpecXCorr cp (charge spec)
+        candidates = findCandidates cp spec . map (digestProtein cp)
+        finish     = reverse . catMaybes
 
-        record l     = tail . flip (insertBy cmp) l . Just
-        n            = max (numMatches cp) (numMatchesDetail cp)
-        nomatch      = replicate n Nothing
+        record l   = tail . flip (insertBy cmp) l . Just
+        n          = max (numMatches cp) (numMatchesDetail cp)
+        nomatch    = replicate n Nothing
 
-        mass         = precursor spec
-        cr           = charge spec
-        cutoff       = 50 + mass * cr
+        score p    = Match {
+            scoreXC   = sequestXC cp spec specExp (specThry p),
+            candidate = p
+          }
 
         cmp (Just x) (Just y) = compare (scoreXC x) (scoreXC y)
         cmp _        _        = GT
@@ -93,14 +95,6 @@ findCandidates cp spec =
 -- Scoring
 --------------------------------------------------------------------------------
 
-sequest :: ConfigParams -> XCorrSpecExp -> Peptide -> Float -> Float -> Match
-sequest cp spec pep cutoff cr = Match
-    {
-        scoreXC   = (sequestXC cp spec (buildThrySpecXCorr cp pep cutoff cr)) / 10000,
-        candidate = pep
-    }
-
-
 --
 -- Explicitly de-forested array dot product [P. Walder, Deforestation, 1988]
 --
@@ -116,10 +110,14 @@ dot v w =  loop m 0
 -- correlation is the dot product between the theoretical representation and the
 -- preprocessed experimental spectra.
 --
-sequestXC :: ConfigParams -> XCorrSpecExp -> XCorrSpecThry -> Float
-sequestXC cp v sv = dot v w
+sequestXC :: ConfigParams -> Spectrum -> XCorrSpecExp -> XCorrSpecThry -> Float
+sequestXC cp spec v sv = (dot v w) / 10000
     where
-        w      = accumArray max 0 (bounds v) [(bin i,e) | (i,e) <- sv, inRange (bounds v) (bin i)]
+        w      = accumArray max 0 bnds [(bin i,e) | (i,e) <- sv, inRange bnds (bin i)]
         bin mz = round (mz / width)
         width  = if aaMassTypeMono cp then 1.0005079 else 1.0011413
+
+        cutoff = 50 + precursor spec * charge spec
+        (m,n)  = bounds v
+        bnds   = (m, min n (bin cutoff))
 
