@@ -8,11 +8,13 @@
 EXECUTABLE	 = sequest
 
 HSMAIN		 = Main.hs
-CHSFILES	 =
+HSFILES	 	 =
 CUFILES		 =
 CU_DEPS		 =
 CFILES		 =
 CCFILES		 =
+
+INCLUDES	 =
 
 
 # ------------------------------------------------------------------------------
