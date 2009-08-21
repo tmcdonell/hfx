@@ -9,10 +9,10 @@
 # Common CUDA build system
 # ------------------------------------------------------------------------------
 
-CUDA_SDK_PATH	 = /Developer/CUDA
+CUDA_SDK_PATH	?= /Developer/GPU\ Computing/C
 
-SRCDIR		 = src/
-DISTROOT	 = dist
+SRCDIR		?= src/
+DISTROOT	?= dist
 BINDIR		 = $(DISTROOT)/bin
 ROOTOBJDIR	 = $(DISTROOT)/obj
 LIBDIR		 = $(CUDA_SDK_PATH)/lib
@@ -51,6 +51,9 @@ $(OBJDIR)/%.hs : $(SRCDIR)%.chs
 
 $(OBJDIR)/%.hs : $(SRCDIR)%.hsc
 	$(VERBOSE)hsc2hs $(INCLUDES) -o $@ $<
+
+$(SRCDIR)C2HS.hs :
+	$(VERBOSE)c2hs --output-dir=$(SRCDIR) --copy-library
 
 spotless : clean
 	$(VERBOSE)rm -rf $(DISTROOT)
