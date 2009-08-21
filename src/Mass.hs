@@ -6,6 +6,8 @@
 --
 -- Mass constants for elements, molecules and amino acid groups
 --
+-- TODO: Find a way to derive both the C and HS versions from a single source
+--
 --------------------------------------------------------------------------------
 
 module Mass where
