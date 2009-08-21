@@ -23,8 +23,8 @@ module DTA
       readDTA           -- File formats
     ) where
 
+import Mass
 import Spectrum
-import AminoAcid
 
 import Numeric
 import Control.Monad (liftM2)

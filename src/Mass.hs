@@ -1,14 +1,14 @@
 --------------------------------------------------------------------------------
 -- |
--- Module    : AminoAcid
+-- Module    : Mass
 -- Copyright : (c) 2009 Trevor L. McDonell
 -- License   : BSD
 --
--- Mass constants for amino acid groups
+-- Mass constants for elements, molecules and amino acid groups
 --
 --------------------------------------------------------------------------------
 
-module AminoAcid where
+module Mass where
 
 
 --

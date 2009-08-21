@@ -23,11 +23,11 @@
 
 module Sequest where
 
+import Mass
 import Config
 import Protein
 import Spectrum
 import IonSeries
-import AminoAcid
 
 import Data.List
 import Data.Maybe

@@ -15,7 +15,7 @@ module Config
       getAAMass
     ) where
 
-import AminoAcid
+import Mass
 import Utils
 
 import Control.Monad

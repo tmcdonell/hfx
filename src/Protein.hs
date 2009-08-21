@@ -11,8 +11,8 @@
 
 module Protein where
 
+import Mass
 import Config
-import AminoAcid
 
 import Data.Int
 import Data.List

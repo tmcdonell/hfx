@@ -10,11 +10,11 @@
 
 module PrettyPrint where
 
+import Mass
 import Config
 import Protein
 import Sequest
 import Spectrum
-import AminoAcid
 
 import Numeric
 import Data.List

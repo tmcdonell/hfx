@@ -12,9 +12,9 @@
 
 module IonSeries where
 
+import Mass
 import Config
 import Protein
-import AminoAcid
 
 
 --------------------------------------------------------------------------------
