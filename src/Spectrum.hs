@@ -1,8 +1,14 @@
-{-
- - Data structures and functions to store and manipulate the results of a
- - mass-spectroscopy experiment. This will generate an intensity array suitable
- - for sequest cross-correlation analysis.
- -}
+--------------------------------------------------------------------------------
+-- |
+-- Module    : Spectrum
+-- Copyright : (c) 2009 Trevor L. McDonell
+-- License   : BSD
+--
+-- Data structures and functions to store and manipulate the results of a
+-- mass-spectroscopy experiment. This will generate an intensity array suitable
+-- for sequest cross-correlation analysis.
+--
+--------------------------------------------------------------------------------
 
 module Spectrum where
 

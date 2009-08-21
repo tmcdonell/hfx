@@ -1,6 +1,12 @@
-{-
- - General utilities that don't really belong anywhere
- -}
+--------------------------------------------------------------------------------
+-- |
+-- Module    : Utils
+-- Copyright : (c) 2009 Trevor L. McDonell
+-- License   : BSD
+--
+-- General utilities that don't really belong anywhere
+--
+--------------------------------------------------------------------------------
 
 module Utils where
 

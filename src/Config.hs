@@ -1,6 +1,12 @@
-{-
- - Functions to process user configuration parameters
- -}
+--------------------------------------------------------------------------------
+-- |
+-- Module    : Config
+-- Copyright : (c) 2009 Trevor L. McDonell
+-- License   : BSD
+--
+-- Functions to process user configuration parameters
+--
+--------------------------------------------------------------------------------
 
 module Config
     (

@@ -1,6 +1,12 @@
-{-
- - Pretty printing with not-so-ugly code
- -}
+--------------------------------------------------------------------------------
+-- |
+-- Module    : PrettyPrint
+-- Copyright : (c) 2009 Trevor L. McDonell
+-- License   : BSD
+--
+-- Pretty printing with not-so-ugly code
+--
+--------------------------------------------------------------------------------
 
 module PrettyPrint where
 

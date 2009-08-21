@@ -1,15 +1,21 @@
-{-
- - Parse a DTA LC-MS/MS results file.
- -
- - The file format is very simple. The first line contains the singly protonated
- - peptide mass (MH+) and the peptide charge state as a pair of space separated
- - values. Subsequent lines contain space separated pairs of fragment ion m/z
- - ratio and intensity values. Note that the precursor peptide mass is
- - independent of the charge state.
- -
- - The filename usually used to identify the dataset, and each file contains
- - only a single MS/MS sample set.
- -}
+--------------------------------------------------------------------------------
+-- |
+-- Module    : DTA
+-- Copyright : (c) 2009 Trevor L. McDonell
+-- License   : BSD
+--
+-- Parse a DTA LC-MS/MS results file.
+--
+-- The file format is very simple. The first line contains the singly protonated
+-- peptide mass (MH+) and the peptide charge state as a pair of space separated
+-- values. Subsequent lines contain space separated pairs of fragment ion m/z
+-- ratio and intensity values. Note that the precursor peptide mass is
+-- independent of the charge state.
+--
+-- The filename usually used to identify the dataset, and each file contains
+-- only a single MS/MS sample set.
+--
+--------------------------------------------------------------------------------
 
 module DTA
     (

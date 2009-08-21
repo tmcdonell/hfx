@@ -1,8 +1,14 @@
-{-
- - Functions to work with a series of ions, and generate theoretical spectra
- - suitable for matching against experimental results with the sequest
- - cross-correlation algorithm.
- -}
+--------------------------------------------------------------------------------
+-- |
+-- Module    : IonSeries
+-- Copyright : (c) 2009 Trevor L. McDonell
+-- License   : BSD
+--
+-- Functions to work with a series of ions, and generate theoretical spectra
+-- suitable for matching against experimental results with the sequest
+-- cross-correlation algorithm.
+--
+--------------------------------------------------------------------------------
 
 module IonSeries where
 

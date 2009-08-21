@@ -1,6 +1,12 @@
-{-
- - Mass constants for amino acid groups
- -}
+--------------------------------------------------------------------------------
+-- |
+-- Module    : AminoAcid
+-- Copyright : (c) 2009 Trevor L. McDonell
+-- License   : BSD
+--
+-- Mass constants for amino acid groups
+--
+--------------------------------------------------------------------------------
 
 module AminoAcid where
 

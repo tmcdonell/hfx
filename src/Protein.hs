@@ -1,6 +1,12 @@
-{-
- - Utilities for protein sequences and peptide fragments
- -}
+--------------------------------------------------------------------------------
+-- |
+-- Module    : Protein
+-- Copyright : (c) 2009 Trevor L. McDonell
+-- License   : BSD
+--
+-- Utilities for protein sequences and peptide fragments
+--
+--------------------------------------------------------------------------------
 
 
 module Protein where
