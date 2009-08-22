@@ -4,6 +4,8 @@
  * License   : BSD
  */
 
+#include "utils.h"
+
 
 /*
  * Compute the next highest power of two

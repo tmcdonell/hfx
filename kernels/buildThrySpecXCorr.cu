@@ -9,8 +9,8 @@
 #include <host_defines.h>
 #include <device_functions.h>
 
-#include "cbits/mass.h"
-#include "cbits/kernels.h"
+#include "mass.h"
+#include "kernels.h"
 
 
 /*
@@ -93,25 +93,4 @@ buildThrySpecXCorr_kernel
     }
 }
 
-
-/*
- * Kernel wrapper to be called from C. The Ion and Spectrum arrays are in the
- * device memory space.
- */
-void
-buildThrySpecXCorr
-(
-    int          charge,
-    float        *b_ions,
-    float        *y_ions,
-    int          *spec,
-    unsigned int len_ions,
-    unsigned int len_spec
-)
-{
-    int threads = min(len_ions, 64);
-    int blocks  = (len_ions + threads - 1) / threads;
-
-    buildThrySpecXCorr_kernel<<<blocks,threads>>>(charge, b_ions, y_ions, spec, len_ions, len_spec);
-}
 

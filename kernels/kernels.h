@@ -14,11 +14,17 @@
 extern "C" {
 #endif
 
-void
-buildThrySpecXCorr(int charge, float *b_ions, float *y_ions, int *spec, unsigned int len_ions, unsigned int len_spec);
+/*
+ * Ion Series
+ */
+__global__ void
+buildThrySpecXCorr_kernel(int, float*, float*, int*, unsigned int, unsigned int);
 
 
 #ifdef __cplusplus
 }
 #endif
 #endif
+/*
+ * vim: syn=cuda
+ */
