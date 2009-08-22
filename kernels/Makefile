@@ -5,16 +5,24 @@
 # ------------------------------------------------------------------------------
 # Input files
 # ------------------------------------------------------------------------------
-EXECUTABLE	:= sequest
-KERNEL		:= sequest-kernels
+STATIC_LIB	:= libsequest-kernels.a
 
-HSMAIN		:= src/Main.hs
-SUBDIRS		:= kernels
-EXTRALIBS	:= $(KERNEL)
+CU_DEPS		:= kernels.h mass.h
+CUFILES_sm_11	:= ion_series.cu \
+		   buildThrySpecXCorr.cu
+
+C_DEPS		:= utils.h
+CFILES		:= utils.c
+CCFILES		:=
+
+INCLUDES	:=
 
 
 # ------------------------------------------------------------------------------
-# Haskell/CUDA build system
+# Rules and targets
 # ------------------------------------------------------------------------------
-include common.mk
+SRCDIR		:= .
+DISTROOT	:= ../dist
+
+include ../common.mk
 
