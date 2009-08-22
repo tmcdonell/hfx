@@ -95,7 +95,7 @@ endif
 CUBIN_ARCH_FLAG :=
 
 # Libraries
-LIB		:= -L$(LIBDIR) $(addprefix -l,$(EXTRALIBS))
+LIB		 = -L$(LIBDIR) $(addprefix -l,$(EXTRALIBS))
 ifeq ($(HP_64),)
    LIB       	+= -L$(CUDA_INSTALL_PATH)/lib
 else

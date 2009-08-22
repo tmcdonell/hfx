@@ -10,7 +10,7 @@ KERNEL		:= sequest-kernels
 
 HSMAIN		:= src/Main.hs
 SUBDIRS		:= kernels
-EXTRALIBS	:= $(KERNEL)
+EXTRALIBS	 = $(KERNEL)$(LIBSUFFIX)
 
 
 # ------------------------------------------------------------------------------
