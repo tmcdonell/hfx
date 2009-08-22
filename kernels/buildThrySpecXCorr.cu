@@ -4,12 +4,11 @@
  * License   : BSD
  */
 
-#include <assert.h>
-
 #include <host_defines.h>
 #include <device_functions.h>
 
 #include "mass.h"
+#include "utils.h"
 #include "kernels.h"
 
 
@@ -22,7 +21,7 @@ binIonMZ(float mass, int charge)
 {
     int bin = rintf((mass + massH * charge) / (charge * binWidthMono));
 #ifdef __DEVICE_EMULATION__
-    assert(bin >= 0 && bin < 2048 && "index out of bounds");
+    assert(bin >= 0 && bin < 2048);
 #endif
     return bin;
 }
