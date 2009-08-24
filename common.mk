@@ -114,6 +114,22 @@ else
     endif
 endif
 
+ifeq ($(USECUFFT),1)
+    ifeq ($(emu),1)
+        LIB	+= -lcufftemu
+    else
+        LIB	+= -lcufft
+    endif
+endif
+
+ifeq ($(USECUBLAS),1)
+    ifeq ($(emu),1)
+        LIB	+= -lcublasemu
+    else
+        LIB	+= -lcublas
+    endif
+endif
+
 # Device emulation configuration
 ifeq ($(emu),1)
     NVCCFLAGS   += -deviceemu
