@@ -6,6 +6,7 @@
 
 #include "utils.h"
 #include "kernels.h"
+#include "kernels-priv.h"
 
 
 /*
