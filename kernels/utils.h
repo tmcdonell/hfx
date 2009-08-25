@@ -20,7 +20,9 @@
 extern "C" {
 #endif
 
+int          isPow2(unsigned int x);
 unsigned int ceilPow2(unsigned int x);
+unsigned int floorPow2(unsigned int x);
 
 #ifdef __cplusplus
 }
