@@ -7,7 +7,7 @@
 # ------------------------------------------------------------------------------
 STATIC_LIB	:= libsequest-kernels.a
 
-CU_DEPS		:= kernels.h mass.h
+CU_DEPS		:= kernels.h mass.h operator.h
 CUFILES		:=
 CUFILES_sm_11	:=
 
