@@ -16,6 +16,13 @@
     ((void) printf ("%s:%u: failed assertion `%s'\n", file, line, e), abort())
 
 
+#ifdef __DEVICE_EMULATION__
+#define __EMUSYNC       __syncthreads()
+#else
+#define __EMUSYNC
+#endif
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
