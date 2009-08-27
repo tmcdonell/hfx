@@ -13,21 +13,6 @@
 extern "C" {
 #endif
 
-/*
- * Ion Series
- */
-void
-buildThrySpecXCorr(int, float*, float*, int*, unsigned int, unsigned int);
-
-/*
- * Spectrum
- */
-void
-normaliseByRegion(float *, int);
-
-void
-calculateXCorr(float *, int);
-
 
 #ifdef __cplusplus
 }

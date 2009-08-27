@@ -8,8 +8,8 @@
 STATIC_LIB	:= libsequest-kernels.a
 
 CU_DEPS		:= kernels.h mass.h
-CUFILES_sm_11	:= ion_series.cu \
-		   buildThrySpecXCorr.cu
+CUFILES		:=
+CUFILES_sm_11	:=
 
 C_DEPS		:= utils.h
 CFILES		:= utils.c
