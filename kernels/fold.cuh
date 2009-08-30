@@ -212,5 +212,7 @@ fold
     return gpu_result;
 }
 
+#undef MAX_THREADS
+#undef MAX_BLOCKS
 #endif
 
