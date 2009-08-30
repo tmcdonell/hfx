@@ -10,10 +10,13 @@
 
 #include <stdio.h>
 
+/*
+ * Test the given expression, and abort the program if it evaluates to false.
+ */
 #define assert(e)  \
     ((void) ((e) ? (void(0)) : __assert (#e, __FILE__, __LINE__)))
 #define __assert(e, file, line) \
-    ((void) printf ("%s:%u: failed assertion `%s'\n", file, line, e), abort())
+    ((void) fprintf (stderr, "%s:%u: failed assertion `%s'\n", file, line, e), abort())
 
 
 #ifdef __DEVICE_EMULATION__
