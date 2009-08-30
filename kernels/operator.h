@@ -7,6 +7,10 @@
 #ifndef __OPERATOR_H__
 #define __OPERATOR_H__
 
+#include <float.h>
+#include <limits.h>
+
+
 /*
  * Template class for binary operators. Certain algorithms may require the
  * operator to be associative (that is, Ta == Tb), such as parallel scan and
@@ -32,6 +36,21 @@ public:
     static __device__ Tc identity();
 };
 
+/*
+ * Return the minimum or maximum value of a type
+ */
+template <typename T> inline __device__ T getMin();
+template <typename T> inline __device__ T getMax();
+
+#define SPEC_MINMAX(type,vmin,vmax)                                            \
+    template <> inline __device__ type getMin() { return vmin; };              \
+    template <> inline __device__ type getMax() { return vmax; }               \
+
+SPEC_MINMAX(float,        -FLT_MAX,  FLT_MAX);
+SPEC_MINMAX(int,           INT_MIN,  INT_MAX);
+SPEC_MINMAX(char,          CHAR_MIN, CHAR_MAX);
+SPEC_MINMAX(unsigned int,  0,        UINT_MAX);
+SPEC_MINMAX(unsigned char, 0,        UCHAR_MAX);
 
 
 /*
@@ -45,12 +64,17 @@ public:
     public:                                                                    \
         static __device__ Tc apply(const Ta &a, const Tb &b) { return expr; }  \
         static __device__ Tc identity() { return id; }                         \
-    };
+    }
 
-BASIC_OP(Plus,  a+b,      0)
-BASIC_OP(Minus, a-b,      0)
-BASIC_OP(Max,   max(a,b), INT_MIN)
-BASIC_OP(Min,   min(a,b), INT_MAX)
+BASIC_OP(Plus,  a+b,      0);
+BASIC_OP(Minus, a-b,      0);
+BASIC_OP(Times, a*b,      1);
+BASIC_OP(Div,   a/b,      1);
+BASIC_OP(Min,   min(a,b), getMax<Ta>());
+BASIC_OP(Max,   max(a,b), getMin<Ta>());
 
+
+#undef SPEC_MINMAX
+#undef BASIC_OP
 #endif
 
