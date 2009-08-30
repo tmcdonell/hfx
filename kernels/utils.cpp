@@ -4,6 +4,7 @@
  * License   : BSD
  */
 
+#if 0
 #include <math.h>
 
 #include "utils.h"
@@ -51,4 +52,5 @@ floorPow2(unsigned int x)
     frexp(x, &exp);
     return 1 << (exp - 1);
 }
+#endif
 
