@@ -5,74 +5,74 @@
 .SUFFIXES : .cu .cu_dbg.o .c_dbg.o .cpp_dbg.o .cu_rel.o .c_rel.o .cpp_rel.o .cubin .ptx
 
 # Add new SM Versions here as devices with new Compute Capability are released
-SM_VERSIONS	:= sm_10 sm_11 sm_12 sm_13
+SM_VERSIONS     := sm_10 sm_11 sm_12 sm_13
 
 # detect OS
-OSUPPER		:= $(shell uname -s 2>/dev/null | tr [:lower:] [:upper:])
-OSLOWER		:= $(shell uname -s 2>/dev/null | tr [:upper:] [:lower:])
-DARWIN		:= $(strip $(findstring DARWIN, $(OSUPPER)))
+OSUPPER         := $(shell uname -s 2>/dev/null | tr [:lower:] [:upper:])
+OSLOWER         := $(shell uname -s 2>/dev/null | tr [:upper:] [:lower:])
+DARWIN          := $(strip $(findstring DARWIN, $(OSUPPER)))
 
 # detect if 32 bit or 64 bit system
-HP_64		:= $(strip $(shell uname -m | grep 64))
+HP_64           := $(strip $(shell uname -m | grep 64))
 
 # Basic directory setup
 CUDA_INSTALL_PATH ?= /usr/local/cuda
-CUDA_SDK_PATH	  ?= /Developer/GPU\ Computing/C
+CUDA_SDK_PATH     ?= /Developer/GPU\ Computing/C
 
-SRCDIR		?= src
-DISTROOT	?= dist
-BINDIR		:= $(DISTROOT)/bin
-LIBDIR		:= $(DISTROOT)/lib
-ROOTOBJDIR	:= $(DISTROOT)/obj
+SRCDIR          ?= src
+DISTROOT        ?= dist
+BINDIR          := $(DISTROOT)/bin
+LIBDIR          := $(DISTROOT)/lib
+ROOTOBJDIR      := $(DISTROOT)/obj
 
 # Compilers
-NVCC		:= $(CUDA_INSTALL_PATH)/bin/nvcc
-GHC		:= ghc
-C2HS		:= c2hs
-HSC2HS		:= hsc2hs
-CXX		:= g++
-CC		:= gcc
-LINK		:= g++ -fPIC
+NVCC            := nvcc
+GHC             := ghc
+C2HS            := c2hs
+HSC2HS          := hsc2hs
+CXX             := g++
+CC              := gcc
+LINK            := g++ -fPIC
 
 # Includes
-INCLUDES	+= -I. -I$(CUDA_INSTALL_PATH)/include
+INCLUDES        += -I. -I$(CUDA_INSTALL_PATH)/include
 
 # architecture flag for cubin build
 CUBIN_ARCH_FLAG :=
 
 # Warning flags
 CXXWARN_FLAGS := \
-	-W -Wall \
-	-Wimplicit \
-	-Wswitch \
-	-Wformat \
-	-Wchar-subscripts \
-	-Wparentheses \
-	-Wmultichar \
-	-Wtrigraphs \
-	-Wpointer-arith \
-	-Wcast-align \
-	-Wreturn-type \
-	-Wno-unused-function
+        -W -Wall \
+        -Wimplicit \
+        -Wswitch \
+        -Wformat \
+        -Wchar-subscripts \
+        -Wparentheses \
+        -Wmultichar \
+        -Wtrigraphs \
+        -Wpointer-arith \
+        -Wcast-align \
+        -Wreturn-type \
+        -Wno-unused-function
 
 CWARN_FLAGS := $(CXXWARN_FLAGS) \
-	-Wstrict-prototypes \
-	-Wmissing-prototypes \
-	-Wmissing-declarations \
-	-Wnested-externs \
-	-Wmain
+        -Wstrict-prototypes \
+        -Wmissing-prototypes \
+        -Wmissing-declarations \
+        -Wnested-externs \
+        -Wmain
 
 GHCWARN_FLAGS := \
-	-Wall
+        -Wall
 
 # Compiler-specific flags
-NVCCFLAGS	:=
-GHCFLAGS	 = -i$(SRCDIR) -i$(OBJDIR) -odir $(OBJDIR) -hidir $(OBJDIR) --make
-CXXFLAGS	:= $(CXXWARN_FLAGS)
-CFLAGS		:= $(CWARN_FLAGS)
+NVCCFLAGS       :=
+GHCFLAGS         = -i$(SRCDIR) -i$(OBJDIR) -odir $(OBJDIR) -hidir $(OBJDIR) --make
+CXXFLAGS        := $(CXXWARN_FLAGS)
+CFLAGS          := $(CWARN_FLAGS)
 
 # Common flags
-COMMONFLAGS	+= $(INCLUDES) -DUNIX
+COMMONFLAGS     += $(INCLUDES) -DUNIX
 
 # Debug/release configuration
 ifeq ($(dbg),1)
@@ -95,38 +95,38 @@ endif
 CUBIN_ARCH_FLAG :=
 
 # Libraries
-LIB		 = -L$(LIBDIR) $(addprefix -l,$(EXTRALIBS))
+LIB              = -L$(LIBDIR) $(addprefix -l,$(EXTRALIBS))
 ifeq ($(HP_64),)
-   LIB       	+= -L$(CUDA_INSTALL_PATH)/lib
+   LIB          += -L$(CUDA_INSTALL_PATH)/lib
 else
-   LIB       	+= -L$(CUDA_INSTALL_PATH)/lib64
+   LIB          += -L$(CUDA_INSTALL_PATH)/lib64
 endif
 
 # If dynamically linking to CUDA and CUDART, we exclude the libraries from the LIB
 ifeq ($(USECUDADYNLIB),1)
-    LIB 	+= -ldl -rdynamic
+    LIB         += -ldl -rdynamic
 else
     # static linking, we will statically link against CUDA and CUDART
     ifeq ($(USEDRVAPI),1)
-        LIB 	+= -lcuda
+        LIB     += -lcuda
     else
-        LIB 	+= -lcudart
+        LIB     += -lcudart
     endif
 endif
 
 ifeq ($(USECUFFT),1)
     ifeq ($(emu),1)
-        LIB	+= -lcufftemu
+        LIB     += -lcufftemu
     else
-        LIB	+= -lcufft
+        LIB     += -lcufft
     endif
 endif
 
 ifeq ($(USECUBLAS),1)
     ifeq ($(emu),1)
-        LIB	+= -lcublasemu
+        LIB     += -lcublasemu
     else
-        LIB	+= -lcublas
+        LIB     += -lcublas
     endif
 endif
 
@@ -137,30 +137,39 @@ ifeq ($(emu),1)
     BINSUBDIR   := emu$(BINSUBDIR)
     LIBSUFFIX   := $(LIBSUFFIX)_emu
     # consistency, makes developing easier
-    CXXFLAGS	+= -D__DEVICE_EMULATION__
-    CFLAGS	+= -D__DEVICE_EMULATION__
+    CXXFLAGS    += -D__DEVICE_EMULATION__
+    CFLAGS      += -D__DEVICE_EMULATION__
 endif
 
 # Library/executable configuration
 ifneq ($(STATIC_LIB),)
-    TARGETDIR	:= $(LIBDIR)
-    TARGET  	:= $(subst .a,$(LIBSUFFIX).a,$(LIBDIR)/$(STATIC_LIB))
-    LINKLINE 	 = ar rucv $(TARGET) $(OBJS)
+    TARGETDIR   := $(LIBDIR)
+    TARGET      := $(subst .a,$(LIBSUFFIX).a,$(LIBDIR)/$(STATIC_LIB))
+    LINKLINE     = ar rucv $(TARGET) $(OBJS)
 else
-    TARGETDIR	:= $(BINDIR)/$(BINSUBDIR)
-    TARGET   	:= $(TARGETDIR)/$(EXECUTABLE)
+ifneq ($(DYNAMIC_LIB),)
+    TARGETDIR   := $(LIBDIR)
+    TARGET      := $(subst .dylib,$(LIBSUFFIX).dylib,$(LIBDIR)/$(DYNAMIC_LIB))
+    CFLAGS      += -fPIC
+    CXXFLAGS    += -fPIC
+    NVCCFLAGS   += -Xcompiler -fPIC
+    LINKLINE     = $(LINK) -dynamiclib -o $(TARGET) $(OBJS) $(LIB)
+else
+    TARGETDIR   := $(BINDIR)/$(BINSUBDIR)
+    TARGET      := $(TARGETDIR)/$(EXECUTABLE)
     ifneq ($(HSMAIN),)
         LINKLINE =  $(GHC) -o $(TARGET) $(LIB) $(GHCFLAGS) $(HSMAIN)
     else
         LINKLINE = $(LINK) -o $(TARGET) $(OBJS) $(LIB)
     endif
 endif
+endif
 
 # check if verbose
 ifeq ($(verbose),1)
-    VERBOSE 	:=
+    VERBOSE     :=
 else
-    VERBOSE 	:= @
+    VERBOSE     := @
 endif
 
 
@@ -168,16 +177,16 @@ endif
 # Check for input flags and set compiler flags appropriately
 # ------------------------------------------------------------------------------
 ifeq ($(fastmath),1)
-    NVCCFLAGS 	+= -use_fast_math
+    NVCCFLAGS   += -use_fast_math
 endif
 
 ifeq ($(keep),1)
-    NVCCFLAGS 	    += -keep
+    NVCCFLAGS       += -keep
     NVCC_KEEP_CLEAN := *.i* *.cubin *.cu.c *.cudafe* *.fatbin.c *.ptx
 endif
 
 ifdef maxregisters
-    NVCCFLAGS 	+= -maxrregcount $(maxregisters)
+    NVCCFLAGS   += -maxrregcount $(maxregisters)
 endif
 
 # Add cudacc flags
@@ -197,10 +206,10 @@ endif
 # ------------------------------------------------------------------------------
 # Set up object files
 # ------------------------------------------------------------------------------
-OBJDIR 	:= $(ROOTOBJDIR)/$(BINSUBDIR)
-OBJS 	+= $(patsubst %.cpp,$(OBJDIR)/%.cpp.o,$(notdir $(CCFILES)))
-OBJS 	+= $(patsubst %.c,$(OBJDIR)/%.c.o,$(notdir $(CFILES)))
-OBJS 	+= $(patsubst %.cu,$(OBJDIR)/%.cu.o,$(notdir $(CUFILES)))
+OBJDIR  := $(ROOTOBJDIR)/$(BINSUBDIR)
+OBJS    += $(patsubst %.cpp,$(OBJDIR)/%.cpp.o,$(notdir $(CCFILES)))
+OBJS    += $(patsubst %.c,$(OBJDIR)/%.c.o,$(notdir $(CFILES)))
+OBJS    += $(patsubst %.cu,$(OBJDIR)/%.cu.o,$(notdir $(CUFILES)))
 
 # ------------------------------------------------------------------------------
 # Set up cubin output files
@@ -211,7 +220,7 @@ CUBINS   += $(patsubst %.cu,$(CUBINDIR)/%.cubin,$(notdir $(CUBINFILES)))
 # ------------------------------------------------------------------------------
 # Set up PTX output files
 # ------------------------------------------------------------------------------
-PTXDIR 	:= $(SRCDIR)/data
+PTXDIR  := $(SRCDIR)/data
 PTXBINS += $(patsubst %.cu,$(PTXDIR)/%.ptx,$(notdir $(PTXFILES)))
 
 
