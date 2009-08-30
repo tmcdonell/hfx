@@ -13,7 +13,7 @@
  * Combine two arrays using the given binary operator function. A single thread
  * is used to compute each result pair.
  */
-template <class BinaryOp, typename Ta, typename Tb, typename Tc>
+template <class op, typename Ta, typename Tb, typename Tc>
 __global__ void
 zipWith
 (
@@ -23,7 +23,7 @@ zipWith
 )
 {
     unsigned int idx = blockDim.x * blockIdx.x + threadIdx.x;
-    out[idx] = BinaryOp::apply(xs[idx], ys[idx]);
+    out[idx]         = op::apply(xs[idx], ys[idx]);
 }
 
 #endif

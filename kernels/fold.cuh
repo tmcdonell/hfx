@@ -22,8 +22,8 @@
  *
  * Stolen from the CUDA SDK examples
  */
-template <unsigned int blockSize, bool lengthIsPow2, class BinaryOp, typename T>
-__global__ void
+template <unsigned int blockSize, bool lengthIsPow2, class op, typename T>
+__global__ static void
 fold_recursive
 (
     const T     *d_xs,
@@ -41,7 +41,7 @@ fold_recursive
     unsigned int tid      = threadIdx.x;
     unsigned int gridSize = blockSize * 2 * gridDim.x;
 
-    scratch[tid] = BinaryOp::identity();
+    scratch[tid] = op::identity();
 
     /*
      * Reduce multiple elements per thread. The number is determined by the
@@ -52,34 +52,34 @@ fold_recursive
      */
     for (i =  blockIdx.x * blockSize * 2 + tid; i <  length; i += gridSize)
     {
-        scratch[tid] = BinaryOp::apply(scratch[tid], d_xs[i]);
+        scratch[tid] = op::apply(scratch[tid], d_xs[i]);
 
         /*
          * Ensure we don't read out of bounds. This is optimised away if the
          * input length is a power of two
          */
         if (lengthIsPow2 || i + blockSize < length)
-            scratch[tid] = BinaryOp::apply(scratch[tid], d_xs[i+blockSize]);
+            scratch[tid] = op::apply(scratch[tid], d_xs[i+blockSize]);
     }
     __syncthreads();
 
     /*
      * Now, calculate the reduction in shared memory
      */
-    if (blockSize >= 512) { if (tid < 256) { scratch[tid] = BinaryOp::apply(scratch[tid], scratch[tid+256]); } __syncthreads(); }
-    if (blockSize >= 256) { if (tid < 128) { scratch[tid] = BinaryOp::apply(scratch[tid], scratch[tid+128]); } __syncthreads(); }
-    if (blockSize >= 128) { if (tid <  64) { scratch[tid] = BinaryOp::apply(scratch[tid], scratch[tid+ 64]); } __syncthreads(); }
+    if (blockSize >= 512) { if (tid < 256) { scratch[tid] = op::apply(scratch[tid], scratch[tid+256]); } __syncthreads(); }
+    if (blockSize >= 256) { if (tid < 128) { scratch[tid] = op::apply(scratch[tid], scratch[tid+128]); } __syncthreads(); }
+    if (blockSize >= 128) { if (tid <  64) { scratch[tid] = op::apply(scratch[tid], scratch[tid+ 64]); } __syncthreads(); }
 
 #ifndef __DEVICE_EMULATION__
     if (tid < 32)
 #endif
     {
-        if (blockSize >= 64) { scratch[tid] = BinaryOp::apply(scratch[tid], scratch[tid+32]);  __EMUSYNC; }
-        if (blockSize >= 32) { scratch[tid] = BinaryOp::apply(scratch[tid], scratch[tid+16]);  __EMUSYNC; }
-        if (blockSize >= 16) { scratch[tid] = BinaryOp::apply(scratch[tid], scratch[tid+ 8]);  __EMUSYNC; }
-        if (blockSize >=  8) { scratch[tid] = BinaryOp::apply(scratch[tid], scratch[tid+ 4]);  __EMUSYNC; }
-        if (blockSize >=  4) { scratch[tid] = BinaryOp::apply(scratch[tid], scratch[tid+ 2]);  __EMUSYNC; }
-        if (blockSize >=  2) { scratch[tid] = BinaryOp::apply(scratch[tid], scratch[tid+ 1]);  __EMUSYNC; }
+        if (blockSize >= 64) { scratch[tid] = op::apply(scratch[tid], scratch[tid+32]);  __EMUSYNC; }
+        if (blockSize >= 32) { scratch[tid] = op::apply(scratch[tid], scratch[tid+16]);  __EMUSYNC; }
+        if (blockSize >= 16) { scratch[tid] = op::apply(scratch[tid], scratch[tid+ 8]);  __EMUSYNC; }
+        if (blockSize >=  8) { scratch[tid] = op::apply(scratch[tid], scratch[tid+ 4]);  __EMUSYNC; }
+        if (blockSize >=  4) { scratch[tid] = op::apply(scratch[tid], scratch[tid+ 2]);  __EMUSYNC; }
+        if (blockSize >=  2) { scratch[tid] = op::apply(scratch[tid], scratch[tid+ 1]);  __EMUSYNC; }
     }
 
     /*
@@ -93,8 +93,8 @@ fold_recursive
 /*
  * Wrapper function for kernel launch
  */
-template <class BinaryOp, typename T>
-void
+template <class op, typename T>
+static void
 fold_dispatch
 (
     const T     *d_xs,
@@ -110,16 +110,16 @@ fold_dispatch
     {
         switch (threads)
         {
-        case 512: fold_recursive<512,true,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case 256: fold_recursive<256,true,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case 128: fold_recursive<128,true,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case  64: fold_recursive< 64,true,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case  32: fold_recursive< 32,true,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case  16: fold_recursive< 16,true,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   8: fold_recursive<  8,true,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   4: fold_recursive<  4,true,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   2: fold_recursive<  2,true,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   1: fold_recursive<  1,true,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case 512: fold_recursive<512,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case 256: fold_recursive<256,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case 128: fold_recursive<128,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case  64: fold_recursive< 64,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case  32: fold_recursive< 32,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case  16: fold_recursive< 16,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   8: fold_recursive<  8,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   4: fold_recursive<  4,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   2: fold_recursive<  2,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   1: fold_recursive<  1,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
         default:
             assert(!"Non-exhaustive patterns in match");
         }
@@ -128,16 +128,16 @@ fold_dispatch
     {
         switch (threads)
         {
-        case 512: fold_recursive<512,false,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case 256: fold_recursive<256,false,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case 128: fold_recursive<128,false,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case  64: fold_recursive< 64,false,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case  32: fold_recursive< 32,false,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case  16: fold_recursive< 16,false,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   8: fold_recursive<  8,false,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   4: fold_recursive<  4,false,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   2: fold_recursive<  2,false,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   1: fold_recursive<  1,false,BinaryOp,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case 512: fold_recursive<512,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case 256: fold_recursive<256,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case 128: fold_recursive<128,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case  64: fold_recursive< 64,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case  32: fold_recursive< 32,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case  16: fold_recursive< 16,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   8: fold_recursive<  8,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   4: fold_recursive<  4,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   2: fold_recursive<  2,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   1: fold_recursive<  1,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
         default:
             assert(!"Non-exhaustive patterns in match");
         }
@@ -148,7 +148,7 @@ fold_dispatch
 /*
  * Compute the number of blocks and threads to use for the reduction kernel
  */
-void
+static void
 fold_control
 (
     int         n,
@@ -169,7 +169,7 @@ fold_control
  * The reduction will take place in parallel, so the operator must be
  * associative.
  */
-template <class BinaryOp, typename T>
+template <class op, typename T>
 T
 fold
 (
@@ -191,13 +191,13 @@ fold
     /*
      * Recursively reduce the partial block sums to a single value
      */
-    fold_dispatch<BinaryOp,T>(d_xs, d_data, n, blocks, threads);
+    fold_dispatch<op,T>(d_xs, d_data, n, blocks, threads);
 
     n = blocks;
     while (n > 1)
     {
         fold_control(n, blocks, threads);
-        fold_dispatch<BinaryOp,T>(d_data, d_data, n, blocks, threads);
+        fold_dispatch<op,T>(d_data, d_data, n, blocks, threads);
 
         n = (n + threads * 2 - 1) / (threads * 2);
     }
