@@ -40,7 +40,7 @@ extern "C" {
 inline bool
 isPow2(unsigned int x)
 {
-    return ((x&(x=1)) == 0);
+    return ((x&(x-1)) == 0);
 }
 
 
