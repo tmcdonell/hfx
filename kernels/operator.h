@@ -12,6 +12,20 @@
 
 
 /*
+ * Template class for an operation that can be mapped over an array.
+ */
+template <typename Ta, typename Tb=Ta>
+class Functor
+{
+public:
+    /*
+     * Apply the operation to the given operand.
+     */
+    static __device__ Tb apply(const Ta &x);
+};
+
+
+/*
  * Template class for binary operators. Certain algorithms may require the
  * operator to be associative (that is, Ta == Tb), such as parallel scan and
  * reduction.
