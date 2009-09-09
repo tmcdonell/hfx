@@ -11,22 +11,23 @@ import Foreign.C
 
 #include "../kernels/kernels.h"
 
-{# fun unsafe zipWithPlusi
-    { withDevicePtr* `DevicePtr CInt' ,
-      withDevicePtr* `DevicePtr CInt' ,
-      withDevicePtr* `DevicePtr CInt' ,
-      fromIntegral   `Int'            } -> `()' #}
+{# fun unsafe zipWithMaxf
+    { withDevicePtr* `DevicePtr CFloat' ,
+      withDevicePtr* `DevicePtr CFloat' ,
+      withDevicePtr* `DevicePtr CFloat' ,
+      fromIntegral   `Int'              } -> `()' #}
 
 
 main :: IO ()
 main =
-    let nums  = [1..1024]
-        cpu_r = zipWith (+) nums nums
+    let nums1  = map sin [1..1024]
+        nums2  = map cos [1..1024]
+        cpu_r = zipWith max nums1 nums2
     in
-        CUDA.withArrayLen nums $ \l xs -> do
-        CUDA.withArray    nums $ \ys   -> do
+        CUDA.withArrayLen nums1 $ \l xs -> do
+        CUDA.withArray    nums2 $ \ys   -> do
         CUDA.allocaBytes (fromIntegral l*4) $ \zs -> do
-        zipWithPlusi xs ys zs l >> do
+        zipWithMaxf xs ys zs l >> do
         CUDA.forceEither `fmap` CUDA.peekArray l zs >>= \gpu_r ->
             if gpu_r == cpu_r
             then putStrLn  "Test: PASSED"
