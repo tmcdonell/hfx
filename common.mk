@@ -77,6 +77,7 @@ COMMONFLAGS     += $(INCLUDES) -DUNIX
 # Debug/release configuration
 ifeq ($(dbg),1)
     COMMONFLAGS += -g
+    GHCFLAGS	+= -prof -auto-all -fhpc
     NVCCFLAGS   += -D_DEBUG
     CXXFLAGS    += -D_DEBUG
     CFLAGS      += -D_DEBUG
@@ -84,6 +85,7 @@ ifeq ($(dbg),1)
     LIBSUFFIX   := D
 else
     COMMONFLAGS += -O2
+    GHCFLAGS	+= -O2
     BINSUBDIR   := release
     LIBSUFFIX   :=
     NVCCFLAGS   += --compiler-options -fno-strict-aliasing
@@ -307,3 +309,6 @@ clobber : clean
 
 spotless:
 	$(VERBOSE)rm -rf $(DISTROOT)
+	$(VERBOSE)rm -rf .hpc
+	$(VERBOSE)find . -name "*.tix" -print0 | xargs -0 rm -f
+
