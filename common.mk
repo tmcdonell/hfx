@@ -312,3 +312,6 @@ spotless:
 	$(VERBOSE)rm -rf .hpc
 	$(VERBOSE)find . -name "*.tix" -print0 | xargs -0 rm -f
 
+check:
+	$(VERBOSE)(cd tests/driver && ./check $(test))
+

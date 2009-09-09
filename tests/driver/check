@@ -1,0 +1,314 @@
+#!/usr/bin/perl 
+# 
+# Copyright (C) 2002-04 Don Stewart - http://www.cse.unsw.edu.au/~dons
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+# 02111-1307, USA.
+# 
+
+use File::Basename;
+
+# check script for the various phases of the compiler
+
+sub find_leaves();
+sub is_leaf($);
+sub get_toplevel_phases();
+sub find_tests();
+sub find_any_extra_flags();
+ 
+# "check" runs the tests in all the subdirs. Tests look like *'.dta'
+# with a corresponding *'.out' file.
+ 
+$project = "sequest";
+
+chdir "../.."; # assuming we are in "driver"
+$TOP    = `pwd`;
+chomp $TOP;
+
+#
+# some globals
+#
+#$diff   = "$TOP/seci --cmp-abssyn";         # diff program
+$diff    = "diff -u";
+
+$prog   = "$TOP/$project";                      # name of binary
+$regress= "$TOP/tests";                         # path to regression dir
+$actual = "/tmp/$project.test.$$";              # actual output file
+
+$dfs    = "find . -type d";                  # how to do a dfs
+
+# for each top-level directory, keep a score of how many test were
+# run, and how many failed. This has the form "name" => [0,0],
+# initially
+%score = ();
+
+# check the $prog exists
+print "need to build $project first\n" and (exit 1) if (not -x "$prog");
+
+# which compiler modules to check
+# if the user has set a var, we use this instead
+if ($#ARGV >= 0) {
+        @phases = @ARGV;
+} else {
+        @phases = get_toplevel_phases();
+}
+
+$mark = 0;
+
+# for each compiler phase, run the regression tests in the leaf
+# directories of that phase's tree
+for $phase (@phases) {
+
+    chdir "$regress/$phase/" or die "$0: couldn't chdir into $regress/$phase/: $!\n";
+
+    @leaves = find_leaves();
+
+    # for each leaf, run the tests found.
+    # is_leaf ensures that Tests.all exists in the directory
+    for $leaf (@leaves) {
+
+        chdir "$regress/$phase/$leaf" or die "$0: couldn't chdir into $leaf: $!\n";
+
+        # canonicalise
+        $leaf = "" if ($leaf eq ".");
+
+        # print where we are at
+        $base = $leaf;
+        $base =~ s%\./|$regress/$phase/%%g; # basename of dir we are in
+        if ($base eq "") {
+                print "======> $phase\n";
+        } else {
+                print "======> $phase/$base\n";
+        }
+
+        # read expected mark distribution for this set of tests
+        $marks = find_marks();
+
+        # read in any flags needed to test this phase
+        $extra_flags = find_any_extra_flags();
+        chomp $extra_flags;
+
+        $expectfail = 0; # reset
+        if ($extra_flags =~ /expect-fail/) {
+            $expectfail = 1;
+            $extra_flags =~ s/expect-fail//g;
+        }
+
+        # reset for each leaf directory.
+        # each leaf needs to contain a Marks file too.
+        $tested = $passed = 0;
+
+        @tests = sort (find_tests());
+
+        # must run from the top directory
+        chdir $TOP;
+
+        for $test_ (@tests) {
+
+            $result = "";
+
+            # find the basename of the test, sans suffix
+            # ($test) = split /\./, $test_, 2;
+            $test = basename($test_, ".dta");
+
+            # actual input file, scanned from Tests.all
+            # couldn't find the extra '/' appended to $leaf... :{
+            $source = join("/", split("/+", "tests/$phase/$leaf/$test_"));     # relative.
+
+            # canonical name of expected results. 
+            # add .err|.out if needed
+            $expect = join("/", split("/+", "$regress/$phase/$leaf/$test"));
+
+            # need to handle "should_fail".
+
+            # override for now
+            #$extra_flags = "--dump-abssyn";
+
+            # run the compiler over this test file 
+            if ($phase ne "codegen") {
+                `$prog $extra_flags $source > "$actual.out" 2> "$actual.err"`;
+
+                if (not $expectfail) {
+                   if ( $? != 0  or ($? >> 8) != 0 ) {
+                    $result = `cat $actual.err 2> /dev/null`;
+                    $result.= `cat $actual.out 2> /dev/null`;
+                   }
+
+                } elsif (not -s "$actual.err") {
+                    $result = "unexpected pass!" ;
+                }
+                        
+
+            # else it is codegeneration, which we handle differently
+            } else {
+                `$prog $extra_flags $source 2> "$actual.err"`; # compile
+
+                if ( $? >> 8 ) { # if it didn't compile, hmm..
+                    $result .= `cat $actual.err` if ( $? ) ;
+                } else {
+                    `$expect > "$actual.out" 2> "$actual.err"`; # run
+                }
+            }
+
+            # if we don't already have failures
+            if (not $result and not $expectfail) {
+
+                # diff the output  (the actual files always exist, but
+                # we only care if they are non-null, or if there also
+                # exist expected files. that is, null output, and no
+                # expected files is ok.
+                $result  = `$diff "$expect.out" "$actual.out" | head -30`;
+
+                # need some logic to cat the $actual.out if it exists, but
+                # the expected doesn't, instead of having diff die.
+         #      if (-f "$expect.err") {     # we expect something
+         #          $result .= `$diff "$expect.err" "$actual.err"`;
+
+         #      if (-f "$actual.err") { # we didn't expect errors!
+         #           $result .= `cat "$actual.err" | head -10`;
+         #      }
+
+            }
+
+            if ($result) {
+                printf "=== %-40s failed ===\n", $test;
+                print "$result\n";
+            } else {
+                printf "=== %-40s passed === \n", $test;
+            }
+
+            # update the overall score
+            $score{$phase}[0]++ ; $total[0]++;
+            if (not $result) { 
+                $score{$phase}[1]++ ; $total[1]++ 
+            }
+
+            # and update the leaf score:
+            $tested++;
+            $passed++ if (not $result); # i.e. success
+
+            unlink "$actual.err";
+            unlink "$actual.out";
+        } # end for()
+
+        # scale the test results to the proportion of marks assigned
+        # to this test:
+        if ($marks != "" and $marks != 0) {
+            printf ("\t\t\t\t\t%2.1f/%-2d marks\n", ($passed/$tested*$marks), $marks);
+        }
+
+        # accumulate marks at each point:
+        $possiblemarks  += $marks;
+        if ($tested != "" and $tested != 0) {
+            $achievedmarks  += ($passed/$tested) * $marks;
+        }
+
+        # reset just in case.
+        $marks = -1.0;
+
+    }
+}
+
+# and print out the numbers
+print "\n";
+print "-" x 60;
+print "\n--\n--\n";
+
+for $p (@phases) {
+    printf "-- %15s : passed ", $p;
+    print  (($score{$p}[1]+0) . "/" . ($score{$p}[0]+0) . " tests\n");
+}
+
+printf "--\n-- %15s : passed ", "total";
+print (($total[1]+0) . "/" . ($total[0]+0) . " tests");
+printf " (%0.1f%%)\n", (($total[1]+0) / ($total[0]+0) * 100);
+
+#printf "--\n-- %15s : %.1f/%-d\n", "MARKS GAINED", $achievedmarks, $possiblemarks;
+
+print "--\n--\n";
+print "-" x 60;
+print "\n";
+
+exit 0;
+
+#-----------------------------------------------------------------------
+#- Utilities
+
+# is_leaf: a directory is a leaf node if it contains any *.dta files
+sub is_leaf($) {
+    my $dir = shift;
+    opendir IN, $dir or die "couldn't open $dir in sub is_leaf()!\n";
+    $found = grep { /\.dta$/ } readdir(IN);
+    return ($found) ? 1 : 0;
+}
+
+# return a list of leaf directories
+sub find_leaves() {
+    open DIRS, "$dfs |" or die "$0: couldn't run '$dfs'!";
+    my @dirs = <DIRS>;
+    chomp @dirs;
+    return sort (grep { is_leaf($_) } @dirs);
+}
+
+# find the top-level regress directories, filtering out the "driver"
+sub get_toplevel_phases() {
+    chdir "$regress" or die "$0: couldn't chdir: $!";
+    opendir DIR, "." or die "$0: couldn't opendir ./: $!";
+    my @phases = grep { !/^\./ and !/driver/ } readdir(DIR);
+    closedir DIR;
+    chdir "driver"; # go home
+    return @phases;
+}
+
+# return a sorted list of all *.dta files in the current directory
+sub find_tests() {
+    opendir DIR, "." or die "$0: couldn'd chdir: $!";
+    my @tests = grep { /\.dta$/ } readdir(DIR);
+    closedir DIR;
+
+    # now remove all elems of @tests found in "Skip" file
+    open IN, "Skip" or return @tests;
+    @tests_ = @tests;
+    while (<IN>) {
+        chomp;
+        $skip = $_;
+        @tests_ = grep { !/$skip/ } @tests_;
+    }
+    close IN;
+    return @tests_;
+}
+
+# open the Flag file, if it exists, and read its contents
+# the contents is a string of command line flags to append to the prog
+sub find_any_extra_flags() {
+    open IN, "Flag" or return "";
+    my $flag = <IN>;
+    close IN;
+    return $flag;
+}
+
+# open the Marks file, if it exists, and read its contents
+# the contents is a numeric string telling us how many marks to scale
+# these tests to.
+sub find_marks() {
+    open IN, "./Marks" or return "";
+    my $m = <IN>;
+    close IN;
+    chomp $m;
+    return "" if ($m == "0");
+    return $m;
+}
+
+# vim: expandtab sw=4 ts=4
