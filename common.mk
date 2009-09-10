@@ -214,6 +214,12 @@ OBJS    += $(patsubst %.c,$(OBJDIR)/%.c.o,$(notdir $(CFILES)))
 OBJS    += $(patsubst %.cu,$(OBJDIR)/%.cu.o,$(notdir $(CUFILES)))
 
 # ------------------------------------------------------------------------------
+# Set up preprocessed Haskell files
+# ------------------------------------------------------------------------------
+DEPS	+= $(patsubst %.chs,$(OBJDIR)/%.hs,$(notdir $(CHSFILES)))
+DEPS	+= $(patsubst %.hsc,$(OBJDIR)/%.hs,$(notdir $(HSCFILES)))
+
+# ------------------------------------------------------------------------------
 # Set up cubin output files
 # ------------------------------------------------------------------------------
 CUBINDIR := $(SRCDIR)/data
@@ -278,7 +284,7 @@ endef
 # function interprets it as make commands.
 $(foreach smver,$(SM_VERSIONS),$(eval $(call SMVERSION_template,$(smver))))
 
-$(TARGET): makedirectories $(OBJS) $(CUBINS) $(PTXBINS) Makefile $(addsuffix .subdir,$(SUBDIRS))
+$(TARGET): makedirectories $(DEPS) $(OBJS) $(CUBINS) $(PTXBINS) Makefile $(addsuffix .subdir,$(SUBDIRS))
 	$(VERBOSE)$(LINKLINE)
 
 cubindirectory:
@@ -310,6 +316,7 @@ clobber : clean
 spotless:
 	$(VERBOSE)rm -rf $(DISTROOT)
 	$(VERBOSE)rm -rf .hpc
+	$(VERBOSE)rm -f *.html
 	$(VERBOSE)find . -name "*.tix" -print0 | xargs -0 rm -f
 
 check:
