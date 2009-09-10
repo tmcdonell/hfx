@@ -13,16 +13,19 @@
 extern "C" {
 #endif
 
-/*
- * test.cu
- */
-int  reducePlusi(int *xs, int N);
-
-void scanl1Plusi(int *in, int *out, int N);
-void scanr1Plusi(int *in, int *out, int N);
-
-void zipWithPlusi(int *xs, int *ys, int *zs, int N);
-void zipWithMaxf(float *xs, float *ys, float *zs, int N);
+// -----------------------------------------------------------------------------
+// Ion Series
+// -----------------------------------------------------------------------------
+void
+k_buildXCorrSpecThry
+(
+    int                 charge,
+    float               *b_ions,
+    float               *y_ions,
+    int                 *out,
+    unsigned int        len_ions,
+    unsigned int        len_spec
+);
 
 
 #ifdef __cplusplus
