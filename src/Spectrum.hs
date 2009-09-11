@@ -104,10 +104,10 @@ buildExpSpecXCorr :: ConfigParams
                   -> Spectrum
                   -> (XCorrSpecExp -> IO a)
                   -> IO a
-buildExpSpecXCorr cp s f =
-    let sp = calculateXCorr . normaliseByRegion . observedIntensity cp $ s
+buildExpSpecXCorr cp spec action =
+    let sp = calculateXCorr . normaliseByRegion . observedIntensity cp $ spec
     in  CUDA.withArray (elems sp) $ \sp' ->
-        f (XCorrSpecExp (bounds sp) sp')
+        action (XCorrSpecExp (bounds sp) sp')
 
 
 --
