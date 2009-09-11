@@ -10,7 +10,15 @@
 --
 --------------------------------------------------------------------------------
 
-module Spectrum where
+module Spectrum
+  (
+    Spectrum(..),
+    SpectrumCollection(..),
+    XCorrSpecExp(..),
+
+    buildExpSpecXCorr
+  )
+  where
 
 import Config
 import Utils

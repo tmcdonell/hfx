@@ -8,7 +8,13 @@
 --
 --------------------------------------------------------------------------------
 
-module PrettyPrint where
+module PrettyPrint
+  (
+    printConfig,
+    printResults,
+    printResultsDetail
+  )
+  where
 
 import Mass
 import Config

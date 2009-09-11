@@ -9,7 +9,19 @@
 --------------------------------------------------------------------------------
 
 
-module Protein where
+module Protein
+  (
+    Peptide(..),
+    Protein(..),
+    ProteinDatabase,
+
+    readFasta,
+    digestProtein,
+
+    pmass, name, description, slice,
+    bIonLadder, yIonLadder
+  )
+  where
 
 import Mass
 import Config
