@@ -11,7 +11,12 @@
 --
 --------------------------------------------------------------------------------
 
-module IonSeries where
+module IonSeries
+  (
+    XCorrSpecThry(..),
+    buildThrySpecXCorr
+  )
+  where
 
 #include "kernels/kernels.h"
 
@@ -19,6 +24,7 @@ import Config
 import Protein
 
 import C2HS
+import Foreign.CUDA (DevicePtr, withDevicePtr)
 import qualified Foreign.CUDA as CUDA
 
 
@@ -53,19 +59,26 @@ buildThrySpecXCorr :: ConfigParams
                    -> Peptide                   -- ^ peptide to build spectrum for
                    -> (XCorrSpecThry -> IO b)   -- ^ action to perform
                    -> IO b
-buildThrySpecXCorr _cp (m,n) chrg pep fun =
-    CUDA.allocaBytes bytes $ \spec ->
-    CUDA.memset spec bytes 0 >>= \rv -> case rv of
-      Just e  -> error e
-      Nothing -> CUDA.withArrayLen (bIonLadder pep) $ \n b_ions -> do
-                 CUDA.withArray    (yIonLadder pep) $ \y_ions   -> do
-                 addIons chrg b_ions y_ions spec n len >> do
+buildThrySpecXCorr _cp (m,n) chrg pep action =
+    CUDA.allocaBytesMemset bytes 0     $ \spec     -> do
+    CUDA.withArrayLen (bIonLadder pep) $ \l b_ions -> do
+    CUDA.withArray    (yIonLadder pep) $ \y_ions   -> do
+    addIons chrg b_ions y_ions spec l len >> do
 
-                 fun (XCorrSpecThry (m,n) spec)
+    action (XCorrSpecThry (m,n) spec)
+
     where
       len   = n - m + 1
       bytes = fromIntegral len * fromIntegral (sizeOf (undefined::Int))
 
+
+{# fun unsafe addIons
+    { cIntConv          `Int'             ,
+      withDevicePtr*    `DevicePtr Float' ,
+      withDevicePtr*    `DevicePtr Float' ,
+      withDevicePtr*    `DevicePtr Int'   ,
+      cIntConv          `Int'             ,
+      cIntConv          `Int'             } -> `()' #}
 
 #if 0
 buildThrySpecXCorr :: ConfigParams -> Int -> Int -> Peptide -> IO XCorrSpecThry
@@ -84,19 +97,6 @@ buildThrySpecXCorr _cp len_spec charge peptide = do
     where
       bytes = fromIntegral (len_spec * sizeOf (undefined::Int))
 #endif
-
-
-{# fun unsafe addIons
-    { cIntConv          `Int'                  ,
-      withDevicePtr*    `CUDA.DevicePtr Float' ,
-      withDevicePtr*    `CUDA.DevicePtr Float' ,
-      withDevicePtr*    `CUDA.DevicePtr Int'   ,
-      cIntConv          `Int'                  ,
-      cIntConv          `Int'                  } -> `()' #}
-  where
-    withDevicePtr = CUDA.withDevicePtr
-
-
 #if 0
 --
 -- Sequential version
