@@ -19,6 +19,8 @@ import Data.List
 import Data.Array.Unboxed
 import Data.ByteString.Lazy (ByteString)
 
+import qualified Foreign.CUDA as CUDA
+
 
 --------------------------------------------------------------------------------
 -- Data Structures
@@ -70,7 +72,9 @@ mzRange spec =  minmax (peaks spec)
 -- A mz/intensity spectrum array of experimental data suitable for sequest
 -- cross-correlation ranking
 --
-type XCorrSpecExp = Array Int Float
+data XCorrSpecExp = XCorrSpecExp
+        (Int,Int)               -- bounds of the array
+        (CUDA.DevicePtr Float)  -- array data, stored on the device
 
 
 --------------------------------------------------------------------------------
@@ -81,8 +85,28 @@ type XCorrSpecExp = Array Int Float
 -- Process the observed spectral peaks and generate an array suitable for
 -- Sequest cross correlation analysis.
 --
-buildExpSpecXCorr    :: ConfigParams -> Spectrum -> XCorrSpecExp
-buildExpSpecXCorr cp =  calculateXCorr . normaliseByRegion . observedIntensity cp
+-- Instead of returning the array directly, we operate on it using the given
+-- action, so the data can be released once the action completes (no device GC).
+--
+-- TODO: This goes via a temporary IArray, but it might have been possible to
+--       use a StorableArray and copy directly from that memory. Otherwise,
+--       investigate the use of an STUArray for fast construction.
+--
+buildExpSpecXCorr :: ConfigParams
+                  -> Spectrum
+                  -> (XCorrSpecExp -> IO a)
+                  -> IO a
+buildExpSpecXCorr cp s f =
+    let sp = calculateXCorr . normaliseByRegion . observedIntensity cp $ s
+    in  CUDA.withArray (elems sp) $ \sp' ->
+        f (XCorrSpecExp (bounds sp) sp')
+
+{-
+buildExpSpecXCorr :: ConfigParams -> Spectrum -> IO XCorrSpecExp
+buildExpSpecXCorr cp = export . calculateXCorr . normaliseByRegion . observedIntensity cp
+    where
+        export a = XCorrSpecExp (bounds a) `fmap` CUDA.newArray (elems a)
+-}
 
 --
 -- Generate an intensity array for the observed spectrum. The square root of the
