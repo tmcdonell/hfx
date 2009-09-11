@@ -31,7 +31,7 @@ addIons
 // -----------------------------------------------------------------------------
 // Prelude
 // -----------------------------------------------------------------------------
-int  reducePlusf(float *xs, float N);
+float reducePlusf(float *xs, int N);
 
 void scanl1Plusi(int *in, int *out, int N);
 void scanr1Plusi(int *in, int *out, int N);

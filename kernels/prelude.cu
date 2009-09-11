@@ -20,9 +20,9 @@
 // -----------------------------------------------------------------------------
 // Reduce
 // -----------------------------------------------------------------------------
-int reducePlusi(int *xs, int N)
+float reducePlusf(float *xs, int N)
 {
-    int result = reduce< Plus<int> >(xs, N);
+    float result = reduce< Plus<float> >(xs, N);
     return result;
 }
 
