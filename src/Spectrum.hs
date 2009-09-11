@@ -146,8 +146,8 @@ normaliseByRegion a = array (bounds a) [ (i,norm i) | i <- indices a ]
 -- Each sequest matching score is then a dot product between a theoretical input
 -- and this pre-processed spectrum.
 --
-calculateXCorr :: Array Int Float -> XCorrSpecExp
-calculateXCorr a = array (bounds a) [(i,xcorr i e) | (i,e) <- assocs a]
+calculateXCorr :: Array Int Float -> Array Int Float
+calculateXCorr a  = listArray (0, ceilPow2 n - 1) (repeat 0) // [(i,xcorr i e) | (i,e) <- assocs a]
     where
         (m,n)     = bounds a
         xcorr i e = e - (subFoldA1' (+) a (xrange i)) / 150
