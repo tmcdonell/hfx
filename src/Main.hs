@@ -51,11 +51,11 @@ search cp fp = do
         Nothing -> error "Protein database not specified"
         Just db -> readFasta db
 
-    let spec     = forceEitherStr dta
-        matches  = searchForMatches cp proteins spec
+    let spec = forceEitherStr dta
 
     printConfig cp fp spec
 
+    matches             <- searchForMatches cp proteins spec
     printResults        $! (take (numMatches cp)       matches)
     printResultsDetail  $! (take (numMatchesDetail cp) matches)
 

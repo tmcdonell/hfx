@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP, ForeignFunctionInterface #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Sequest
@@ -21,7 +22,15 @@
 --
 --------------------------------------------------------------------------------
 
-module Sequest where
+module Sequest
+  (
+    Match(..),
+    MatchCollection,
+    searchForMatches
+  )
+  where
+
+#include "kernels/kernels.h"
 
 import Mass
 import Config
@@ -31,7 +40,12 @@ import IonSeries
 
 import Data.List
 import Data.Maybe
-import Data.Array.Unboxed
+import Data.Foldable (foldlM)
+
+import C2HS
+import Foreign.CUDA (DevicePtr, withDevicePtr)
+import qualified Foreign.CUDA as CUDA
+
 
 --------------------------------------------------------------------------------
 -- Data Structures
@@ -59,6 +73,31 @@ data Match = Match
 -- Search the database for amino acid sequences within a defined mass tolerance.
 -- Only peptides which fall within this range will be considered.
 --
+searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> IO MatchCollection
+searchForMatches cp database spec = buildExpSpecXCorr cp spec $ \specExp -> do
+
+    finish `fmap` foldlM record nomatch [ score specExp peptide |
+                                            protein <- candidates database,
+                                            peptide <- fragments protein
+                                        ]
+    where
+        candidates = findCandidates cp spec . map (digestProtein cp)
+        finish     = reverse . catMaybes
+
+        record l   = fmap $ tail . flip (insertBy cmp) l . Just
+        n          = max (numMatches cp) (numMatchesDetail cp)
+        nomatch    = replicate n Nothing
+
+        cmp (Just x) (Just y) = compare (scoreXC x) (scoreXC y)
+        cmp _        _        = GT
+
+        score e@(XCorrSpecExp bnds _) p = do
+            buildThrySpecXCorr cp bnds (round (charge spec)) p $ \t -> do
+            sequestXC cp e t >>= \s -> do
+
+            return $ Match { scoreXC  = s, candidate = p }
+
+#if 0
 searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> MatchCollection
 searchForMatches cp database spec = finish $
     foldl' record nomatch [ score peptide |
@@ -82,6 +121,7 @@ searchForMatches cp database spec = finish $
 
         cmp (Just x) (Just y) = compare (scoreXC x) (scoreXC y)
         cmp _        _        = GT
+#endif
 
 
 --
@@ -101,6 +141,32 @@ findCandidates cp spec =
 -- Scoring
 --------------------------------------------------------------------------------
 
+--
+-- Score a peptide against the observed intensity spectrum. The sequest cross
+-- correlation is the dot product between the theoretical representation and the
+-- preprocessed experimental spectra.
+--
+sequestXC :: ConfigParams -> XCorrSpecExp -> XCorrSpecThry -> IO Float
+sequestXC _cp (XCorrSpecExp (m,n) d_exp) (XCorrSpecThry (p,q) d_thry) =
+    CUDA.allocaBytes bytes $ \res      -> do
+    zipWithPlusif d_thry d_exp res len >> do
+    reducePlusf res len >>= \x -> return (x / 10000)
+    where
+      len   = min (n-m) (q-p)
+      bytes = fromIntegral len * fromIntegral (sizeOf (undefined::Float))
+
+
+{# fun unsafe zipWithPlusif
+    { withDevicePtr* `DevicePtr Int'   ,
+      withDevicePtr* `DevicePtr Float' ,
+      withDevicePtr* `DevicePtr Float' ,
+                     `Int'             } -> `()' #}
+
+{# fun unsafe reducePlusf
+    { withDevicePtr* `DevicePtr Float' ,
+                     `Int'             } -> `Float' cFloatConv #}
+
+#if 0
 --
 -- Explicitly de-forested array dot product [P. Walder, Deforestation, 1988]
 --
@@ -126,4 +192,5 @@ sequestXC cp spec v sv = (dot v w) / 10000
         cutoff = 50 + precursor spec * charge spec
         (m,n)  = bounds v
         bnds   = (m, min n (bin cutoff))
+#endif
 
