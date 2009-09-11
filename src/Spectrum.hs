@@ -101,12 +101,6 @@ buildExpSpecXCorr cp s f =
     in  CUDA.withArray (elems sp) $ \sp' ->
         f (XCorrSpecExp (bounds sp) sp')
 
-{-
-buildExpSpecXCorr :: ConfigParams -> Spectrum -> IO XCorrSpecExp
-buildExpSpecXCorr cp = export . calculateXCorr . normaliseByRegion . observedIntensity cp
-    where
-        export a = XCorrSpecExp (bounds a) `fmap` CUDA.newArray (elems a)
--}
 
 --
 -- Generate an intensity array for the observed spectrum. The square root of the
