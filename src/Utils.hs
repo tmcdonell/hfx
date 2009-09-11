@@ -11,6 +11,7 @@
 module Utils where
 
 import Data.Int
+import Data.Bits
 import Data.Array
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as L
@@ -36,6 +37,18 @@ subFoldA' f q a i = go q i
 --
 subFoldA1' :: Ix k => (a -> a -> a) -> Array k a -> [k] -> a
 subFoldA1' f a i = subFoldA' f (a ! head i) a (tail i)
+
+
+--------------------------------------------------------------------------------
+-- Bits
+--------------------------------------------------------------------------------
+
+isPow2 :: Bits a => a -> Bool
+isPow2 x = x .&. (x-1) == 0
+
+ceilPow2 :: (Bits a, Integral a) => a -> a
+ceilPow2 x | isPow2 x   = x
+           | otherwise  = 1 `shiftL` ceiling (logBase 2 (fromIntegral x)::Double)
 
 
 --------------------------------------------------------------------------------
