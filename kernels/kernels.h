@@ -17,7 +17,7 @@ extern "C" {
 // Ion Series
 // -----------------------------------------------------------------------------
 void
-k_buildXCorrSpecThry
+addIons
 (
     int                 charge,
     float               *b_ions,

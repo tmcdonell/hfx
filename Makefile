@@ -9,6 +9,8 @@ EXECUTABLE	:= sequest
 KERNEL		:= sequest-kernels
 
 HSMAIN		:= src/Main.hs
+CHSFILES	:= src/IonSeries.chs
+
 SUBDIRS		:= kernels
 EXTRALIBS	 = $(KERNEL)$(LIBSUFFIX)
 

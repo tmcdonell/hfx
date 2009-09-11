@@ -66,7 +66,7 @@ addIonsY(float mass, int charge, int *spec)
  */
 template <bool lengthIsPow2>
 __global__ static void
-addIons
+addIons_core
 (
     int          max_charge,
     float        *b_ions,
@@ -94,7 +94,7 @@ addIons
 
 
 void
-k_buildXCorrSpecThry
+addIons
 (
     int          max_charge,
     float        *b_ions,
@@ -110,8 +110,8 @@ k_buildXCorrSpecThry
     (void) len_spec;
 
     if (isPow2(len_ions))
-        addIons<true><<<blocks,threads>>>(max_charge, b_ions, y_ions, spec, len_ions);
+        addIons_core<true><<<blocks,threads>>>(max_charge, b_ions, y_ions, spec, len_ions);
     else
-        addIons<false><<<blocks,threads>>>(max_charge, b_ions, y_ions, spec, len_ions);
+        addIons_core<false><<<blocks,threads>>>(max_charge, b_ions, y_ions, spec, len_ions);
 }
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP, ForeignFunctionInterface #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : IonSeries
@@ -12,9 +13,13 @@
 
 module IonSeries where
 
-import Mass
+#include "kernels/kernels.h"
+
 import Config
 import Protein
+
+import C2HS
+import qualified Foreign.CUDA as CUDA
 
 
 --------------------------------------------------------------------------------
@@ -25,7 +30,12 @@ import Protein
 -- The mz/intensity spectrum array for the theoretical spectrum. Keep this as a
 -- sparse array, as there are so few elements compared to the experimental data.
 --
-type XCorrSpecThry = [(Float, Float)]
+-- XXX: Changed to a dense array on the device, to facilitate eventual dot
+-- product operation (and because my cuda-fu is weak...)
+--
+data XCorrSpecThry = XCorrSpecThry
+        (Int,Int)
+        (CUDA.DevicePtr Int)
 
 
 --------------------------------------------------------------------------------
@@ -34,7 +44,62 @@ type XCorrSpecThry = [(Float, Float)]
 
 --
 -- Generate the theoretical spectral representation of a peptide from its
--- character code sequence.
+-- character code sequence, and do something useful with it. The device memory
+-- is deallocated once the action completes.
+--
+buildThrySpecXCorr :: ConfigParams
+                   -> (Int,Int)                 -- ^ bounds of the output array
+                   -> Int                       -- ^ precursor charge state
+                   -> Peptide                   -- ^ peptide to build spectrum for
+                   -> (XCorrSpecThry -> IO b)   -- ^ action to perform
+                   -> IO b
+buildThrySpecXCorr _cp (m,n) chrg pep fun =
+    CUDA.allocaBytes bytes $ \spec ->
+    CUDA.memset spec bytes 0 >>= \rv -> case rv of
+      Just e  -> error e
+      Nothing -> CUDA.withArrayLen (bIonLadder pep) $ \n b_ions -> do
+                 CUDA.withArray    (yIonLadder pep) $ \y_ions   -> do
+                 addIons chrg b_ions y_ions spec n len >> do
+
+                 fun (XCorrSpecThry (m,n) spec)
+    where
+      len   = n - m + 1
+      bytes = fromIntegral len * fromIntegral (sizeOf (undefined::Int))
+
+
+#if 0
+buildThrySpecXCorr :: ConfigParams -> Int -> Int -> Peptide -> IO XCorrSpecThry
+buildThrySpecXCorr _cp len_spec charge peptide = do
+    spec <- CUDA.forceEither `fmap` CUDA.malloc bytes
+    rv   <- CUDA.memset spec bytes 0
+
+    case rv of
+      Just e  -> error e
+      Nothing -> CUDA.withArrayLen (bIonLadder peptide) $ \len_ions b_ions -> do
+                 CUDA.withArray    (yIonLadder peptide) $ \y_ions -> do
+                   addIons charge b_ions y_ions spec len_ions len_spec
+
+    return $ XCorrSpecThry (0,len_spec) spec
+
+    where
+      bytes = fromIntegral (len_spec * sizeOf (undefined::Int))
+#endif
+
+
+{# fun unsafe addIons
+    { cIntConv          `Int'                  ,
+      withDevicePtr*    `CUDA.DevicePtr Float' ,
+      withDevicePtr*    `CUDA.DevicePtr Float' ,
+      withDevicePtr*    `CUDA.DevicePtr Int'   ,
+      cIntConv          `Int'                  ,
+      cIntConv          `Int'                  } -> `()' #}
+  where
+    withDevicePtr = CUDA.withDevicePtr
+
+
+#if 0
+--
+-- Sequential version
 --
 buildThrySpecXCorr :: ConfigParams -> Float -> Peptide -> XCorrSpecThry
 buildThrySpecXCorr _cp charge peptide =
@@ -43,7 +108,6 @@ buildThrySpecXCorr _cp charge peptide =
         addIons c = concatMap (addIonsAB c) b_ions ++ concatMap (addIonsY c) y_ions
         b_ions    = bIonLadder peptide
         y_ions    = yIonLadder peptide
-
 
 --
 -- Convert mass to mass/charge ratio
@@ -78,4 +142,5 @@ addIonsY charge mass =
         (m,50), (m+1,25), (m-1,25),
         (m - massNH3/charge, 10)
       ]
+#endif
 
