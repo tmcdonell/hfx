@@ -4,6 +4,12 @@
 
 .SUFFIXES : .cu .cu_dbg.o .c_dbg.o .cpp_dbg.o .cu_rel.o .c_rel.o .cpp_rel.o .cubin .ptx
 
+# No CUDA compatible device present
+# MAIN_DEVICE     := $(shell ghc -e "Control.Monad.liftM (Data.Either.either id Foreign.CUDA.deviceName) (Foreign.CUDA.props 0)")
+# ifeq ($(MAIN_DEVICE),"Device Emulation (CPU)")
+#     emu		:= 1
+# endif
+
 # Add new SM Versions here as devices with new Compute Capability are released
 SM_VERSIONS     := sm_10 sm_11 sm_12 sm_13
 
@@ -67,7 +73,7 @@ GHCWARN_FLAGS := \
 
 # Compiler-specific flags
 NVCCFLAGS       :=
-GHCFLAGS         = -i$(SRCDIR) -i$(OBJDIR) -odir $(OBJDIR) -hidir $(OBJDIR) --make
+GHCFLAGS         = $(GHCWARN_FLAGS) -i$(SRCDIR) -i$(OBJDIR) -odir $(OBJDIR) -hidir $(OBJDIR) --make
 CXXFLAGS        := $(CXXWARN_FLAGS)
 CFLAGS          := $(CWARN_FLAGS)
 
@@ -155,7 +161,7 @@ ifneq ($(DYNAMIC_LIB),)
     CFLAGS      += -fPIC
     CXXFLAGS    += -fPIC
     NVCCFLAGS   += -Xcompiler -fPIC
-    LINKLINE     = $(LINK) -dynamiclib -o $(TARGET) $(OBJS) $(LIB)
+    LINKLINE     = $(LINK) -dynamiclib -o $(TARGET) -install_name "@rpath/$(notdir $(TARGET))" $(OBJS) $(LIB)
 else
     TARGETDIR   := $(BINDIR)/$(BINSUBDIR)
     TARGET      := $(TARGETDIR)/$(EXECUTABLE)
