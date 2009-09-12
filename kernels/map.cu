@@ -4,16 +4,15 @@
  * License   : BSD
  */
 
-#ifndef __MAP_KERNEL__
-#define __MAP_KERNEL__
-
+#include "utils.h"
+#include "kernels.h"
 #include "operator.h"
 
 /*
  * Apply a function each element of an array. A single thread is used to compute
  * each result. The input and output array may be coincident.
  */
-template <class fn, bool lengthIsPow2 typename Ta, typename Tb>
+template <class fn, bool lengthIsPow2, typename Ta, typename Tb>
 __global__ static void
 map_core
 (
@@ -46,6 +45,4 @@ map
     else
         map_core< fn,false ><<<blocks,threads>>>(xs, out, length);
 }
-
-#endif
 

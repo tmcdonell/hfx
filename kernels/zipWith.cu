@@ -4,9 +4,8 @@
  * License   : BSD
  */
 
-#ifndef __ZIPWITH_KERNEL__
-#define __ZIPWITH_KERNEL__
-
+#include "utils.h"
+#include "kernels.h"
 #include "operator.h"
 
 /*
@@ -49,5 +48,18 @@ zipWith
         zipWith_core< op,false ><<<blocks,threads>>>(xs, ys, zs, length);
 }
 
-#endif
+
+// -----------------------------------------------------------------------------
+// Instances
+// -----------------------------------------------------------------------------
+
+void zipWithPlusif(int *xs, float *ys, float *zs, int N)
+{
+    zipWith< Plus<int, float, float> >(xs, ys, zs, N);
+}
+
+void zipWithTimesif(int *xs, float *ys, float *zs, int N)
+{
+    zipWith< Times<int, float, float> >(xs, ys, zs, N);
+}
 

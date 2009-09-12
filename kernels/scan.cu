@@ -4,12 +4,8 @@
  * License   : BSD
  */
 
-#ifndef __SCAN_KERNEL__
-#define __SCAN_KERNEL__
-
 #include "utils.h"
 #include "operator.h"
-#include "shared_mem.h"
 
 #include "cudpp/cudpp_globals.h"
 #include "cudpp/scan_kernel.cu"
@@ -188,5 +184,18 @@ scan
     scan_finalise<T>(&plan);
 }
 
-#endif
+
+// -----------------------------------------------------------------------------
+// Instances
+// -----------------------------------------------------------------------------
+
+void scanl1Plusi(int *in, int *out, int N)
+{
+    scan< Plus<int>, int, false, false >(in, out, N);
+}
+
+void scanr1Plusi(int *in, int *out, int N)
+{
+    scan< Plus<int>, int, true, false >(in, out, N);
+}
 

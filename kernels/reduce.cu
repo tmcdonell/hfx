@@ -4,13 +4,11 @@
  * License   : BSD
  */
 
-#ifndef __REDUCE_KERNEL__
-#define __REDUCE_KERNEL__
-
 #define MAX_THREADS     128
 #define MAX_BLOCKS      64
 
 #include "utils.h"
+#include "kernels.h"
 #include "operator.h"
 #include "shared_mem.h"
 
@@ -212,7 +210,14 @@ reduce
     return gpu_result;
 }
 
-#undef MAX_THREADS
-#undef MAX_BLOCKS
-#endif
+
+// -----------------------------------------------------------------------------
+// Instances
+// -----------------------------------------------------------------------------
+
+float reducePlusf(float *xs, int N)
+{
+    float result = reduce< Plus<float> >(xs, N);
+    return result;
+}
 
