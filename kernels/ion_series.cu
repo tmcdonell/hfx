@@ -4,9 +4,6 @@
  * License   : BSD
  */
 
-//#include <host_defines.h>
-//#include <device_functions.h>
-
 #include "mass.h"
 #include "utils.h"
 #include "kernels.h"

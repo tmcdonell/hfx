@@ -60,10 +60,10 @@ buildThrySpecXCorr :: ConfigParams
                    -> (XCorrSpecThry -> IO b)   -- ^ action to perform
                    -> IO b
 buildThrySpecXCorr _cp (m,n) chrg pep action =
-    CUDA.allocaBytesMemset bytes 0     $ \spec     -> do
-    CUDA.withArrayLen (bIonLadder pep) $ \l b_ions -> do
-    CUDA.withArray    (yIonLadder pep) $ \y_ions   -> do
-    addIons chrg b_ions y_ions spec l len >> do
+    CUDA.allocaBytesMemset bytes 0     $ \spec     ->
+    CUDA.withArrayLen (bIonLadder pep) $ \l b_ions ->
+    CUDA.withArray    (yIonLadder pep) $ \y_ions   ->
+    addIons chrg b_ions y_ions spec l len >>
 
     action (XCorrSpecThry (m,n) spec)
 
@@ -77,8 +77,8 @@ buildThrySpecXCorr _cp (m,n) chrg pep action =
       withDevicePtr*    `DevicePtr Float' ,
       withDevicePtr*    `DevicePtr Float' ,
       withDevicePtr*    `DevicePtr Int'   ,
-      cIntConv          `Int'             ,
-      cIntConv          `Int'             } -> `()' #}
+                        `Int'             ,
+                        `Int'             } -> `()' #}
 
 #if 0
 buildThrySpecXCorr :: ConfigParams -> Int -> Int -> Peptide -> IO XCorrSpecThry

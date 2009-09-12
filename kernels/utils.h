@@ -11,6 +11,10 @@
 #include <math.h>
 #include <stdio.h>
 
+#ifndef _DEBUG
+#define assert(e)               ((void)0)
+#else
+
 /*
  * Test the given expression, and abort the program if it evaluates to false.
  */
@@ -18,6 +22,7 @@
     ((void) ((e) ? (void(0)) : __assert (#e, __FILE__, __LINE__)))
 #define __assert(e, file, line) \
     ((void) fprintf (stderr, "%s:%u: failed assertion `%s'\n", file, line, e), abort())
+#endif
 
 
 /*

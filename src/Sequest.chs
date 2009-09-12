@@ -74,7 +74,7 @@ data Match = Match
 -- Only peptides which fall within this range will be considered.
 --
 searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> IO MatchCollection
-searchForMatches cp database spec = buildExpSpecXCorr cp spec $ \specExp -> do
+searchForMatches cp database spec = buildExpSpecXCorr cp spec $ \specExp ->
 
     finish `fmap` foldlM record nomatch [ score specExp peptide |
                                             protein <- candidates database,
@@ -91,10 +91,9 @@ searchForMatches cp database spec = buildExpSpecXCorr cp spec $ \specExp -> do
         cmp (Just x) (Just y) = compare (scoreXC x) (scoreXC y)
         cmp _        _        = GT
 
-        score e@(XCorrSpecExp bnds _) p = do
-            buildThrySpecXCorr cp bnds (round (charge spec)) p $ \t -> do
-            sequestXC cp e t >>= \s -> do
-
+        score e@(XCorrSpecExp bnds _) p =
+            buildThrySpecXCorr cp bnds (round (charge spec)) p $ \t ->
+            sequestXC cp e t >>= \s ->
             return $ Match { scoreXC  = s, candidate = p }
 
 #if 0
