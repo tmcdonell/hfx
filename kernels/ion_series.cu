@@ -10,18 +10,11 @@
 
 
 /*
- * Convert a given mass into a mass/charge ratio, and locate the appropriate
- * spectrum bin for the peak.
+ * Convert a given mass into a mass/charge ratio
+ * Locate the appropriate spectrum bin for a peak.
  */
-__device__ int
-binIonMZ(float mass, int charge)
-{
-    int bin = rintf((mass + massH * charge) / (charge * binWidthMono));
-#ifdef __DEVICE_EMULATION__
-    assert(bin >= 0 && bin < 2048);
-#endif
-    return bin;
-}
+__device__ float ionMZ(float m, float c) { return (m + massH * c) / c; }
+__device__ int   bin(float x) { return rintf(x / binWidthMono); }
 
 
 /*
@@ -29,31 +22,33 @@ binIonMZ(float mass, int charge)
  * corresponding to the neutral losses of H2O and NH3.
  */
 __device__ void
-addIonsAB(float mass, int charge, int *spec)
+addIonsAB(float mass, float charge, int *spec)
 {
     // A
-    atomicMax(&spec[binIonMZ(mass - massCO, charge)], 10);
+    atomicMax(&spec[bin(ionMZ(mass - massCO, charge))], 10);
 
     // B
-    int m = binIonMZ(mass, charge);
+    float m = ionMZ(mass, charge);
+    int   b = bin(m);
 
-    atomicMax(&spec[m],   50);
-    atomicMax(&spec[m+1], 25);
-    atomicMax(&spec[m-1], 25);
-    atomicMax(&spec[binIonMZ(mass - massH2O, charge)], 10);
-    atomicMax(&spec[binIonMZ(mass - massNH3, charge)], 10);
+    atomicMax(&spec[b],   50);
+    atomicMax(&spec[b+1], 25);
+    atomicMax(&spec[b-1], 25);
+    atomicMax(&spec[bin(m - massH2O/charge)], 10);
+    atomicMax(&spec[bin(m - massNH3/charge)], 10);
 }
 
 
 __device__ void
-addIonsY(float mass, int charge, int *spec)
+addIonsY(float mass, float charge, int *spec)
 {
-    int m = binIonMZ(mass + massH2O, charge);
+    float m = ionMZ(mass + massH2O, charge);
+    int   b = bin(m);
 
-    atomicMax(&spec[m],   50);
-    atomicMax(&spec[m+1], 25);
-    atomicMax(&spec[m-1], 25);
-    atomicMax(&spec[binIonMZ(mass - massNH3, charge)], 10);
+    atomicMax(&spec[b],   50);
+    atomicMax(&spec[b+1], 25);
+    atomicMax(&spec[b-1], 25);
+    atomicMax(&spec[bin(m - massNH3/charge)], 10);
 }
 
 
@@ -82,8 +77,8 @@ addIons_core
 
         do
         {
-            addIonsAB(b_mass, charge, spec);
-            addIonsY (y_mass, charge, spec);
+            addIonsAB(b_mass, (float) charge, spec);
+            addIonsY (y_mass, (float) charge, spec);
         }
         while (++charge < max_charge);
     }
