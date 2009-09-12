@@ -23,10 +23,11 @@
 * @{
 */
 
-#include "cta/scan_cta.cu"
-#include <cudpp_globals.h>
 #include <math.h>
 #include <cstdio>
+
+#include "cudpp/scan_cta.cu"
+#include "cudpp/cudpp_globals.h"
 
 /**
   * @brief Template class containing compile-time parameters to the segmented scan functions
@@ -44,7 +45,7 @@
   * @param fullBlock True if all blocks in this scan are full (CTA_SIZE * SCAN_ELEMENTS_PER_THREAD elements)
   * @param exclusivity True for exclusive scans, false for inclusive scans
 */
-template <class T, CUDPPOperator oper, bool backward, bool exclusivity,
+template <class T, class oper, bool backward, bool exclusivity,
           bool doShiftFlags, bool fullBlock, bool sums, bool sm12OrBetter>
 class SegmentedScanTraits
 {
@@ -65,13 +66,10 @@ public:
 
 
     //! The operator function used for segmented scan
-    static __device__ T op(const T &a, const T &b)
-    {
-        return Operator<T, oper>::op(a, b);
-    }
+    static __device__ T op(const T &a, const T &b) { return oper::apply(a, b); }
 
     //! The identity value used by segmented scan
-    static __device__ T identity() { return Operator<T, oper>::identity(); }
+    static __device__ T identity() { return oper::identity(); }
 };
 
 /**
@@ -1205,13 +1203,13 @@ void segmentedScanCTA(T            *s_data,
         if (traits::isBackward())
         {
             mIndex =
-                reduceCTA<unsigned int, ScanTraits<unsigned int, CUDPP_MAX, false, false, false, false, true>,
+                reduceCTA<unsigned int, ScanTraits<unsigned int, Max<T>, false, false, false, false, true>,
                       (2 * CTA_SIZE)>(s_indices);
         }
         else
         {
             mIndex =
-                reduceCTA<unsigned int, ScanTraits<unsigned int, CUDPP_MIN, false, false, false, false, true>,
+                reduceCTA<unsigned int, ScanTraits<unsigned int, Min<T>, false, false, false, false, true>,
                       (2 * CTA_SIZE)>(s_indices);
         }
     }

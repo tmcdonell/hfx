@@ -31,9 +31,9 @@
 * @{
 */
 
-#include <cudpp_globals.h>
-#include "cta/segmented_scan_cta.cu"
-#include "sharedmem.h"
+#include "cudpp/cudpp_globals.h"
+#include "cudpp/segmented_scan_cta.cu"
+#include "shared_mem.h"
 
 /**
 * @brief Main segmented scan kernel
