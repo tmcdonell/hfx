@@ -54,3 +54,8 @@ void zipWithPlusif(int *xs, float *ys, float *zs, int N)
     zipWith< Plus<int, float, float> >(xs, ys, zs, N);
 }
 
+void zipWithTimesif(int *xs, float *ys, float *zs, int N)
+{
+    zipWith< Times<int, float, float> >(xs, ys, zs, N);
+}
+

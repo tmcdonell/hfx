@@ -149,14 +149,14 @@ findCandidates cp spec =
 sequestXC :: ConfigParams -> XCorrSpecExp -> XCorrSpecThry -> IO Float
 sequestXC _cp (XCorrSpecExp (m,n) d_exp) (XCorrSpecThry (p,q) d_thry) =
     CUDA.allocaBytes bytes $ \res      -> do
-    zipWithPlusif d_thry d_exp res len >> do
+    zipWithTimesif d_thry d_exp res len >> do
     reducePlusf res len >>= \x -> return (x / 10000)
     where
       len   = min (n-m) (q-p)
       bytes = fromIntegral len * fromIntegral (sizeOf (undefined::Float))
 
 
-{# fun unsafe zipWithPlusif
+{# fun unsafe zipWithTimesif
     { withDevicePtr* `DevicePtr Int'   ,
       withDevicePtr* `DevicePtr Float' ,
       withDevicePtr* `DevicePtr Float' ,

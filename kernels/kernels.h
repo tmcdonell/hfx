@@ -37,6 +37,7 @@ void scanl1Plusi(int *in, int *out, int N);
 void scanr1Plusi(int *in, int *out, int N);
 
 void zipWithPlusif(int *xs, float *ys, float *zs, int N);
+void zipWithTimesif(int *xs, float *ys, float *zs, int N);
 
 
 #ifdef __cplusplus
