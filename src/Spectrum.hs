@@ -27,6 +27,7 @@ import Data.List
 import Data.Array.Unboxed
 import Data.ByteString.Lazy (ByteString)
 
+import C2HS
 import qualified Foreign.CUDA as CUDA
 
 
@@ -81,8 +82,8 @@ mzRange spec =  minmax (peaks spec)
 -- cross-correlation ranking
 --
 data XCorrSpecExp = XCorrSpecExp
-        (Int,Int)               -- bounds of the array
-        (CUDA.DevicePtr Float)  -- array data, stored on the device
+        (Int,Int)                       -- bounds of the array
+        (CUDA.DevicePtr CFloat)         -- array data, stored on the device
 
 
 --------------------------------------------------------------------------------
@@ -106,7 +107,7 @@ buildExpSpecXCorr :: ConfigParams
                   -> IO a
 buildExpSpecXCorr cp spec action =
     let sp = calculateXCorr . normaliseByRegion . observedIntensity cp $ spec
-    in  CUDA.withArray (elems sp) $ \sp' ->
+    in  CUDA.withArray (map cFloatConv . elems $ sp) $ \sp' ->
         action (XCorrSpecExp (bounds sp) sp')
 
 

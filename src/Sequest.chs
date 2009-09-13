@@ -74,8 +74,8 @@ data Match = Match
 -- Only peptides which fall within this range will be considered.
 --
 searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> IO MatchCollection
-searchForMatches cp database spec = buildExpSpecXCorr cp spec $ \specExp ->
-
+searchForMatches cp database spec =
+    buildExpSpecXCorr cp spec $ \specExp ->
     finish `fmap` foldlM record nomatch [ score specExp peptide |
                                             protein <- candidates database,
                                             peptide <- fragments protein
@@ -152,18 +152,19 @@ sequestXC _cp (XCorrSpecExp (m,n) d_exp) (XCorrSpecThry (p,q) d_thry) =
     reducePlusf res len >>= \x -> return (x / 10000)
     where
       len   = min (n-m) (q-p)
-      bytes = fromIntegral len * fromIntegral (sizeOf (undefined::Float))
+      bytes = fromIntegral len * fromIntegral (sizeOf (undefined::CFloat))
 
 
 {# fun unsafe zipWithTimesif
-    { withDevicePtr* `DevicePtr Int'   ,
-      withDevicePtr* `DevicePtr Float' ,
-      withDevicePtr* `DevicePtr Float' ,
-                     `Int'             } -> `()' #}
+    { withDevicePtr* `DevicePtr CInt'   ,
+      withDevicePtr* `DevicePtr CFloat' ,
+      withDevicePtr* `DevicePtr CFloat' ,
+                     `Int'              } -> `()' #}
 
 {# fun unsafe reducePlusf
-    { withDevicePtr* `DevicePtr Float' ,
-                     `Int'             } -> `Float' cFloatConv #}
+    { withDevicePtr* `DevicePtr CFloat' ,
+                     `Int'              } -> `Float' cFloatConv #}
+
 
 #if 0
 --

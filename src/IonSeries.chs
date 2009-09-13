@@ -41,7 +41,7 @@ import qualified Foreign.CUDA as CUDA
 --
 data XCorrSpecThry = XCorrSpecThry
         (Int,Int)
-        (CUDA.DevicePtr Int)
+        (CUDA.DevicePtr CInt)
 
 
 --------------------------------------------------------------------------------
@@ -61,8 +61,8 @@ buildThrySpecXCorr :: ConfigParams
                    -> IO b
 buildThrySpecXCorr _cp (m,n) chrg pep action =
     CUDA.allocaBytesMemset bytes 0     $ \spec     ->
-    CUDA.withArrayLen (bIonLadder pep) $ \l b_ions ->
-    CUDA.withArray    (yIonLadder pep) $ \y_ions   ->
+    CUDA.withArrayLen (map cFloatConv . bIonLadder $ pep) $ \l b_ions ->
+    CUDA.withArray    (map cFloatConv . yIonLadder $ pep) $ \y_ions   ->
     addIons chrg b_ions y_ions spec l len >>
 
     action (XCorrSpecThry (m,n) spec)
@@ -73,12 +73,12 @@ buildThrySpecXCorr _cp (m,n) chrg pep action =
 
 
 {# fun unsafe addIons
-    { cIntConv          `Int'             ,
-      withDevicePtr*    `DevicePtr Float' ,
-      withDevicePtr*    `DevicePtr Float' ,
-      withDevicePtr*    `DevicePtr Int'   ,
-                        `Int'             ,
-                        `Int'             } -> `()' #}
+    { cIntConv          `Int'              ,
+      withDevicePtr*    `DevicePtr CFloat' ,
+      withDevicePtr*    `DevicePtr CFloat' ,
+      withDevicePtr*    `DevicePtr CInt'   ,
+                        `Int'              ,
+                        `Int'              } -> `()' #}
 
 #if 0
 buildThrySpecXCorr :: ConfigParams -> Int -> Int -> Peptide -> IO XCorrSpecThry
