@@ -22,33 +22,49 @@ __device__ int   bin(float x) { return rintf(x / binWidthMono); }
  * corresponding to the neutral losses of H2O and NH3.
  */
 __device__ void
-addIonsAB(float mass, float charge, int *spec)
+addIonsAB(float mass, float charge, int *spec, unsigned int N)
 {
+    int   idx;
+    float m;
+
     // A
-    atomicMax(&spec[bin(ionMZ(mass - massCO, charge))], 10);
+    idx = bin(ionMZ(mass - massCO, charge));
+    if (0 <= idx && idx < N) atomicMax(&spec[idx], 10);
 
     // B
-    float m = ionMZ(mass, charge);
-    int   b = bin(m);
+    m   = ionMZ(mass, charge);
+    idx = bin(m);
 
-    atomicMax(&spec[b],   50);
-    atomicMax(&spec[b+1], 25);
-    atomicMax(&spec[b-1], 25);
-    atomicMax(&spec[bin(m - massH2O/charge)], 10);
-    atomicMax(&spec[bin(m - massNH3/charge)], 10);
+    if (1 <= idx && idx < N-1)
+    {
+        atomicMax(&spec[idx],   50);
+        atomicMax(&spec[idx+1], 25);
+        atomicMax(&spec[idx-1], 25);
+    }
+
+    idx = bin(m - massH2O/charge);
+    if (0 <= idx && idx < N) atomicMax(&spec[idx], 10);
+
+    idx = bin(m - massNH3/charge);
+    if (0 <= idx && idx < N) atomicMax(&spec[idx], 10);
 }
 
 
 __device__ void
-addIonsY(float mass, float charge, int *spec)
+addIonsY(float mass, float charge, int *spec, unsigned int N)
 {
-    float m = ionMZ(mass + massH2O, charge);
-    int   b = bin(m);
+    float m   = ionMZ(mass + massH2O, charge);
+    int   idx = bin(m);
 
-    atomicMax(&spec[b],   50);
-    atomicMax(&spec[b+1], 25);
-    atomicMax(&spec[b-1], 25);
-    atomicMax(&spec[bin(m - massNH3/charge)], 10);
+    if (1 <= idx && idx < N-1)
+    {
+        atomicMax(&spec[idx],   50);
+        atomicMax(&spec[idx+1], 25);
+        atomicMax(&spec[idx-1], 25);
+    }
+
+    idx = bin(m - massNH3/charge);
+    if (0 <= idx && idx < N) atomicMax(&spec[idx], 10);
 }
 
 
@@ -64,7 +80,8 @@ addIons_core
     float        *b_ions,
     float        *y_ions,
     int          *spec,
-    unsigned int len_ions
+    unsigned int len_ions,
+    unsigned int len_spec
 )
 {
     unsigned int idx = threadIdx.x + blockDim.x * blockIdx.x;
@@ -77,8 +94,8 @@ addIons_core
 
         do
         {
-            addIonsAB(b_mass, (float) charge, spec);
-            addIonsY (y_mass, (float) charge, spec);
+            addIonsAB(b_mass, (float) charge, spec, len_spec);
+            addIonsY (y_mass, (float) charge, spec, len_spec);
         }
         while (++charge < max_charge);
     }
@@ -99,11 +116,9 @@ addIons
     unsigned int threads = min(ceilPow2(len_ions), 512);
     unsigned int blocks  = (len_ions + threads - 1) / threads;
 
-    (void) len_spec;
-
     if (isPow2(len_ions))
-        addIons_core<true><<<blocks,threads>>>(max_charge, b_ions, y_ions, spec, len_ions);
+        addIons_core<true><<<blocks,threads>>>(max_charge, b_ions, y_ions, spec, len_ions, len_spec);
     else
-        addIons_core<false><<<blocks,threads>>>(max_charge, b_ions, y_ions, spec, len_ions);
+        addIons_core<false><<<blocks,threads>>>(max_charge, b_ions, y_ions, spec, len_ions, len_spec);
 }
 
