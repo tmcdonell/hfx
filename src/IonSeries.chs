@@ -23,6 +23,9 @@ module IonSeries
 import Config
 import Protein
 
+--import Mass
+--import Data.Array.Unboxed
+
 import C2HS
 import Foreign.CUDA (DevicePtr, withDevicePtr)
 import qualified Foreign.CUDA as CUDA
@@ -48,6 +51,7 @@ data XCorrSpecThry = XCorrSpecThry
 -- Theoretical Spectrum
 --------------------------------------------------------------------------------
 
+#if 1
 --
 -- Generate the theoretical spectral representation of a peptide from its
 -- character code sequence, and do something useful with it. The device memory
@@ -79,7 +83,7 @@ buildThrySpecXCorr _cp (m,n) chrg pep action =
       withDevicePtr*    `DevicePtr CInt'   ,
                         `Int'              ,
                         `Int'              } -> `()' #}
-
+#endif
 #if 0
 buildThrySpecXCorr :: ConfigParams -> Int -> Int -> Peptide -> IO XCorrSpecThry
 buildThrySpecXCorr _cp len_spec charge peptide = do
@@ -108,7 +112,27 @@ buildThrySpecXCorr _cp charge peptide =
         addIons c = concatMap (addIonsAB c) b_ions ++ concatMap (addIonsY c) y_ions
         b_ions    = bIonLadder peptide
         y_ions    = yIonLadder peptide
+#endif
+#if 0
+buildThrySpecXCorr :: ConfigParams
+                   -> (Int,Int)                 -- ^ bounds of the output array
+                   -> Int                       -- ^ precursor charge state
+                   -> Peptide                   -- ^ peptide to build spectrum for
+                   -> (XCorrSpecThry -> IO b)   -- ^ action to perform
+                   -> IO b
+buildThrySpecXCorr cp bnds chrg pep action =
+    CUDA.withArray (map cIntConv . elems $ spec) $ \s' -> action (XCorrSpecThry bnds s')
+    where
+        spec      :: Array Int Int
+        spec      = accumArray max 0 bnds [(bin i,e) | (i,e) <- concatMap addIons [1 .. (max 1 (fromIntegral chrg-1))], inRange bnds (bin i)]
+        bin mz    = round (mz / width)
+        width     = if aaMassTypeMono cp then 1.0005079 else 1.0011413
 
+        addIons c = concatMap (addIonsAB c) b_ions ++ concatMap (addIonsY c) y_ions
+        b_ions    = bIonLadder pep
+        y_ions    = yIonLadder pep
+#endif
+#if 0
 --
 -- Convert mass to mass/charge ratio
 --
@@ -125,7 +149,7 @@ ionMZ m c = (m + massH*c) / c
 -- prediction of fragment ion abundances are not possible. Magnitude components
 -- are assigned based on empirical knowledge.
 --
-addIonsAB, addIonsY :: Float -> Float -> [(Float, Float)]
+addIonsAB, addIonsY :: Num a => Float -> Float -> [(Float, a)]
 addIonsAB charge mass = addIonsA : addIonsB
     where
         addIonsA = let m = ionMZ (mass - massCO) charge in (m, 10)
