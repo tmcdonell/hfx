@@ -28,7 +28,7 @@ import Data.Array.Unboxed
 import Data.ByteString.Lazy (ByteString)
 
 import C2HS
-import qualified Foreign.CUDA as CUDA
+import qualified Foreign.CUDA as G
 
 
 --------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ mzRange spec =  minmax (peaks spec)
 --
 data XCorrSpecExp = XCorrSpecExp
         (Int,Int)                       -- bounds of the array
-        (CUDA.DevicePtr CFloat)         -- array data, stored on the device
+        (G.DevicePtr CFloat)            -- array data, stored on the device
 
 
 --------------------------------------------------------------------------------
@@ -92,10 +92,7 @@ data XCorrSpecExp = XCorrSpecExp
 
 --
 -- Process the observed spectral peaks and generate an array suitable for
--- Sequest cross correlation analysis.
---
--- Instead of returning the array directly, we operate on it using the given
--- action, so the data can be released once the action completes (no device GC).
+-- Sequest cross correlation analysis
 --
 -- TODO: This goes via a temporary IArray, but it might have been possible to
 --       use a StorableArray and copy directly from that memory. Otherwise,
@@ -103,12 +100,12 @@ data XCorrSpecExp = XCorrSpecExp
 --
 buildExpSpecXCorr :: ConfigParams
                   -> Spectrum
-                  -> (XCorrSpecExp -> IO a)
-                  -> IO a
-buildExpSpecXCorr cp spec action =
+                  -> IO XCorrSpecExp
+buildExpSpecXCorr cp spec =
     let sp = calculateXCorr . normaliseByRegion . observedIntensity cp $ spec
-    in  CUDA.withArray (map cFloatConv . elems $ sp) $ \sp' ->
-        action (XCorrSpecExp (bounds sp) sp')
+    in do
+      d_ptr <- G.newArray . map cFloatConv . elems $ sp
+      return $ XCorrSpecExp (bounds sp) d_ptr
 
 
 --

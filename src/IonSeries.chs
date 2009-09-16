@@ -28,7 +28,7 @@ import Protein
 
 import C2HS
 import Foreign.CUDA (DevicePtr, withDevicePtr)
-import qualified Foreign.CUDA as CUDA
+import qualified Foreign.CUDA as G
 
 
 --------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ import qualified Foreign.CUDA as CUDA
 --
 data XCorrSpecThry = XCorrSpecThry
         (Int,Int)
-        (CUDA.DevicePtr CInt)
+        (G.DevicePtr CInt)
 
 
 --------------------------------------------------------------------------------
@@ -54,22 +54,20 @@ data XCorrSpecThry = XCorrSpecThry
 #if 1
 --
 -- Generate the theoretical spectral representation of a peptide from its
--- character code sequence, and do something useful with it. The device memory
--- is deallocated once the action completes.
+-- character code sequence
 --
 buildThrySpecXCorr :: ConfigParams
                    -> (Int,Int)                 -- ^ bounds of the output array
                    -> Int                       -- ^ precursor charge state
                    -> Peptide                   -- ^ peptide to build spectrum for
-                   -> (XCorrSpecThry -> IO b)   -- ^ action to perform
-                   -> IO b
-buildThrySpecXCorr _cp (m,n) chrg pep action =
-    CUDA.allocaBytesMemset bytes 0     $ \spec     ->
-    CUDA.withArrayLen (map cFloatConv . bIonLadder $ pep) $ \l b_ions ->
-    CUDA.withArray    (map cFloatConv . yIonLadder $ pep) $ \y_ions   ->
+                   -> IO XCorrSpecThry
+buildThrySpecXCorr _cp (m,n) chrg pep =
+    G.allocaBytesMemset bytes 0     $ \spec     ->
+    G.withArrayLen (map cFloatConv . bIonLadder $ pep) $ \l b_ions ->
+    G.withArray    (map cFloatConv . yIonLadder $ pep) $ \y_ions   ->
     addIons chrg b_ions y_ions spec l len >>
 
-    action (XCorrSpecThry (m,n) spec)
+    return (XCorrSpecThry (m,n) spec)
 
     where
       len   = n - m + 1

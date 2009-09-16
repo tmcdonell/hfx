@@ -40,7 +40,6 @@ import IonSeries
 
 import Data.List
 import Data.Maybe
-import Data.Foldable (foldlM)
 
 import C2HS
 import Foreign.CUDA (DevicePtr, withDevicePtr)
@@ -58,9 +57,9 @@ type MatchCollection = [Match]
 --
 data Match = Match
     {
---        scoreSP   :: (Int, Int),        -- Matched ions / total ions
-        scoreXC   :: Float,             -- Sequest cross-correlation score
-        candidate :: Peptide            -- The fragment that was examined
+        candidate :: Peptide,           -- The fragment that was examined
+        scoreXC   :: Float              -- Sequest cross-correlation score
+--        scoreSP   :: (Int, Int)         -- Matched ions / total ions
     }
     deriving (Eq, Show)
 
@@ -74,27 +73,29 @@ data Match = Match
 -- Only peptides which fall within this range will be considered.
 --
 searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> IO MatchCollection
-searchForMatches cp database spec =
-    buildExpSpecXCorr cp spec $ \specExp ->
-    finish `fmap` foldlM record nomatch [ score specExp peptide |
-                                            protein <- candidates database,
-                                            peptide <- fragments protein
-                                        ]
+searchForMatches cp database spec = do
+    specExp <- buildExpSpecXCorr cp spec
+    scores  <- sequence [ score specExp peptide |
+                            protein <- candidates database,
+                            peptide <- fragments protein
+                        ]
+
+    return . finish $ foldl' record nomatch scores
     where
+        specThry b = buildThrySpecXCorr cp b (round (charge spec))
         candidates = findCandidates cp spec . map (digestProtein cp)
         finish     = reverse . catMaybes
 
-        record l   = fmap $ tail . flip (insertBy cmp) l . Just
+        record l   = tail . flip (insertBy cmp) l . Just
         n          = max (numMatches cp) (numMatchesDetail cp)
         nomatch    = replicate n Nothing
 
-        cmp (Just x) (Just y) = compare (scoreXC x) (scoreXC y)
-        cmp _        _        = GT
+        score e p  = Match p `fmap` (specThry (bnds e) p >>= sequestXC cp e)
 
-        score e@(XCorrSpecExp bnds _) p =
-            buildThrySpecXCorr cp bnds (round (charge spec)) p $ \t ->
-            sequestXC cp e t >>= \s ->
-            return $ Match { scoreXC  = s, candidate = p }
+        bnds (XCorrSpecExp b _) = b
+        cmp (Just x) (Just y)   = compare (scoreXC x) (scoreXC y)
+        cmp _        _          = GT
+
 
 #if 0
 searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> MatchCollection

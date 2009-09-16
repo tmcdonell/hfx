@@ -60,7 +60,7 @@ title = map (map text) [[" # ", " (M+H)+  ", "deltCn", "XCorr", "Reference", "Pe
                         ["---", "---------", "------", "-----", "---------", "-------"]]
 
 toDoc :: Int -> Float -> Match -> [Doc]
-toDoc n s0 (Match sc pep) =
+toDoc n s0 (Match pep sc) =
     [ space <> int n <> char '.'
     , float' (pmass pep)
     , float' ((s0 - sc)/s0)
@@ -71,7 +71,7 @@ toDoc n s0 (Match sc pep) =
     where float' = text . flip (showFFloat (Just 4)) ""
 
 toDocDetail :: Int -> Match -> [Doc]
-toDocDetail n (Match _ pep)  =
+toDocDetail n (Match pep _)  =
     [ space <> int n <> char '.'
     , text (description (parent pep))
     ]
