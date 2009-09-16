@@ -53,13 +53,20 @@ zipWith
 // Instances
 // -----------------------------------------------------------------------------
 
-void zipWithPlusif(int *xs, float *ys, float *zs, int N)
+#if 0
+void zipWith_plusf(float *xs, float *ys, float *zs, int N)
 {
-    zipWith< Plus<int, float, float> >(xs, ys, zs, N);
+    zipWith< Plus<float> >(xs, ys, zs, N);
 }
 
-void zipWithTimesif(int *xs, float *ys, float *zs, int N)
+void zipWith_timesf(float *xs, float *ys, float *zs, int N)
 {
-    zipWith< Times<int, float, float> >(xs, ys, zs, N);
+    zipWith< Times<float> >(xs, ys, zs, N);
+}
+#endif
+
+void zipWith_timesif(int *xs, float *ys, float *zs, int N)
+{
+    zipWith< Times<int,float,float> >(xs, ys, zs, N);
 }
 

@@ -30,7 +30,6 @@ module Sequest
   )
   where
 
-#include <cublas.h>
 #include "kernels/kernels.h"
 
 import Mass
@@ -44,7 +43,7 @@ import Data.Maybe
 
 import C2HS
 import Foreign.CUDA (DevicePtr, withDevicePtr)
-import qualified Foreign.CUDA as CUDA
+import qualified Foreign.CUDA as G
 
 
 --------------------------------------------------------------------------------
@@ -148,35 +147,24 @@ findCandidates cp spec =
 -- preprocessed experimental spectra.
 --
 sequestXC :: ConfigParams -> XCorrSpecExp -> XCorrSpecThry -> IO Float
-sequestXC _cp (XCorrSpecExp (m,n) d_exp) (XCorrSpecThry _ d_thry) = do
-    CUDA.allocaBytes bytes $ \d_xs -> do
-    map_fromIntegralf d_thry d_xs len
-    cublasSdot len d_exp 1 d_xs 1 >>= \x -> return (x / 10000)
+sequestXC _cp (XCorrSpecExp (m,n) d_exp) (XCorrSpecThry _ d_thry) =
+  do
+    G.allocaBytes bytes $ \d_xs -> do
+    zipWith_timesif d_thry d_exp d_xs len
+    fold_plusf d_xs len >>= \x -> return (x / 10000)
     where
       len   = (n-m)
       bytes = fromIntegral len * fromIntegral (sizeOf (undefined::CFloat))
 
 
-{# fun unsafe zipWithTimesif
+{# fun unsafe zipWith_timesif
     { withDevicePtr* `DevicePtr CInt'   ,
       withDevicePtr* `DevicePtr CFloat' ,
       withDevicePtr* `DevicePtr CFloat' ,
                      `Int'              } -> `()' #}
 
-{# fun unsafe reducePlusf
+{# fun unsafe fold_plusf
     { withDevicePtr* `DevicePtr CFloat' ,
-                     `Int'              } -> `Float' #}
-
-{# fun unsafe map_fromIntegralf
-    { withDevicePtr* `DevicePtr CInt'   ,
-      withDevicePtr* `DevicePtr CFloat' ,
-                     `Int'              } -> `()' #}
-
-{# fun unsafe cublasSdot
-    {                `Int'              ,
-      withDevicePtr* `DevicePtr CFloat' ,
-                     `Int'              ,
-      withDevicePtr* `DevicePtr CFloat' ,
                      `Int'              } -> `Float' #}
 
 
