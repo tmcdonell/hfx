@@ -22,7 +22,7 @@
  */
 template <unsigned int blockSize, bool lengthIsPow2, class op, typename T>
 __global__ static void
-reduce_recursive
+fold_recursive
 (
     const T     *d_xs,
     T           *d_ys,
@@ -93,7 +93,7 @@ reduce_recursive
  */
 template <class op, typename T>
 static void
-reduce_dispatch
+fold_dispatch
 (
     const T     *d_xs,
     T           *d_ys,
@@ -108,16 +108,16 @@ reduce_dispatch
     {
         switch (threads)
         {
-        case 512: reduce_recursive<512,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case 256: reduce_recursive<256,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case 128: reduce_recursive<128,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case  64: reduce_recursive< 64,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case  32: reduce_recursive< 32,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case  16: reduce_recursive< 16,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   8: reduce_recursive<  8,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   4: reduce_recursive<  4,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   2: reduce_recursive<  2,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   1: reduce_recursive<  1,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case 512: fold_recursive<512,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case 256: fold_recursive<256,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case 128: fold_recursive<128,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case  64: fold_recursive< 64,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case  32: fold_recursive< 32,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case  16: fold_recursive< 16,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   8: fold_recursive<  8,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   4: fold_recursive<  4,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   2: fold_recursive<  2,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   1: fold_recursive<  1,true,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
         default:
             assert(!"Non-exhaustive patterns in match");
         }
@@ -126,16 +126,16 @@ reduce_dispatch
     {
         switch (threads)
         {
-        case 512: reduce_recursive<512,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case 256: reduce_recursive<256,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case 128: reduce_recursive<128,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case  64: reduce_recursive< 64,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case  32: reduce_recursive< 32,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case  16: reduce_recursive< 16,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   8: reduce_recursive<  8,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   4: reduce_recursive<  4,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   2: reduce_recursive<  2,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
-        case   1: reduce_recursive<  1,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case 512: fold_recursive<512,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case 256: fold_recursive<256,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case 128: fold_recursive<128,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case  64: fold_recursive< 64,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case  32: fold_recursive< 32,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case  16: fold_recursive< 16,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   8: fold_recursive<  8,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   4: fold_recursive<  4,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   2: fold_recursive<  2,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
+        case   1: fold_recursive<  1,false,op,T><<<blocks,threads,smem>>>(d_xs, d_ys, length); break;
         default:
             assert(!"Non-exhaustive patterns in match");
         }
@@ -147,7 +147,7 @@ reduce_dispatch
  * Compute the number of blocks and threads to use for the reduction kernel
  */
 static void
-reduce_control
+fold_control
 (
     int         n,
     int         &blocks,
@@ -169,7 +169,7 @@ reduce_control
  */
 template <class op, typename T>
 T
-reduce
+fold
 (
     const T     *d_xs,
     int         n
@@ -183,19 +183,19 @@ reduce
     /*
      * Allocate temporary storage for the block-level reduction
      */
-    reduce_control(n, blocks, threads);
+    fold_control(n, blocks, threads);
     cudaMalloc((void **) &d_data, sizeof(T) * blocks);
 
     /*
-     * Recursively reduce the partial block sums to a single value
+     * Recursively fold the partial block sums to a single value
      */
-    reduce_dispatch<op,T>(d_xs, d_data, n, blocks, threads);
+    fold_dispatch<op,T>(d_xs, d_data, n, blocks, threads);
 
     n = blocks;
     while (n > 1)
     {
-        reduce_control(n, blocks, threads);
-        reduce_dispatch<op,T>(d_data, d_data, n, blocks, threads);
+        fold_control(n, blocks, threads);
+        fold_dispatch<op,T>(d_data, d_data, n, blocks, threads);
 
         n = (n + threads * 2 - 1) / (threads * 2);
     }
@@ -215,9 +215,9 @@ reduce
 // Instances
 // -----------------------------------------------------------------------------
 
-float reducePlusf(float *xs, int N)
+float fold_plusf(float *xs, int N)
 {
-    float result = reduce< Plus<float> >(xs, N);
+    float  result = fold< Plus<float> >(xs, N);
     return result;
 }
 
