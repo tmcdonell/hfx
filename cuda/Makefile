@@ -5,8 +5,8 @@
 # ------------------------------------------------------------------------------
 # Input files
 # ------------------------------------------------------------------------------
-#STATIC_LIB	:= libsequest-kernels.a
-DYNAMIC_LIB	:= libsequest-kernels.dylib
+#STATIC_LIB	:= libkernels.a
+DYNAMIC_LIB	:= libkernels.dylib
 
 CU_DEPS		:= $(wildcard cudpp/*) \
 		   kernels.h mass.h operator.h shared_mem.h utils.h

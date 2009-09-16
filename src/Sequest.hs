@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, ForeignFunctionInterface #-}
+{-# LANGUAGE CPP #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Sequest
@@ -30,10 +30,9 @@ module Sequest
   )
   where
 
-#include "kernels/kernels.h"
-
 import Mass
 import Config
+import Kernels
 import Protein
 import Spectrum
 import IonSeries
@@ -162,18 +161,7 @@ sequestXC _cp (XCorrSpecExp (m,n) d_exp) (XCorrSpecThry _ d_thry) =
     fold_plusf d_xs len >>= \x -> return (x / 10000)
     where
       len   = (n-m)
-      bytes = fromIntegral len * fromIntegral (sizeOf (undefined::CFloat))
-
-
-{# fun unsafe zipWith_timesif
-    { withDevicePtr* `DevicePtr CInt'   ,
-      withDevicePtr* `DevicePtr CFloat' ,
-      withDevicePtr* `DevicePtr CFloat' ,
-                     `Int'              } -> `()' #}
-
-{# fun unsafe fold_plusf
-    { withDevicePtr* `DevicePtr CFloat' ,
-                     `Int'              } -> `Float' #}
+      bytes = fromIntegral len * fromIntegral (sizeOf (undefined::Float))
 
 
 #if 0

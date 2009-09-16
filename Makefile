@@ -6,13 +6,12 @@
 # Input files
 # ------------------------------------------------------------------------------
 EXECUTABLE	:= sequest
-KERNEL		:= sequest-kernels
+KERNEL		:= kernels
 
 HSMAIN		:= src/Main.hs
-CHSFILES	:= src/IonSeries.chs \
-		   src/Sequest.chs
+CHSFILES	:= src/Kernels.chs
 
-SUBDIRS		:= kernels
+SUBDIRS		:= cuda
 EXTRALIBS	 = stdc++ $(KERNEL)$(LIBSUFFIX)
 
 

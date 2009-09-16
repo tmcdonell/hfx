@@ -322,6 +322,7 @@ clobber : clean
 spotless:
 	$(VERBOSE)rm -rf $(DISTROOT)
 	$(VERBOSE)rm -rf .hpc
+	$(VERBOSE)rm -f $(EXECUTABLE).{aux,hp,prof,ps}
 	$(VERBOSE)rm -f *.html
 	$(VERBOSE)find . -name "*.tix" -print0 | xargs -0 rm -f
 

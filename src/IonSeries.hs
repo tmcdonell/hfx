@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, ForeignFunctionInterface #-}
+{-# LANGUAGE CPP #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : IonSeries
@@ -18,16 +18,15 @@ module IonSeries
   )
   where
 
-#include "kernels/kernels.h"
 
 import Config
+import Kernels
 import Protein
 
 --import Mass
 --import Data.Array.Unboxed
 
 import C2HS
-import Foreign.CUDA (DevicePtr, withDevicePtr)
 import qualified Foreign.CUDA as G
 
 
@@ -51,7 +50,6 @@ data XCorrSpecThry = XCorrSpecThry
 -- Theoretical Spectrum
 --------------------------------------------------------------------------------
 
-#if 1
 --
 -- Generate the theoretical spectral representation of a peptide from its
 -- character code sequence
@@ -74,14 +72,6 @@ buildThrySpecXCorr _cp (m,n) chrg pep =
       bytes = fromIntegral len * fromIntegral (sizeOf (undefined::Int))
 
 
-{# fun unsafe addIons
-    { cIntConv          `Int'              ,
-      withDevicePtr*    `DevicePtr CFloat' ,
-      withDevicePtr*    `DevicePtr CFloat' ,
-      withDevicePtr*    `DevicePtr CInt'   ,
-                        `Int'              ,
-                        `Int'              } -> `()' #}
-#endif
 #if 0
 buildThrySpecXCorr :: ConfigParams -> Int -> Int -> Peptide -> IO XCorrSpecThry
 buildThrySpecXCorr _cp len_spec charge peptide = do
