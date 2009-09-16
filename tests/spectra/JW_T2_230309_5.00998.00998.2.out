@@ -1,0 +1,17 @@
+Spectrum    :: tests/spectra/JW_T2_230309_5.00998.00998.2.dta
+Database    :: data/uniprot_sprot_human+trypsin.fasta        
+Enzyme      :: Trypsin 1 KR P                                
+(M+H)+ Mass :: 1120.6207 ~ 3.0                               
+
+ #    (M+H)+    deltCn  XCorr   Reference           Peptide        
+---  ---------  ------  -----   ---------           -------        
+ 1.  1120.6227  0.0000  3.9804  P13726|TF_HUMAN     R.RNNTFLSLR.D  
+ 2.  1121.6656  0.3600  2.5476  Q2M1Z3|CDGAP_HUMAN  K.RLSHRPSLR.Q  
+ 3.  1120.5785  0.3937  2.4133  Q8N485|LIX1_HUMAN   -.MDRTLESLR.H  
+ 4.  1120.5673  0.4145  2.3305  Q4G0U5|YB017_HUMAN  R.EMDKESILR.K  
+ 5.  1121.5956  0.4230  2.2966  Q9P2B7|K1430_HUMAN  R.STLGQYSPLR.A 
+
+ 1.  P13726|TF_HUMAN Tissue factor precursor - Homo sapiens (Human)             
+ 2.  Q2M1Z3|CDGAP_HUMAN Cdc42 GTPase-activating protein - Homo sapiens (Human)  
+ 3.  Q8N485|LIX1_HUMAN Protein limb expression 1 homolog - Homo sapiens (Human) 
+

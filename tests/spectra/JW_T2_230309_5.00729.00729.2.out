@@ -1,0 +1,17 @@
+Spectrum    :: tests/spectra/JW_T2_230309_5.00729.00729.2.dta
+Database    :: data/uniprot_sprot_human+trypsin.fasta        
+Enzyme      :: Trypsin 1 KR P                                
+(M+H)+ Mass :: 1060.5247 ~ 3.0                               
+
+ #    (M+H)+    deltCn  XCorr   Reference           Peptide        
+---  ---------  ------  -----   ---------           -------        
+ 1.  1060.5275  0.0000  3.4866  P13726|TF_HUMAN     K.VNVTVEDER.T  
+ 2.  1062.6130  0.5357  1.6189  Q08554|DSC1_HUMAN   R.TLAKTCIKK.-  
+ 3.  1060.5652  0.5433  1.5924  O95163|ELP1_HUMAN   R.GNLEVVHHR.A  
+ 4.  1060.5614  0.5770  1.4747  Q9BYT9|TM16C_HUMAN  R.IVYHMLER.T   
+ 5.  1061.5844  0.5840  1.4506  Q92859|NEO1_HUMAN   K.DVTVVSKEGK.P 
+
+ 1.  P13726|TF_HUMAN Tissue factor precursor - Homo sapiens (Human)       
+ 2.  Q08554|DSC1_HUMAN Desmocollin-1 precursor - Homo sapiens (Human)     
+ 3.  O95163|ELP1_HUMAN Elongator complex protein 1 - Homo sapiens (Human) 
+

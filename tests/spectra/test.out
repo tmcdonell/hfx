@@ -1,0 +1,17 @@
+Spectrum    :: tests/spectra/test.dta                
+Database    :: data/uniprot_sprot_human+trypsin.fasta
+Enzyme      :: Trypsin 1 KR P                        
+(M+H)+ Mass :: 1756.7354 ~ 3.0                       
+
+ #    (M+H)+    deltCn  XCorr   Reference           Peptide               
+---  ---------  ------  -----   ---------           -------               
+ 1.  1756.8394  0.0000  4.9870  P21333|FLNA_HUMAN   K.SPFEVYVDKSQGDASK.V  
+ 2.  1757.9033  0.6069  1.9604  O75179|ANR17_HUMAN  R.KSDNHSPAVVTTTVSSK.K 
+ 3.  1757.8613  0.6161  1.9147  Q9NXF1|TEX10_HUMAN  K.ENPHATSNSIFINWK.E   
+ 4.  1756.9500  0.6467  1.7621  Q9Y4E8|UBP15_HUMAN  K.FSYVTPRAFKTQVGR.F   
+ 5.  1757.8315  0.6530  1.7304  Q9H4Q3|PRD13_HUMAN  R.EIAMHNQQLSEMAAGK.G  
+
+ 1.  P21333|FLNA_HUMAN Filamin-A - Homo sapiens (Human)                                    
+ 2.  O75179|ANR17_HUMAN Ankyrin repeat domain-containing protein 17 - Homo sapiens (Human) 
+ 3.  Q9NXF1|TEX10_HUMAN Testis-expressed sequence 10 protein - Homo sapiens (Human)        
+

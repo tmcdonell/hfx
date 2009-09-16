@@ -1,0 +1,17 @@
+Spectrum    :: tests/spectra/JW_T2_230309_5.01210.01210.2.dta
+Database    :: data/uniprot_sprot_human+trypsin.fasta        
+Enzyme      :: Trypsin 1 KR P                                
+(M+H)+ Mass :: 1408.6929 ~ 3.0                               
+
+ #    (M+H)+    deltCn  XCorr   Reference           Peptide            
+---  ---------  ------  -----   ---------           -------            
+ 1.  1408.6960  0.0000  4.2502  P13726|TF_HUMAN     K.TNTNEFLIDVDK.G   
+ 2.  1408.6669  0.4837  2.1945  Q9Y566|SHAN1_HUMAN  R.SQESKQESRSDK.A   
+ 3.  1408.6974  0.5415  1.9488  Q15413|RYR3_HUMAN   R.YVDNNRSNWLK.S    
+ 4.  1409.6031  0.5603  1.8690  Q8IXF0|NPAS3_HUMAN  K.DTSGITEDNENSK.S  
+ 5.  1408.6892  0.5716  1.8207  P0C6C1|AN34C_HUMAN  R.SSSKPSCSLASGLK.S 
+
+ 1.  P13726|TF_HUMAN Tissue factor precursor - Homo sapiens (Human)                              
+ 2.  Q9Y566|SHAN1_HUMAN SH3 and multiple ankyrin repeat domains protein 1 - Homo sapiens (Human) 
+ 3.  Q15413|RYR3_HUMAN Ryanodine receptor 3 - Homo sapiens (Human)                               
+

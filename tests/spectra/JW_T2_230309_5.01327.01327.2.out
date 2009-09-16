@@ -1,0 +1,17 @@
+Spectrum    :: tests/spectra/JW_T2_230309_5.01327.01327.2.dta
+Database    :: data/uniprot_sprot_human+trypsin.fasta        
+Enzyme      :: Trypsin 1 KR P                                
+(M+H)+ Mass :: 2109.8914 ~ 3.0                               
+
+ #    (M+H)+    deltCn  XCorr   Reference           Peptide                 
+---  ---------  ------  -----   ---------           -------                 
+ 1.  2109.8567  0.0000  5.9485  P13726|TF_HUMAN     K.CFYTTDTECDLTDEIVK.D   
+ 2.  2112.0796  0.6697  1.9650  P52789|HXK2_HUMAN   R.AILQHLGLESTCDDSIIVK.E 
+ 3.  2108.1390  0.6732  1.9440  Q6P4F1|FUT10_HUMAN  R.HSHLPLTTQYLESIEVLK.S  
+ 4.  2110.9644  0.6915  1.8349  Q9BWH6|RPAP1_HUMAN  R.DQEAEQEAQTIHEENIAR.L  
+ 5.  2111.9530  0.7006  1.7812  P56589|PEX3_HUMAN   R.DMLESPDFSTVLNTCLNR.G  
+
+ 1.  P13726|TF_HUMAN Tissue factor precursor - Homo sapiens (Human)              
+ 2.  P52789|HXK2_HUMAN Hexokinase-2 - Homo sapiens (Human)                       
+ 3.  Q6P4F1|FUT10_HUMAN Alpha-(1,3)-fucosyltransferase 10 - Homo sapiens (Human) 
+

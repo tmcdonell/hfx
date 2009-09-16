@@ -1,0 +1,17 @@
+Spectrum    :: tests/spectra/JW_T2_230309_5.00613.00613.3.dta
+Database    :: data/uniprot_sprot_human+trypsin.fasta        
+Enzyme      :: Trypsin 1 KR P                                
+(M+H)+ Mass :: 1595.7012 ~ 3.0                               
+
+ #    (M+H)+    deltCn  XCorr   Reference           Peptide             
+---  ---------  ------  -----   ---------           -------             
+ 1.  1595.6831  0.0000  2.8196  P13726|TF_HUMAN     R.KSTDSPVECMGQEK.G  
+ 2.  1597.7794  0.2066  2.2370  Q5FWE3|PRRT3_HUMAN  R.LACPAPSGKSEVPER.P 
+ 3.  1596.8134  0.2144  2.2151  Q7Z353|HDX_HUMAN    K.NDTEFQLHIPVQR.Q   
+ 4.  1597.7533  0.3113  1.9418  Q13576|IQGA2_HUMAN  K.VDFTEEEISNMRK.E   
+ 5.  1595.9597  0.3350  1.8751  Q8IY17|PLPL6_HUMAN  K.ILRIQKETPTLQR.K   
+
+ 1.  P13726|TF_HUMAN Tissue factor precursor - Homo sapiens (Human)                           
+ 2.  Q5FWE3|PRRT3_HUMAN Proline-rich transmembrane protein 3 precursor - Homo sapiens (Human) 
+ 3.  Q7Z353|HDX_HUMAN Highly divergent homeobox - Homo sapiens (Human)                        
+
