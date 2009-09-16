@@ -24,6 +24,13 @@ public:
     static __device__ Tb apply(const Ta &x);
 };
 
+template <typename Ta, typename Tb>
+class fromIntegral : Functor<Ta, Tb>
+{
+public:
+    static __device__ Tb apply(const Ta &x) { return (Tb) x; }
+};
+
 
 /*
  * Template class for binary operators. Certain algorithms may require the

@@ -41,8 +41,18 @@ map
     unsigned int blocks  = (length + threads - 1) / threads;
 
     if (isPow2(length))
-        map_core< fn,true ><<<blocks,threads>>>(xs, out, length);
+        map_core< fn,true  ><<<blocks,threads>>>(xs, out, length);
     else
         map_core< fn,false ><<<blocks,threads>>>(xs, out, length);
+}
+
+
+// -----------------------------------------------------------------------------
+// Instances
+// -----------------------------------------------------------------------------
+
+void map_fromIntegralf(int *xs, float *out, int N)
+{
+    map< fromIntegral<int,float> >(xs, out, N);
 }
 

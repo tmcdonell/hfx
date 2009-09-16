@@ -15,6 +15,8 @@ CHSFILES	:= src/IonSeries.chs \
 SUBDIRS		:= kernels
 EXTRALIBS	 = stdc++ $(KERNEL)$(LIBSUFFIX)
 
+USECUBLAS	:= 1
+
 
 # ------------------------------------------------------------------------------
 # Haskell/CUDA build system
