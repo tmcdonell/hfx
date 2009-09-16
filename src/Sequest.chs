@@ -69,24 +69,32 @@ data Match = Match
 --------------------------------------------------------------------------------
 
 --
+-- Left fold with strict accumulator and monadic operator
+--
+foldlM' :: Monad m => (a -> b -> m a) -> a -> [b] -> m a
+foldlM' f z0 xs0 = go z0 xs0
+    where go z []     = return z
+          go z (x:xs) = do z'  <-   f z x
+                           z' `seq` go z' xs
+
+
+--
 -- Search the database for amino acid sequences within a defined mass tolerance.
 -- Only peptides which fall within this range will be considered.
 --
 searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> IO MatchCollection
 searchForMatches cp database spec = do
     specExp <- buildExpSpecXCorr cp spec
-    scores  <- sequence [ score specExp peptide |
-                            protein <- candidates database,
-                            peptide <- fragments protein
-                        ]
-
-    return . finish $ foldl' record nomatch scores
+    finish `fmap` foldlM' record nomatch [ score specExp peptide |
+                                            protein <- candidates database,
+                                            peptide <- fragments protein
+                                         ]
     where
         specThry b = buildThrySpecXCorr cp b (round (charge spec))
         candidates = findCandidates cp spec . map (digestProtein cp)
         finish     = reverse . catMaybes
 
-        record l   = tail . flip (insertBy cmp) l . Just
+        record l   = fmap $ tail . flip (insertBy cmp) l . Just
         n          = max (numMatches cp) (numMatchesDetail cp)
         nomatch    = replicate n Nothing
 
