@@ -41,7 +41,6 @@ import Data.List
 import Data.Maybe
 
 import C2HS
-import Foreign.CUDA (DevicePtr, withDevicePtr)
 import qualified Foreign.CUDA as G
 
 

@@ -55,7 +55,7 @@ search cp fp = do
 
     printConfig cp fp spec
 
-    matches             <- searchForMatches cp proteins spec
-    printResults        $! (take (numMatches cp)       matches)
-    printResultsDetail  $! (take (numMatchesDetail cp) matches)
+    matches            <- searchForMatches cp proteins spec
+    printResults       $! (take (numMatches cp)       matches)
+    printResultsDetail $! (take (numMatchesDetail cp) matches)
 
