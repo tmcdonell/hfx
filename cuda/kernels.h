@@ -33,7 +33,9 @@ addIons
 // -----------------------------------------------------------------------------
 float fold_plusf(float *xs, int N);
 void  zipWith_timesif(int *xs, float *ys, float *zs, int N);
-
+void  permute_f(float *in, float *out, int *indices, int length);
+void  scanl1Seg_plusf(float *in, unsigned int *flags, float *out, int N);
+void  scanr1Seg_plusf(float *in, unsigned int *flags, float *out, int N);
 
 #ifdef __cplusplus
 }

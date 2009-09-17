@@ -249,8 +249,8 @@ segscan_finalise(segscan_plan<T> *p)
 
 /*
  * Perform a segmented scan operation on the input array of data, much like
- * `scan', but with an additional input array of `flags' with non-zero elements
- * that demarcate the first element of a segment.
+ * `scan', but with an additional input array of non-zero `flags' that demarcate
+ * the first element of a segment.
  */
 template <class op, typename T, bool backward, bool exclusive>
 void
@@ -275,14 +275,13 @@ segmented_scan
 // Instances
 // -----------------------------------------------------------------------------
 
-void seg_scanl1Plusi(int *in, unsigned int *flags, int *out, int N)
+void scanl1Seg_plusf(float *in, unsigned int *flags, float *out, int N)
 {
-    segmented_scan< Plus<int>, int, false, false >(in, flags, out, N);
+    segmented_scan< Plus<float>, float, false, false >(in, flags, out, N);
 }
 
-void seg_scanr1Plusi(int *in, unsigned int *flags, int *out, int N)
+void scanr1Seg_plusf(float *in, unsigned int *flags, float *out, int N)
 {
-    segmented_scan< Plus<int>, int, true, false >(in, flags, out, N);
+    segmented_scan< Plus<float>, float, true, false >(in, flags, out, N);
 }
-
 

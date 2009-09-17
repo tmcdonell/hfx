@@ -51,8 +51,10 @@ map
 // Instances
 // -----------------------------------------------------------------------------
 
+#if 0
 void map_fromIntegralf(int *xs, float *out, int N)
 {
     map< fromIntegral<int,float> >(xs, out, N);
 }
+#endif
 

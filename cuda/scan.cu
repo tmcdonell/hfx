@@ -189,13 +189,15 @@ scan
 // Instances
 // -----------------------------------------------------------------------------
 
-void scanl1Plusi(int *in, int *out, int N)
+#if 0
+void scanl1_Plusi(int *in, int *out, int N)
 {
     scan< Plus<int>, int, false, false >(in, out, N);
 }
 
-void scanr1Plusi(int *in, int *out, int N)
+void scanr1_Plusi(int *in, int *out, int N)
 {
     scan< Plus<int>, int, true, false >(in, out, N);
 }
+#endif
 
