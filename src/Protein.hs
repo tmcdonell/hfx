@@ -142,7 +142,7 @@ massResidual d_ladder idx =
   G.withArrayLen idx'       $ \len d_idx -> do
   G.allocaBytes (bytes len) $ \d_res     -> do
 
-  permute_f d_ladder d_res d_idx len
+  bpermute_f d_ladder d_res d_idx len
   (map cFloatConv . G.forceEither) `fmap` G.peekArray len d_res
   where
     idx'    = map cIntConv idx

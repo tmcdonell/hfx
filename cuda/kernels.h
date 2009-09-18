@@ -32,8 +32,16 @@ addIons
 // Prelude
 // -----------------------------------------------------------------------------
 float fold_plusf(float *xs, int N);
+
 void  zipWith_timesif(int *xs, float *ys, float *zs, int N);
-void  permute_f(float *in, float *out, int *indices, int length);
+
+void  permute_i(int *in, int *out, unsigned int *indices, int length);
+void  bpermute_f(float *in, float *out, unsigned int *indices, int length);
+int   compact_f(float *in, float *out, unsigned int *flags, int length);
+
+void  scanl_plusui(unsigned int *in, unsigned int *out, int N);
+void  scanr_plusui(unsigned int *in, unsigned int *out, int N);
+
 void  scanl1Seg_plusf(float *in, unsigned int *flags, float *out, int N);
 void  scanr1Seg_plusf(float *in, unsigned int *flags, float *out, int N);
 
@@ -41,6 +49,4 @@ void  scanr1Seg_plusf(float *in, unsigned int *flags, float *out, int N);
 }
 #endif
 #endif
-/*
- * vim: syn=cuda
- */
+

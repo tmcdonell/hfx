@@ -31,7 +31,7 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
                         `Int'              } -> `()' #}
 
 --------------------------------------------------------------------------------
--- Prelude
+-- ZipWith
 --------------------------------------------------------------------------------
 
 {# fun unsafe zipWith_timesif
@@ -40,9 +40,29 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
       withDevicePtr* `DevicePtr CFloat' ,
                      `Int'              } -> `()' #}
 
+
+--------------------------------------------------------------------------------
+-- Fold
+--------------------------------------------------------------------------------
+
 {# fun unsafe fold_plusf
     { withDevicePtr* `DevicePtr CFloat' ,
                      `Int'              } -> `Float' #}
+
+
+--------------------------------------------------------------------------------
+-- Scan
+--------------------------------------------------------------------------------
+
+{# fun unsafe scanl_plusui
+    { withDevicePtr* `DevicePtr CUInt' ,
+      withDevicePtr* `DevicePtr CUInt' ,
+                     `Int'            } -> `()' #}
+
+{# fun unsafe scanr_plusui
+    { withDevicePtr* `DevicePtr CUInt' ,
+      withDevicePtr* `DevicePtr CUInt' ,
+                     `Int'            } -> `()' #}
 
 {# fun unsafe scanl1Seg_plusf
     { withDevicePtr* `DevicePtr CFloat' ,
@@ -56,9 +76,26 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
       withDevicePtr* `DevicePtr CFloat' ,
                      `Int'              } -> `()' #}
 
-{# fun unsafe permute_f
+
+--------------------------------------------------------------------------------
+-- Permute
+--------------------------------------------------------------------------------
+
+{# fun unsafe permute_i
+    { withDevicePtr* `DevicePtr CInt'  ,
+      withDevicePtr* `DevicePtr CInt'  ,
+      withDevicePtr* `DevicePtr CUInt' ,
+                     `Int'             } -> `()' #}
+
+{# fun unsafe bpermute_f
     { withDevicePtr* `DevicePtr CFloat' ,
       withDevicePtr* `DevicePtr CFloat' ,
-      withDevicePtr* `DevicePtr CInt'   ,
+      withDevicePtr* `DevicePtr CUInt'  ,
                      `Int'              } -> `()' #}
+
+{# fun unsafe compact_f
+    { withDevicePtr* `DevicePtr CFloat' ,
+      withDevicePtr* `DevicePtr CFloat' ,
+      withDevicePtr* `DevicePtr CUInt'  ,
+                     `Int'              } -> `Int' #}
 

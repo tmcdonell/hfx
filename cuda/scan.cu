@@ -5,6 +5,7 @@
  */
 
 #include "utils.h"
+#include "kernels.h"
 #include "operator.h"
 
 #include "cudpp/cudpp_globals.h"
@@ -189,13 +190,23 @@ scan
 // Instances
 // -----------------------------------------------------------------------------
 
+void scanl_plusui(unsigned int *in, unsigned int *out, int N)
+{
+    scan< Plus<unsigned int>, unsigned int, false, true >(in, out, N);
+}
+
+void scanr_plusui(unsigned int *in, unsigned int *out, int N)
+{
+    scan< Plus<unsigned int>, unsigned int, true, true >(in, out, N);
+}
+
 #if 0
-void scanl1_Plusi(int *in, int *out, int N)
+void scanl1_plusi(int *in, int *out, int N)
 {
     scan< Plus<int>, int, false, false >(in, out, N);
 }
 
-void scanr1_Plusi(int *in, int *out, int N)
+void scanr1_plusi(int *in, int *out, int N)
 {
     scan< Plus<int>, int, true, false >(in, out, N);
 }
