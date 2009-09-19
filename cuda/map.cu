@@ -4,15 +4,29 @@
  * License   : BSD
  */
 
-#include "utils.h"
+#include "mass.h"
 #include "kernels.h"
 #include "operator.h"
+#include "cudpp/cudpp_globals.h"
+
+static void
+map_control
+(
+    unsigned int        n,
+    unsigned int        &blocks,
+    unsigned int        &threads
+)
+{
+    blocks  = max(1.0, (double)n / (SCAN_ELTS_PER_THREAD * CTA_SIZE));
+    threads = blocks > 1 ? CTA_SIZE : ceil((double)n / SCAN_ELTS_PER_THREAD);
+}
+
 
 /*
  * Apply a function each element of an array. A single thread is used to compute
  * each result. The input and output array may be coincident.
  */
-template <class fn, bool lengthIsPow2, typename Ta, typename Tb>
+template <class fn, typename Ta, typename Tb>
 __global__ static void
 map_core
 (
@@ -21,10 +35,19 @@ map_core
     int length
 )
 {
-    unsigned int idx = blockDim.x * blockIdx.x + threadIdx.x;
+    /*
+     * Each thread processes eight elements, this is the first index
+     */
+    unsigned int idx = blockIdx.x * (blockDim.x << 3) + threadIdx.x;
 
-    if (lengthIsPow2 || idx < length)
-        out[idx] = fn::apply(xs[idx]);
+#pragma unroll
+    for (unsigned int i = 0; i < SCAN_ELTS_PER_THREAD; ++i)
+    {
+	if (idx < length)
+	    out[idx] = fn::apply(xs[idx]);
+
+	idx += blockDim.x;
+    }
 }
 
 
@@ -37,13 +60,11 @@ map
     int length
 )
 {
-    unsigned int threads = min(ceilPow2(length), 512);
-    unsigned int blocks  = (length + threads - 1) / threads;
+    unsigned int threads;
+    unsigned int blocks;
 
-    if (isPow2(length))
-        map_core< fn,true  ><<<blocks,threads>>>(xs, out, length);
-    else
-        map_core< fn,false ><<<blocks,threads>>>(xs, out, length);
+    map_control(length, blocks, threads);
+    map_core< fn,Ta,Tb ><<<blocks,threads>>>(xs, out, length);
 }
 
 
@@ -51,10 +72,8 @@ map
 // Instances
 // -----------------------------------------------------------------------------
 
-#if 0
-void map_fromIntegralf(int *xs, float *out, int N)
+void map_getAAMass(char *ions, float *masses, int N)
 {
-    map< fromIntegral<int,float> >(xs, out, N);
+    map< getAAMass<char,float> >(ions, masses, N);
 }
-#endif
 
