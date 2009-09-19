@@ -146,9 +146,9 @@ compact
 // Instances
 // -----------------------------------------------------------------------------
 
-void permute_i(int *in, int *out, unsigned int *indices, int length)
+void permute_ui(unsigned int *in, unsigned int *out, unsigned int *indices, int length)
 {
-    permute<int,false,false>(in, out, indices, length);
+    permute<unsigned int,false,false>(in, out, indices, length);
 }
 
 

@@ -35,7 +35,7 @@ float fold_plusf(float *xs, int N);
 
 void  zipWith_timesif(int *xs, float *ys, float *zs, int N);
 
-void  permute_i(int *in, int *out, unsigned int *indices, int length);
+void  permute_ui(unsigned int *in, unsigned int *out, unsigned int *indices, int length);
 void  bpermute_f(float *in, float *out, unsigned int *indices, int length);
 int   compact_f(float *in, float *out, unsigned int *flags, int length);
 

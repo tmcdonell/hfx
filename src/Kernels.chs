@@ -81,9 +81,9 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
 -- Permute
 --------------------------------------------------------------------------------
 
-{# fun unsafe permute_i
-    { withDevicePtr* `DevicePtr CInt'  ,
-      withDevicePtr* `DevicePtr CInt'  ,
+{# fun unsafe permute_ui
+    { withDevicePtr* `DevicePtr CUInt' ,
+      withDevicePtr* `DevicePtr CUInt' ,
       withDevicePtr* `DevicePtr CUInt' ,
                      `Int'             } -> `()' #}
 
@@ -98,4 +98,22 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
       withDevicePtr* `DevicePtr CFloat' ,
       withDevicePtr* `DevicePtr CUInt'  ,
                      `Int'              } -> `Int' #}
+
+--------------------------------------------------------------------------------
+-- Map
+--------------------------------------------------------------------------------
+
+{# fun unsafe map_getAAMass
+    { withDevicePtr* `DevicePtr CChar'  ,
+      withDevicePtr* `DevicePtr CFloat' ,
+                     `Int'              } -> `()' #}
+
+--------------------------------------------------------------------------------
+-- Replicate
+--------------------------------------------------------------------------------
+
+{# fun unsafe replicate_ui
+    { withDevicePtr* `DevicePtr CUInt' ,
+                     `Int'             ,
+                     `Int'             } -> `()' #}
 

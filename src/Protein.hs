@@ -50,8 +50,8 @@ data Protein = Protein
     {
         header    :: L.ByteString,      -- Description of the protein
         seqdata   :: L.ByteString,      -- Amino acid character sequence
-        seqmassL  :: DevicePtr CFloat,  -- Amino acid mass sequence (to the left, device)
-        seqmassR  :: DevicePtr CFloat,  -- Amino acid mass sequence (to the right, device)
+        bions     :: DevicePtr CFloat,  -- Sequence ladder of b-ion series fragments
+        yions     :: DevicePtr CFloat,  -- y-ion series fragments
         fragments :: [Peptide]          -- Peptide fragments digested from this protein
     }
     deriving (Eq, Show)
@@ -71,7 +71,6 @@ data Peptide = Peptide
     {
         parent    :: Protein,           -- Protein this fragment derives from
         residual  :: Float,             -- The sum of the residual masses of this peptide
---        ladder    :: [Float],           -- Sequence ladder of b-ion series fragments
         offset    :: Int64,
         terminals :: (Int64, Int64)     -- Location in the parent protein of this peptide
     }
@@ -88,11 +87,11 @@ pmass p =  residual p + (massH2O + massH)
 --
 -- Lyse the parent to extract the amino acid sequence of this peptide
 --
-seqextract :: Peptide -> L.ByteString
-seqextract pep = extent ((seqdata . parent) pep) . terminals $ pep
+lyse :: Peptide -> L.ByteString
+lyse pep = seqextract ((seqdata . parent) pep) . terminals $ pep
 
-extent :: L.ByteString -> (Int64,Int64) -> L.ByteString
-extent b (c,n) = L.take (n-c+1) . L.drop c $ b
+seqextract :: L.ByteString -> (Int64,Int64) -> L.ByteString
+seqextract b (c,n) = L.take (n-c+1) . L.drop c $ b
 
 
 #if 0
@@ -118,37 +117,6 @@ yIonLadder   :: Peptide -> [Float]
 yIonLadder p =  (map (\x -> residual p - x) . bIonLadder) p
 #endif
 
-massLadder :: ConfigParams -> Protein -> [(Int64,Int64)] -> IO Protein
-massLadder cp protein idx =
-  G.withArrayLen flags $ \len d_flags ->
-  G.withArray masses   $ \d_mass      -> do
-
-  d_ladderL <- G.forceEither `fmap` G.malloc (bytes len)
-  d_ladderR <- G.forceEither `fmap` G.malloc (bytes len)
-
-  scanl1Seg_plusf d_mass d_flags d_ladderL len
-  scanr1Seg_plusf d_mass d_flags d_ladderR len
-
-  return $ protein { seqmassL = d_ladderL, seqmassR = d_ladderR }
-  where
-    bytes x = fromIntegral x * fromIntegral (sizeOf (undefined::Float))
-    flags   = concatMap (\(m,n) -> 1 : replicate (fromIntegral (n-m)) 0) idx
-    masses  = map (cFloatConv . getAAMass cp) . L.unpack $ acids
-    acids   = foldl' (\a -> L.append a . extent (seqdata protein)) L.empty $ idx
-
-
-massResidual :: DevicePtr CFloat -> [Int64] -> IO [Float]
-massResidual d_ladder idx =
-  G.withArrayLen idx'       $ \len d_idx -> do
-  G.allocaBytes (bytes len) $ \d_res     -> do
-
-  bpermute_f d_ladder d_res d_idx len
-  (map cFloatConv . G.forceEither) `fmap` G.peekArray len d_res
-  where
-    idx'    = map cIntConv idx
-    bytes x = fromIntegral x * fromIntegral (sizeOf (undefined::Float))
-
-
 --------------------------------------------------------------------------------
 -- File Handlers
 --------------------------------------------------------------------------------
@@ -169,27 +137,92 @@ readFasta fasta = do
 -- Protein Fragments
 --------------------------------------------------------------------------------
 
+--
+-- Scan a protein sequence from the database looking for combinations of amino
+-- acids, proceeding from the N to the C terminus.
+--
+-- Fragments are generated between each of the given list of amino acids where
+-- cleavage occurs, and attached to the input protein.
+--
+-- This almost supports special digestion rules...
+--
+-- TODO:
+--  - Copy the character code sequences and perform the mass lookup on the device?
+--  - Perform on-device filtering with map and compact/bpermute?
+--
 digestProtein :: ConfigParams -> Protein -> IO Protein
-digestProtein cp protein = do
-  pro' <- massLadder cp protein splices
-  resi <- massResidual (seqmassR pro') idx
-  let p = zipWith3 (Peptide pro') resi idx splices
+digestProtein cp protein =
+  --
+  -- Copy all necessary data to the device, and allocate some temporary storage
+  -- as well. From the host, we copy the lengths of each individual segment,
+  -- followed by the concatenation of the ion masses of each sequence.
+  --
+  G.withArrayLen lengths $ \num_seqs seq_lengths  ->
+  G.withArrayLen masses  $ \num_ions ion_masses   ->
+  G.allocaBytes (bytes num_seqs)     $ \offsets   ->
+  G.allocaBytes (bytes num_seqs)     $ \residuals ->
+  G.allocaBytes (bytes num_ions)     $ \flags     ->
+  G.allocaBytes (bytes num_seqs)     $ \ones      -> do
+  ladder_b <- G.forceEither `fmap` G.malloc (bytes num_ions)
+  ladder_y <- G.forceEither `fmap` G.malloc (bytes num_ions)
+  G.memset flags (bytes num_ions) 0
 
-  return $ pro' { fragments = filter inrange p }
+  --
+  -- Scan the sequence lengths to find the offset of that sequence in the
+  -- concatenated array. Permute into these locations in the flags array a `1',
+  -- which then demarcates the start of each segment.
+  --
+  scanl_plusui seq_lengths offsets num_seqs
+  replicate_ui ones 1 num_seqs
+  permute_ui ones flags offsets num_seqs
+
+  --
+  -- The mass ladder generated by successive breaks of the peptide backbone from
+  -- the C- to N- terminus. Also extract the total residual mass of each
+  -- sequence.
+  --
+  scanl1Seg_plusf ion_masses flags ladder_b num_ions
+  scanr1Seg_plusf ion_masses flags ladder_y num_ions
+  bpermute_f ladder_y residuals offsets num_seqs
+
+  --
+  -- Read back and package the results
+  --
+  r_off <- (map cIntConv   . G.forceEither) `fmap` G.peekArray num_seqs offsets
+  r_res <- (map cFloatConv . G.forceEither) `fmap` G.peekArray num_seqs residuals
+
+  return $ let p = protein { bions = ladder_b, yions = ladder_y }
+           in  p { fragments = filter inrange $ zipWith3 (Peptide p) r_res r_off splices }
   where
     inrange p = minPeptideMass cp <= pmass p && pmass p <= maxPeptideMass cp
+    bytes x   = fromIntegral x * fromIntegral (sizeOf (undefined::CFloat))
 
     indices   = L.findIndices ((fst . digestionRule) cp) (seqdata protein)
-    frags     = simpleFragment protein indices
-    splices   = simpleSplice cp frags
-    idx       = init . scanl (\l (m,n) -> l+n-m+1) 0 $ splices
+    splices   = simpleSplice cp . simpleFragment protein $ indices
+
+    lengths   = map (\(m,n) -> cIntConv (n - m + 1)) splices
+    ions      = foldl' (\a -> L.append a . seqextract (seqdata protein)) L.empty $ splices
+    masses    = map (cFloatConv . getAAMass cp) . L.unpack $ ions
 
 
+--
+-- Split a protein at the given amino acid locations. Be sure to include the
+-- final fragment, with a dummy cleavage point at the end of the sequence.
+--
 simpleFragment :: Protein -> [Int64] -> [(Int64,Int64)]
 simpleFragment protein indices =
   zip (-1:indices) (indices ++ [L.length (seqdata protein) -1])
 
 
+--
+-- Include the possibility of a number of missed cleavages. All combinations of
+-- [0..n] sequential peptides are joined. For example, with two missed
+-- cleavages:
+--      simpleSplice [a,b,c] -> [a,a:b,a:b:c, b,b:c, c]
+--
+-- The input list must consist of sorted and adjacent breaks of the original
+-- protein sequence, but the output is unordered.
+--
 simpleSplice :: ConfigParams -> [(Int64,Int64)] -> [(Int64,Int64)]
 simpleSplice cp = go
   where
@@ -198,7 +231,6 @@ simpleSplice cp = go
 
     n             = missedCleavages cp + 1
     splice a b    = (fst a + 1, snd b)
-
 
 
 #if 0
@@ -287,7 +319,7 @@ simpleSplice cp pep@(p:ps)
 -- the flanking residuals (if present)
 --
 slice :: Peptide -> String
-slice peptide = [ca,'.'] ++ (L.unpack (seqextract peptide)) ++ ['.',na]
+slice peptide = [ca,'.'] ++ (L.unpack (lyse peptide)) ++ ['.',na]
     where
         chain = seqdata (parent peptide)
         (c,n) = terminals peptide
