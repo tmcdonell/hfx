@@ -57,12 +57,12 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
 {# fun unsafe scanl_plusui
     { withDevicePtr* `DevicePtr CUInt' ,
       withDevicePtr* `DevicePtr CUInt' ,
-                     `Int'            } -> `()' #}
+                     `Int'             } -> `()' #}
 
 {# fun unsafe scanr_plusui
     { withDevicePtr* `DevicePtr CUInt' ,
       withDevicePtr* `DevicePtr CUInt' ,
-                     `Int'            } -> `()' #}
+                     `Int'             } -> `()' #}
 
 {# fun unsafe scanl1Seg_plusf
     { withDevicePtr* `DevicePtr CFloat' ,

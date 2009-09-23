@@ -17,7 +17,7 @@ map_control
     unsigned int        &threads
 )
 {
-    blocks  = max(1.0, (double)n / (SCAN_ELTS_PER_THREAD * CTA_SIZE));
+    blocks  = max(1.0, ceil((double)n / (SCAN_ELTS_PER_THREAD * CTA_SIZE)));
     threads = blocks > 1 ? CTA_SIZE : ceil((double)n / SCAN_ELTS_PER_THREAD);
 }
 
