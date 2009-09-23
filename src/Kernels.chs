@@ -117,3 +117,17 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
                      `Int'             ,
                      `Int'             } -> `()' #}
 
+
+--------------------------------------------------------------------------------
+-- Sort
+--------------------------------------------------------------------------------
+
+{# fun unsafe sort_f
+    { withDevicePtr* `DevicePtr CFloat' ,
+                     `Int'              } -> `()' #}
+
+{# fun unsafe sortPairs_f
+    { withDevicePtr* `DevicePtr CFloat' ,
+      withDevicePtr* `DevicePtr CFloat' ,
+                     `Int'              } -> `()' #}
+

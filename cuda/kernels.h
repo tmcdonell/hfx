@@ -45,7 +45,12 @@ void  scanr_plusui(unsigned int *in, unsigned int *out, int N);
 void  scanl1Seg_plusf(float *in, unsigned int *flags, float *out, int N);
 void  scanr1Seg_plusf(float *in, unsigned int *flags, float *out, int N);
 
+void  map_getAAMass(char *ions, float *masses, int N);
+
 void  replicate_ui(unsigned int *out, unsigned int x, int N);
+
+void  sort_f(float *vals, int N);
+void  sortPairs_f(float *keys, float *vals, int N);
 
 #ifdef __cplusplus
 }

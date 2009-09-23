@@ -138,6 +138,15 @@ ifeq ($(USECUBLAS),1)
     endif
 endif
 
+ifeq ($(USECUDPP),1)
+    ifeq ($(emu),1)
+        LIB     += -lcudpp_emu
+    else
+        LIB     += -lcudpp
+    endif
+endif
+
+
 # Device emulation configuration
 ifeq ($(emu),1)
     NVCCFLAGS   += -deviceemu

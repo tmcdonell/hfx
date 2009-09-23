@@ -14,6 +14,7 @@ CUFILES		:= \
 		   fold.cu \
 		   map.cu \
 		   permute.cu \
+		   radix_sort.cu \
 		   replicate.cu \
 		   scan.cu \
 		   segmented_scan.cu \
@@ -26,6 +27,8 @@ CFILES		:=
 CCFILES		:=
 
 INCLUDES	:=
+
+USECUDPP	:= 1
 
 
 # ------------------------------------------------------------------------------
