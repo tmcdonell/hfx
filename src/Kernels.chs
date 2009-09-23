@@ -131,3 +131,13 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
       withDevicePtr* `DevicePtr CFloat' ,
                      `Int'              } -> `()' #}
 
+
+--------------------------------------------------------------------------------
+-- groupBy
+--------------------------------------------------------------------------------
+
+{# fun unsafe group_f
+    { withDevicePtr* `DevicePtr CFloat' ,
+      withDevicePtr* `DevicePtr CUInt'  ,
+                     `Int'              } -> `()' #}
+

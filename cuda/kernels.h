@@ -52,6 +52,8 @@ void  replicate_ui(unsigned int *out, unsigned int x, int N);
 void  sort_f(float *vals, int N);
 void  sortPairs_f(float *keys, float *vals, int N);
 
+void  group_f(float *xs, unsigned int *flags, int N);
+
 #ifdef __cplusplus
 }
 #endif

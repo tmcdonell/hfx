@@ -12,6 +12,7 @@ CU_DEPS		:= $(wildcard cudpp/*) \
 		   kernels.h mass.h operator.h shared_mem.h utils.h
 CUFILES		:= \
 		   fold.cu \
+		   groupBy.cu \
 		   map.cu \
 		   permute.cu \
 		   radix_sort.cu \

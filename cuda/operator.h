@@ -87,13 +87,21 @@ SPEC_MINMAX(unsigned char, 0,        UCHAR_MAX);
         static __device__ Tc identity() { return id; }                         \
     }
 
-BASIC_OP(Plus,  a+b,      0);
-BASIC_OP(Minus, a-b,      0);
-BASIC_OP(Times, a*b,      1);
-BASIC_OP(Div,   a/b,      1);
+#define LOGICAL_OP(name,expr,id)                                               \
+    template <typename Ta, typename Tb=Ta>                                     \
+    class name : BinaryOp<Ta, Tb, bool>                                        \
+    {                                                                          \
+    public:                                                                    \
+        static __device__ bool apply(const Ta &a, const Tb &b) { return expr; }\
+        static __device__ bool identity() { return id; }                       \
+    }
+
+BASIC_OP(Plus,  a + b,    0);
+BASIC_OP(Times, a * b,    1);
 BASIC_OP(Min,   min(a,b), getMax<Ta>());
 BASIC_OP(Max,   max(a,b), getMin<Ta>());
 
+LOGICAL_OP(Eq,  a == b,   false);
 
 #undef SPEC_MINMAX
 #undef BASIC_OP
