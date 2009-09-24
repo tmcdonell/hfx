@@ -17,6 +17,9 @@ SM_VERSIONS     := sm_10 sm_11 sm_12 sm_13
 OSUPPER         := $(shell uname -s 2>/dev/null | tr [:lower:] [:upper:])
 OSLOWER         := $(shell uname -s 2>/dev/null | tr [:upper:] [:lower:])
 DARWIN          := $(strip $(findstring DARWIN, $(OSUPPER)))
+ifneq ($(DARWIN),)
+    SNOWLEOPARD := $(strip $(findstring 10.6, $(shell egrep "<string>10\.6.*</string>" /System/Library/CoreServices/SystemVersion.plist)))
+endif
 
 # detect if 32 bit or 64 bit system
 HP_64           := $(strip $(shell uname -m | grep 64))
@@ -71,11 +74,36 @@ CWARN_FLAGS := $(CXXWARN_FLAGS) \
 GHCWARN_FLAGS := \
         -Wall
 
+# cross-compilation flags
+ifeq ($(x86_64),1)
+    NVCCFLAGS	+= -m64
+    ifneq ($(DARWIN),)
+        CXX_ARCH_FLAGS 	+= -arch x86_64
+    else
+        CXX_ARCH_FLAGS	+= -m64
+    endif
+else
+ifeq ($(i386),1)
+    NVCCFLAGS	+= -m32
+    ifneq ($(DARWIN),)
+        CXX_ARCH_FLAGS	+= -arch i386
+    else
+        CXX_ARCH_FLAGS	+= -m32
+    endif
+else
+    ifneq ($(SNOWLEOPARD),)
+        NVCCFLAGS	+= -m32
+        CXX_ARCH_FLAGS	+= -arch i386 -m32
+    endif
+endif
+endif
+
 # Compiler-specific flags
-NVCCFLAGS       :=
-GHCFLAGS         = $(GHCWARN_FLAGS) -i$(SRCDIR) -i$(OBJDIR) -odir $(OBJDIR) -hidir $(OBJDIR) --make
-CXXFLAGS        := $(CXXWARN_FLAGS)
-CFLAGS          := $(CWARN_FLAGS)
+NVCCFLAGS       +=
+GHCFLAGS        += $(GHCWARN_FLAGS) -i$(SRCDIR) -i$(OBJDIR) -odir $(OBJDIR) -hidir $(OBJDIR) --make
+CXXFLAGS        += $(CXXWARN_FLAGS) $(CXX_ARCH_FLAGS)
+CFLAGS          += $(CWARN_FLAGS) $(CXX_ARCH_FLAGS)
+LINK		+= $(CXX_ARCH_FLAGS)
 
 # Common flags
 COMMONFLAGS     += $(INCLUDES) -DUNIX
