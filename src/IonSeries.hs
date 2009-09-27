@@ -13,7 +13,7 @@
 
 module IonSeries
   (
-    XCorrSpecThry(..),
+    XCorrSpecThry,
     buildThrySpecXCorr
   )
   where
@@ -41,14 +41,32 @@ import qualified Foreign.CUDA as G
 -- XXX: Changed to a dense array on the device, to facilitate eventual dot
 -- product operation (and because my cuda-fu is weak...)
 --
-data XCorrSpecThry = XCorrSpecThry
-        (Int,Int)
-        (G.DevicePtr CInt)
+type XCorrSpecThry = G.DevicePtr CInt
+
+
+--data XCorrSpecThry = XCorrSpecThry
+--  {
+--    smdata   :: G.DevicePtr CFloat,     -- ^ sparse matrix data
+--    smidx    :: G.DevicePtr CUInt,      -- ^ corresponding index of each non-zero element
+--    smlen    :: Int,                    -- ^ number of non-zero elements
+--    smrowlen :: G.DevicePtr CUInt       -- ^ number of non-zero elements in each row
+--  }
+--  deriving (Show)
 
 
 --------------------------------------------------------------------------------
 -- Theoretical Spectrum
 --------------------------------------------------------------------------------
+
+{-
+
+map (foldl1 (\(x,y) (_,z) -> (x, max y z)))
+    . groupBy (\x y -> fst x == fst y)
+    . sortBy (\x y -> compare (fst x) (fst y))
+    . map (\(x,y) -> (bin x,y)) $ spec
+
+ -}
+
 
 --
 -- Generate the theoretical spectral representation of a peptide from its
@@ -59,6 +77,21 @@ buildThrySpecXCorr :: ConfigParams
                    -> Int                       -- ^ precursor charge state
                    -> Peptide                   -- ^ peptide to build spectrum for
                    -> IO XCorrSpecThry
+buildThrySpecXCorr _cp (p,q) cg pep = do
+  spec <- G.forceEither `fmap` G.malloc bytes
+  rv   <- G.memset spec bytes 0
+  case rv of
+    Just e  -> error e
+    Nothing -> addIons charge (residual pep) (seqladder (parent pep)) spec len_i len_s (offset pep) >>
+               return spec
+  where
+    charge = max 1 (cg-1)
+    len_i  = let (c,n) = terminals pep in fromIntegral (n-c)
+    len_s  = q - p + 1
+    bytes  = fromIntegral len_s * fromIntegral (sizeOf (undefined::CInt))
+
+
+#if 0
 buildThrySpecXCorr _cp (m,n) chrg pep =
     G.allocaBytesMemset bytes 0     $ \spec     ->
     G.withArrayLen (map cFloatConv . bIonLadder $ pep) $ \l b_ions ->
@@ -70,8 +103,7 @@ buildThrySpecXCorr _cp (m,n) chrg pep =
     where
       len   = n - m + 1
       bytes = fromIntegral len * fromIntegral (sizeOf (undefined::Int))
-
-
+#endif
 #if 0
 buildThrySpecXCorr :: ConfigParams -> Int -> Int -> Peptide -> IO XCorrSpecThry
 buildThrySpecXCorr _cp len_spec charge peptide = do

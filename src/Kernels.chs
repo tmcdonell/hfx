@@ -24,9 +24,10 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
 
 {# fun unsafe addIons
     { cIntConv          `Int'              ,
-      withDevicePtr*    `DevicePtr CFloat' ,
+                        `Float'            ,
       withDevicePtr*    `DevicePtr CFloat' ,
       withDevicePtr*    `DevicePtr CInt'   ,
+                        `Int'              ,
                         `Int'              ,
                         `Int'              } -> `()' #}
 

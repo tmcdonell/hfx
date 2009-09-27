@@ -72,13 +72,12 @@ addIonsY(float mass, float charge, int *spec, unsigned int N)
  * Add a spectral peak for each fragment ion location. The output spectrum array
  * must exist and be initialised to zero.
  */
-template <bool lengthIsPow2>
 __global__ static void
 addIons_core
 (
     int          max_charge,
-    float        *b_ions,
-    float        *y_ions,
+    float        residual,
+    float        *ladder,
     int          *spec,
     unsigned int len_ions,
     unsigned int len_spec
@@ -86,18 +85,16 @@ addIons_core
 {
     unsigned int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
-    if (lengthIsPow2 || idx < len_ions)
+    if (idx < len_ions)
     {
-        int   charge = 1;
-        float b_mass = b_ions[idx];
-        float y_mass = y_ions[idx];
+        float y_mass = ladder[idx];
+        float b_mass = residual - y_mass;
 
-        do
+        for (int charge = 1; charge <= max_charge; ++charge)
         {
             addIonsAB(b_mass, (float) charge, spec, len_spec);
             addIonsY (y_mass, (float) charge, spec, len_spec);
         }
-        while (++charge < max_charge);
     }
 }
 
@@ -105,20 +102,21 @@ addIons_core
 void
 addIons
 (
-    int          max_charge,
-    float        *b_ions,
-    float        *y_ions,
-    int          *spec,
-    unsigned int len_ions,
-    unsigned int len_spec
+    int                 max_charge,
+    float               residual,
+    float               *y_ions,
+    int                 *spec,
+    unsigned int        len_ions,
+    unsigned int        len_spec,
+    unsigned int        offset
 )
 {
     unsigned int threads = min(ceilPow2(len_ions), 512);
     unsigned int blocks  = (len_ions + threads - 1) / threads;
 
-    if (isPow2(len_ions))
-        addIons_core<true><<<blocks,threads>>>(max_charge, b_ions, y_ions, spec, len_ions, len_spec);
-    else
-        addIons_core<false><<<blocks,threads>>>(max_charge, b_ions, y_ions, spec, len_ions, len_spec);
+    /*
+     * y_ions[offset] == residual
+     */
+    addIons_core<<<blocks,threads>>>(max_charge, residual, &y_ions[offset+1], spec, len_ions, len_spec);
 }
 

@@ -20,11 +20,12 @@ void
 addIons
 (
     int                 charge,
-    float               *b_ions,
+    float               residual,
     float               *y_ions,
     int                 *out,
     unsigned int        len_ions,
-    unsigned int        len_spec
+    unsigned int        len_spec,
+    unsigned int	offset
 );
 
 

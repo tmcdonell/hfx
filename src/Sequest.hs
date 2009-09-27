@@ -82,14 +82,15 @@ foldlM' f z0 xs0 = go z0 xs0
 --
 searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> IO MatchCollection
 searchForMatches cp database spec = do
-    specExp <- buildExpSpecXCorr cp spec
+    specExp    <- buildExpSpecXCorr cp spec
+    candidates <- findCandidates cp spec `fmap` mapM (digestProtein cp) database
+
     finish `fmap` foldlM' record nomatch [ score specExp peptide |
-                                            protein <- candidates database,
+                                            protein <- candidates,
                                             peptide <- fragments protein
                                          ]
     where
         specThry b = buildThrySpecXCorr cp b (round (charge spec))
-        candidates = findCandidates cp spec . map (digestProtein cp)
         finish     = reverse . catMaybes
 
         record l   = fmap $ tail . flip (insertBy cmp) l . Just
@@ -153,7 +154,7 @@ findCandidates cp spec =
 -- preprocessed experimental spectra.
 --
 sequestXC :: ConfigParams -> XCorrSpecExp -> XCorrSpecThry -> IO Float
-sequestXC _cp (XCorrSpecExp (m,n) d_exp) (XCorrSpecThry _ d_thry) =
+sequestXC _cp (XCorrSpecExp (m,n) d_exp) d_thry =
   do
     G.allocaBytes bytes $ \d_xs -> do
     zipWith_timesif d_thry d_exp d_xs len
