@@ -36,6 +36,7 @@ import Kernels
 import Protein
 import Spectrum
 import IonSeries
+import Bio.Util (sequence')
 
 import Data.List
 import Data.Maybe
@@ -71,10 +72,9 @@ data Match = Match
 --
 foldlM' :: Monad m => (a -> b -> m a) -> a -> [b] -> m a
 foldlM' f z0 xs0 = go z0 xs0
-    where go z []     = return z
-          go z (x:xs) = do z'  <-   f z x
-                           z' `seq` go z' xs
-
+  where go z []     = return z
+        go z (x:xs) = do z'  <-   f z x
+                         z' `seq` go z' xs
 
 --
 -- Search the database for amino acid sequences within a defined mass tolerance.
@@ -83,7 +83,7 @@ foldlM' f z0 xs0 = go z0 xs0
 searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> IO MatchCollection
 searchForMatches cp database spec = do
     specExp    <- buildExpSpecXCorr cp spec
-    candidates <- findCandidates cp spec `fmap` mapM (digestProtein cp) database
+    candidates <- findCandidates cp spec `fmap` sequence' (map (digestProtein cp) database)
 
     finish `fmap` foldlM' record nomatch [ score specExp peptide |
                                             protein <- candidates,
