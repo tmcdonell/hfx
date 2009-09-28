@@ -4,9 +4,10 @@
  * License   : BSD
  */
 
+#include "utils.h"
 #include "kernels.h"
 #include "operator.h"
-#include "cudpp/cudpp_globals.h"
+
 
 static void
 replicate_control
@@ -16,8 +17,8 @@ replicate_control
     unsigned int        &threads
 )
 {
-    blocks  = max(1.0, ceil((double)n / (SCAN_ELTS_PER_THREAD * CTA_SIZE)));
-    threads = blocks > 1 ? CTA_SIZE : ceil((double)n / SCAN_ELTS_PER_THREAD);
+    threads = min(ceilPow2(n), 512);
+    blocks  = (n + threads - 1) / threads;
 }
 
 
@@ -34,19 +35,10 @@ replicate_core
     const int   length
 )
 {
-    /*
-     * Each thread processes eight elements, this is the first index
-     */
-    unsigned int idx = blockIdx.x * (blockDim.x << 3) + threadIdx.x;
+    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-#pragma unroll
-    for (unsigned int i = 0; i < SCAN_ELTS_PER_THREAD; ++i)
-    {
-	if (idx < length)
-	    out[idx] = symbol;
-
-	idx += blockDim.x;
-    }
+    if (idx < length)
+	out[idx] = symbol;
 }
 
 

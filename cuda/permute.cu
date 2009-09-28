@@ -6,7 +6,6 @@
 
 #include "utils.h"
 #include "kernels.h"
-#include "cudpp/cudpp_globals.h"
 
 
 static void
@@ -17,8 +16,8 @@ permute_control
     unsigned int        &threads
 )
 {
-    blocks  = max(1.0, ceil((double)n / (SCAN_ELTS_PER_THREAD * CTA_SIZE)));
-    threads = blocks > 1 ? CTA_SIZE : ceil((double)n / SCAN_ELTS_PER_THREAD);
+    threads = min(ceilPow2(n), 512);
+    blocks  = (n + threads - 1) / threads;
 }
 
 
@@ -54,10 +53,7 @@ permute_core
     unsigned int        *num_valid = NULL
 )
 {
-    /*
-     * Each thread processes eight elements, this is the index of the first
-     */
-    unsigned int idx = blockIdx.x * (blockDim.x << 3) + threadIdx.x;
+    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     /*
      * Return the number of valid entries found
@@ -70,19 +66,14 @@ permute_core
             num_valid[0] = valid[length-1] + indices[length-1];
     }
 
-#pragma unroll
-    for (unsigned int i = 0; i < SCAN_ELTS_PER_THREAD; ++i)
+    if (idx < length)
     {
-        if (idx < length)
-        {
-            if (compact && valid[idx])
-                out[indices[idx]] = in[idx];
-            else if (backward)
-                out[idx] = in[indices[idx]];
-            else
-                out[indices[idx]] = in[idx];
-        }
-        idx += blockDim.x;
+	if (compact && valid[idx])
+	    out[indices[idx]] = in[idx];
+	else if (backward)
+	    out[idx] = in[indices[idx]];
+	else
+	    out[indices[idx]] = in[idx];
     }
 }
 
