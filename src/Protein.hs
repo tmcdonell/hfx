@@ -49,7 +49,7 @@ data Protein = Protein
     {
         header    :: L.ByteString,      -- Description of the protein
         seqdata   :: L.ByteString,      -- Amino acid character sequence
-        seqladder :: DevicePtr CFloat,  -- Sequence ladder of y-ion series fragments
+        seqladder :: DevicePtr Float,   -- Sequence ladder of y-ion series fragments
         fragments :: [Peptide]          -- Peptide fragments digested from this protein
     }
     deriving (Eq, Show)
@@ -196,21 +196,21 @@ digestProtein cp protein =
   --
   -- Read back and package the results
   --
-  r_off <- (map cIntConv   . G.forceEither) `fmap` G.peekArray num_seqs offsets
-  r_res <- (map cFloatConv . G.forceEither) `fmap` G.peekArray num_seqs residuals
+  r_off <- G.forceEither `fmap` G.peekArray num_seqs offsets
+  r_res <- G.forceEither `fmap` G.peekArray num_seqs residuals
 
   return $ let p = protein { seqladder = ladder }
            in  p { fragments = filter inrange $ zipWith3 (Peptide p) r_res r_off splices }
   where
     inrange p = minPeptideMass cp <= pmass p && pmass p <= maxPeptideMass cp
-    bytes x   = fromIntegral x * fromIntegral (sizeOf (undefined::CFloat))
+    bytes x   = fromIntegral x * fromIntegral (sizeOf (undefined::Float))
 
     indices   = L.findIndices ((fst . digestionRule) cp) (seqdata protein)
     splices   = simpleSplice cp . simpleFragment protein $ indices
 
-    lengths   = map (\(m,n) -> cIntConv (n - m + 1)) splices
+    lengths   = map (\(m,n) -> fromIntegral (n - m + 1)) splices
     ions      = foldl' (\a -> L.append a . seqextract (seqdata protein)) L.empty $ splices
-    masses    = map (cFloatConv . getAAMass cp) . L.unpack $ ions
+    masses    = map (getAAMass cp) . L.unpack $ ions
 
 
 --

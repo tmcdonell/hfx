@@ -41,7 +41,7 @@ import qualified Foreign.CUDA as G
 -- XXX: Changed to a dense array on the device, to facilitate eventual dot
 -- product operation (and because my cuda-fu is weak...)
 --
-type XCorrSpecThry = G.DevicePtr CInt
+type XCorrSpecThry = G.DevicePtr Int
 
 
 --data XCorrSpecThry = XCorrSpecThry
@@ -88,7 +88,7 @@ buildThrySpecXCorr _cp (p,q) cg pep = do
     charge = max 1 (cg-1)
     len_i  = let (c,n) = terminals pep in fromIntegral (n-c)
     len_s  = q - p + 1
-    bytes  = fromIntegral len_s * fromIntegral (sizeOf (undefined::CInt))
+    bytes  = fromIntegral len_s * fromIntegral (sizeOf (undefined::Int))
 
 
 #if 0

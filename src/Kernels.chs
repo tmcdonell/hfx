@@ -13,33 +13,38 @@
 module Kernels where
 
 import C2HS
-import Foreign.CUDA (DevicePtr, withDevicePtr)
+import Foreign.CUDA (DevicePtr)
 
 #include "cuda/kernels.h"
 
+--
+-- XXX: Need to replace this with a rewrite rules to achieve the same effect
+--
+withDevicePtr :: DevicePtr a -> (Ptr b -> IO c) -> IO c
+withDevicePtr =  withForeignPtr . castForeignPtr
 
 --------------------------------------------------------------------------------
 -- Ion Series
 --------------------------------------------------------------------------------
 
 {# fun unsafe addIons
-    { cIntConv          `Int'              ,
-                        `Float'            ,
-      withDevicePtr*    `DevicePtr CFloat' ,
-      withDevicePtr*    `DevicePtr CInt'   ,
-                        `Int'              ,
-                        `Int'              ,
-                        `Int'              } -> `()' #}
+    { cIntConv          `Int'             ,
+                        `Float'           ,
+      withDevicePtr*    `DevicePtr Float' ,
+      withDevicePtr*    `DevicePtr Int'   ,
+                        `Int'             ,
+                        `Int'             ,
+                        `Int'             } -> `()' #}
 
 --------------------------------------------------------------------------------
 -- ZipWith
 --------------------------------------------------------------------------------
 
 {# fun unsafe zipWith_timesif
-    { withDevicePtr* `DevicePtr CInt'   ,
-      withDevicePtr* `DevicePtr CFloat' ,
-      withDevicePtr* `DevicePtr CFloat' ,
-                     `Int'              } -> `()' #}
+    { withDevicePtr* `DevicePtr Int'   ,
+      withDevicePtr* `DevicePtr Float' ,
+      withDevicePtr* `DevicePtr Float' ,
+                     `Int'             } -> `()' #}
 
 
 --------------------------------------------------------------------------------
@@ -47,8 +52,8 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
 --------------------------------------------------------------------------------
 
 {# fun unsafe fold_plusf
-    { withDevicePtr* `DevicePtr CFloat' ,
-                     `Int'              } -> `Float' #}
+    { withDevicePtr* `DevicePtr Float' ,
+                     `Int'             } -> `Float' #}
 
 
 --------------------------------------------------------------------------------
@@ -56,26 +61,26 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
 --------------------------------------------------------------------------------
 
 {# fun unsafe scanl_plusui
-    { withDevicePtr* `DevicePtr CUInt' ,
-      withDevicePtr* `DevicePtr CUInt' ,
-                     `Int'             } -> `()' #}
+    { withDevicePtr* `DevicePtr Int' ,
+      withDevicePtr* `DevicePtr Int' ,
+                     `Int'           } -> `()' #}
 
 {# fun unsafe scanr_plusui
-    { withDevicePtr* `DevicePtr CUInt' ,
-      withDevicePtr* `DevicePtr CUInt' ,
-                     `Int'             } -> `()' #}
+    { withDevicePtr* `DevicePtr Int' ,
+      withDevicePtr* `DevicePtr Int' ,
+                     `Int'           } -> `()' #}
 
 {# fun unsafe scanl1Seg_plusf
-    { withDevicePtr* `DevicePtr CFloat' ,
-      withDevicePtr* `DevicePtr CUInt'  ,
-      withDevicePtr* `DevicePtr CFloat' ,
-                     `Int'              } -> `()' #}
+    { withDevicePtr* `DevicePtr Float' ,
+      withDevicePtr* `DevicePtr Int'   ,
+      withDevicePtr* `DevicePtr Float' ,
+                     `Int'             } -> `()' #}
 
 {# fun unsafe scanr1Seg_plusf
-    { withDevicePtr* `DevicePtr CFloat' ,
-      withDevicePtr* `DevicePtr CUInt'  ,
-      withDevicePtr* `DevicePtr CFloat' ,
-                     `Int'              } -> `()' #}
+    { withDevicePtr* `DevicePtr Float' ,
+      withDevicePtr* `DevicePtr Int'   ,
+      withDevicePtr* `DevicePtr Float' ,
+                     `Int'             } -> `()' #}
 
 
 --------------------------------------------------------------------------------
@@ -83,40 +88,40 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
 --------------------------------------------------------------------------------
 
 {# fun unsafe permute_ui
-    { withDevicePtr* `DevicePtr CUInt' ,
-      withDevicePtr* `DevicePtr CUInt' ,
-      withDevicePtr* `DevicePtr CUInt' ,
-                     `Int'             } -> `()' #}
+    { withDevicePtr* `DevicePtr Int' ,
+      withDevicePtr* `DevicePtr Int' ,
+      withDevicePtr* `DevicePtr Int' ,
+                     `Int'           } -> `()' #}
 
 {# fun unsafe bpermute_f
-    { withDevicePtr* `DevicePtr CFloat' ,
-      withDevicePtr* `DevicePtr CFloat' ,
-      withDevicePtr* `DevicePtr CUInt'  ,
-                     `Int'              } -> `()' #}
+    { withDevicePtr* `DevicePtr Float' ,
+      withDevicePtr* `DevicePtr Float' ,
+      withDevicePtr* `DevicePtr Int'   ,
+                     `Int'             } -> `()' #}
 
 {# fun unsafe compact_f
-    { withDevicePtr* `DevicePtr CFloat' ,
-      withDevicePtr* `DevicePtr CFloat' ,
-      withDevicePtr* `DevicePtr CUInt'  ,
-                     `Int'              } -> `Int' #}
+    { withDevicePtr* `DevicePtr Float' ,
+      withDevicePtr* `DevicePtr Float' ,
+      withDevicePtr* `DevicePtr Int'   ,
+                     `Int'             } -> `Int' #}
 
 --------------------------------------------------------------------------------
 -- Map
 --------------------------------------------------------------------------------
 
 {# fun unsafe map_getAAMass
-    { withDevicePtr* `DevicePtr CChar'  ,
-      withDevicePtr* `DevicePtr CFloat' ,
-                     `Int'              } -> `()' #}
+    { withDevicePtr* `DevicePtr Char'  ,
+      withDevicePtr* `DevicePtr Float' ,
+                     `Int'             } -> `()' #}
 
 --------------------------------------------------------------------------------
 -- Replicate
 --------------------------------------------------------------------------------
 
 {# fun unsafe replicate_ui
-    { withDevicePtr* `DevicePtr CUInt' ,
-                     `Int'             ,
-                     `Int'             } -> `()' #}
+    { withDevicePtr* `DevicePtr Int' ,
+                     `Int'           ,
+                     `Int'           } -> `()' #}
 
 
 --------------------------------------------------------------------------------
@@ -124,13 +129,13 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
 --------------------------------------------------------------------------------
 
 {# fun unsafe sort_f
-    { withDevicePtr* `DevicePtr CFloat' ,
-                     `Int'              } -> `()' #}
+    { withDevicePtr* `DevicePtr Float' ,
+                     `Int'             } -> `()' #}
 
 {# fun unsafe sortPairs_f
-    { withDevicePtr* `DevicePtr CFloat' ,
-      withDevicePtr* `DevicePtr CFloat' ,
-                     `Int'              } -> `()' #}
+    { withDevicePtr* `DevicePtr Float' ,
+      withDevicePtr* `DevicePtr Float' ,
+                     `Int'             } -> `()' #}
 
 
 --------------------------------------------------------------------------------
@@ -138,7 +143,7 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
 --------------------------------------------------------------------------------
 
 {# fun unsafe group_f
-    { withDevicePtr* `DevicePtr CFloat' ,
-      withDevicePtr* `DevicePtr CUInt'  ,
-                     `Int'              } -> `()' #}
+    { withDevicePtr* `DevicePtr Float' ,
+      withDevicePtr* `DevicePtr Int'   ,
+                     `Int'             } -> `()' #}
 

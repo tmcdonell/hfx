@@ -83,7 +83,7 @@ mzRange spec =  minmax (peaks spec)
 --
 data XCorrSpecExp = XCorrSpecExp
         (Int,Int)                       -- bounds of the array
-        (G.DevicePtr CFloat)            -- array data, stored on the device
+        (G.DevicePtr Float)             -- array data, stored on the device
 
 
 --------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ buildExpSpecXCorr :: ConfigParams
 buildExpSpecXCorr cp spec =
     let sp = calculateXCorr . normaliseByRegion . observedIntensity cp $ spec
     in do
-      d_ptr <- G.newArray . map cFloatConv . elems $ sp
+      d_ptr <- G.newArray . elems $ sp
       return $ XCorrSpecExp (bounds sp) d_ptr
 
 
