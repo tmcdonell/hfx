@@ -113,8 +113,8 @@ compact
     unsigned int *num;
     unsigned int *indices;
 
-    cudaMalloc(&num, sizeof(unsigned int));
-    cudaMalloc(&indices, length * sizeof(unsigned int));
+    cudaMalloc((void**) &num, sizeof(unsigned int));
+    cudaMalloc((void**) &indices, length * sizeof(unsigned int));
 
     if (backward) scanr_plusui(flags, indices, length);
     else          scanl_plusui(flags, indices, length);

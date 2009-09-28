@@ -219,9 +219,9 @@ segscan_init(int N, segscan_plan<T> *plan)
 
         if (num_blocks > 1)
         {
-            cudaMalloc(&plan->sums[level],    num_blocks * sizeof(T));
-            cudaMalloc(&plan->flags[level],   num_blocks * sizeof(unsigned int));
-            cudaMalloc(&plan->indices[level], num_blocks * sizeof(unsigned int));
+            cudaMalloc((void**) &plan->sums[level],    num_blocks * sizeof(T));
+            cudaMalloc((void**) &plan->flags[level],   num_blocks * sizeof(unsigned int));
+            cudaMalloc((void**) &plan->indices[level], num_blocks * sizeof(unsigned int));
         }
     }
 }

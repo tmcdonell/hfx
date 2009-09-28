@@ -131,7 +131,7 @@ endif
 CUBIN_ARCH_FLAG :=
 
 # Libraries
-LIB              = -L$(LIBDIR) $(addprefix -l,$(EXTRALIBS))
+LIB             += -L$(LIBDIR) $(addprefix -l,$(EXTRALIBS))
 ifeq ($(HP_64),)
    LIB          += -L$(CUDA_INSTALL_PATH)/lib
 else
@@ -167,11 +167,17 @@ ifeq ($(USECUBLAS),1)
 endif
 
 ifeq ($(USECUDPP),1)
-    ifeq ($(emu),1)
-        LIB     += -lcudpp_emu
-    else
-        LIB     += -lcudpp
+    CUDPPLIB := cudpp
+
+    ifneq ($(HP_64),)
+        CUDPPLIB := $(CUDPPLIB)64
     endif
+
+    ifeq ($(emu),1)
+        CUDPPLIB := $(CUDPPLIB)_emu
+    endif
+
+    LIB     += -l$(CUDPPLIB)
 endif
 
 
@@ -198,7 +204,11 @@ ifneq ($(DYNAMIC_LIB),)
     CFLAGS      += -fPIC
     CXXFLAGS    += -fPIC
     NVCCFLAGS   += -Xcompiler -fPIC
+    ifneq ($(DARWIN),)
     LINKLINE     = $(LINK) -dynamiclib -o $(TARGET) -install_name "@rpath/$(notdir $(TARGET))" $(OBJS) $(LIB)
+    else
+    LINKLINE     = $(LINK) -shared -o $(TARGET) -Wl,-rpath,$(notdir $(TARGET)) $(OBJS) $(LIB)
+    endif
 else
     TARGETDIR   := $(BINDIR)/$(BINSUBDIR)
     TARGET      := $(TARGETDIR)/$(EXECUTABLE)

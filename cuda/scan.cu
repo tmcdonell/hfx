@@ -144,7 +144,7 @@ scan_init(int N, scan_plan<T> *plan)
         num_blocks = calc_num_blocks(elements);
 
         if (num_blocks > 1)
-            cudaMalloc(&plan->block_sums[level], num_blocks * sizeof(T));
+            cudaMalloc((void**) &plan->block_sums[level], num_blocks * sizeof(T));
     }
 }
 
