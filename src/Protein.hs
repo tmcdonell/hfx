@@ -167,14 +167,20 @@ digestProtein cp protein =
   -- as well. From the host, we copy the lengths of each individual segment,
   -- followed by the concatenation of the ion masses of each sequence.
   --
-  G.withArrayLen lengths $ \num_seqs seq_lengths  ->
-  G.withArrayLen masses  $ \num_ions ion_masses   ->
-  G.allocaBytes (bytes num_seqs)     $ \offsets   ->
-  G.allocaBytes (bytes num_seqs)     $ \residuals ->
-  G.allocaBytes (bytes num_ions)     $ \flags     ->
-  G.allocaBytes (bytes num_seqs)     $ \ones      -> do
+  G.withArrayLen lengths $ \num_seqs seq_lengths   ->
+  G.withArrayLen ions    $ \num_ions seq_ions      ->
+  G.allocaBytes (bytes num_seqs)     $ \offsets    ->
+  G.allocaBytes (bytes num_seqs)     $ \residuals  ->
+  G.allocaBytes (bytes num_ions)     $ \flags      ->
+  G.allocaBytes (bytes num_ions)     $ \ion_masses ->
+  G.allocaBytes (bytes num_seqs)     $ \ones       -> do
   ladder <- G.forceEither `fmap` G.malloc (bytes num_ions)
   G.memset flags (bytes num_ions) 0
+
+  --
+  -- Convert the amino acid code into the corresponding monoisotopic mass
+  --
+  map_getAAMass seq_ions ion_masses num_ions
 
   --
   -- Scan the sequence lengths to find the offset of that sequence in the
@@ -209,8 +215,8 @@ digestProtein cp protein =
     splices   = simpleSplice cp . simpleFragment protein $ indices
 
     lengths   = map (\(m,n) -> fromIntegral (n - m + 1)) splices
-    ions      = foldl' (\a -> L.append a . seqextract (seqdata protein)) L.empty $ splices
-    masses    = map (getAAMass cp) . L.unpack $ ions
+    ions      = L.unpack . foldl' (\a -> L.append a . seqextract (seqdata protein)) L.empty $ splices
+--    masses    = map (getAAMass cp) . L.unpack $ ions
 
 
 --

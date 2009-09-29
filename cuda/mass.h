@@ -29,7 +29,7 @@
 #define massO   16.0013f
 #define massH   1.0078246f
 
-extern __constant__ float aa_table[26] =
+extern __device__ float aa_table[26] =
 {
     71.037114f,         //  A: Alanine              Alg     C3H5NO
     114.53494f,         //  B: Aspargine            Asx     C4H8N2O3
@@ -69,7 +69,7 @@ public:
 
 
 template <>
-class getAAMass<char, float> : Functor<char, float>
+class getAAMass<int, float> : Functor<char, float>
 {
 public:
     static __device__ float apply(const char &x) { return aa_table[x - 'A']; }

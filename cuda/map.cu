@@ -5,9 +5,10 @@
  */
 
 #include "mass.h"
+#include "utils.h"
 #include "kernels.h"
 #include "operator.h"
-#include "cudpp/cudpp_globals.h"
+//#include "cudpp/cudpp_globals.h"
 
 static void
 map_control
@@ -17,8 +18,11 @@ map_control
     unsigned int        &threads
 )
 {
-    blocks  = max(1.0, ceil((double)n / (SCAN_ELTS_PER_THREAD * CTA_SIZE)));
-    threads = blocks > 1 ? CTA_SIZE : ceil((double)n / SCAN_ELTS_PER_THREAD);
+    threads = min(ceilPow2(n), 512);
+    blocks  = (n + threads - 1) / threads;
+
+//    blocks  = max(1.0, ceil((double)n / (SCAN_ELTS_PER_THREAD * CTA_SIZE)));
+//    threads = blocks > 1 ? CTA_SIZE : ceil((double)n / SCAN_ELTS_PER_THREAD);
 }
 
 
@@ -35,6 +39,7 @@ map_core
     int length
 )
 {
+#if 0
     /*
      * Each thread processes eight elements, this is the first index
      */
@@ -48,6 +53,18 @@ map_core
 
 	idx += blockDim.x;
     }
+#endif
+
+    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    __shared__ float mass[26];
+
+    if (threadIdx.x < 26)
+        mass[threadIdx.x] = aa_table[threadIdx.x];
+
+    __syncthreads();
+
+    if (idx < length)
+        out[idx] = mass[xs[idx] - 'A'];
 }
 
 
@@ -72,8 +89,8 @@ map
 // Instances
 // -----------------------------------------------------------------------------
 
-void map_getAAMass(char *ions, float *masses, int N)
+void map_getAAMass(int *ions, float *masses, int N)
 {
-    map< getAAMass<char,float> >(ions, masses, N);
+    map< getAAMass<int,float> >(ions, masses, N);
 }
 
