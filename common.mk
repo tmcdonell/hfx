@@ -127,6 +127,17 @@ else
     CFLAGS      += -fno-strict-aliasing
 endif
 
+# Device emulation configuration
+ifeq ($(emu),1)
+    NVCCFLAGS   += -deviceemu
+    CUDACCFLAGS +=
+    BINSUBDIR   := emu$(BINSUBDIR)
+    LIBSUFFIX   := $(LIBSUFFIX)_emu
+    # consistency, makes developing easier
+    CXXFLAGS    += -D__DEVICE_EMULATION__
+    CFLAGS      += -D__DEVICE_EMULATION__
+endif
+
 # architecture flag for cubin build
 CUBIN_ARCH_FLAG :=
 
@@ -180,23 +191,11 @@ ifeq ($(USECUDPP),1)
     LIB     += -l$(CUDPPLIB)
 endif
 
-
-# Device emulation configuration
-ifeq ($(emu),1)
-    NVCCFLAGS   += -deviceemu
-    CUDACCFLAGS +=
-    BINSUBDIR   := emu$(BINSUBDIR)
-    LIBSUFFIX   := $(LIBSUFFIX)_emu
-    # consistency, makes developing easier
-    CXXFLAGS    += -D__DEVICE_EMULATION__
-    CFLAGS      += -D__DEVICE_EMULATION__
-endif
-
 # Library/executable configuration
 ifneq ($(STATIC_LIB),)
     TARGETDIR   := $(LIBDIR)
     TARGET      := $(subst .a,$(LIBSUFFIX).a,$(LIBDIR)/$(STATIC_LIB))
-    LINKLINE     = ar rucv $(TARGET) $(OBJS)
+    LINKLINE     = ar rucv $(TARGET) $(OBJS); ranlib $(TARGET)
 else
 ifneq ($(DYNAMIC_LIB),)
     TARGETDIR   := $(LIBDIR)
