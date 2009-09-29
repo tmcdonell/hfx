@@ -18,6 +18,7 @@ module Config
 import Mass
 import Utils
 
+import Foreign.C.Types
 import Control.Monad
 import Data.Array.Unboxed
 import Data.Char
@@ -45,18 +46,18 @@ data ConfigParams = ConfigParams
         --
         -- Enzyme search parameters
         --
-        massTolerance       :: Float,                    -- Search peptides within ± this value of the spectrum mass
+        massTolerance       :: CFloat,                   -- Search peptides within ± this value of the spectrum mass
         removePrecursorPeak :: Bool,                     -- Remove a ±5 da window surrounding the precursor mass
         missedCleavages     :: Int,                      -- Number of missed cleavage sites to consider
         digestionRule       :: ((Char -> Bool), String), -- Protein fragmentation rule and description text
-        minPeptideMass      :: Float,                    -- Minimum mass of peptides to be considered
-        maxPeptideMass      :: Float,                    -- Maximum peptide mass
+        minPeptideMass      :: CFloat,                   -- Minimum mass of peptides to be considered
+        maxPeptideMass      :: CFloat,                   -- Maximum peptide mass
 
         --
         -- Allow static modifications to an amino acid mass, which affects every
         -- occurrence of that residue/terminus
         --
-        aaMassTable         :: Array Char Float,
+        aaMassTable         :: Array Char CFloat,
         aaMassTypeMono      :: Bool,
 
         --
@@ -79,7 +80,7 @@ data ConfigParams = ConfigParams
 --
 -- XXX: Shouldn't really live here...
 --
-getAAMass       :: ConfigParams -> Char -> Float
+getAAMass       :: ConfigParams -> Char -> CFloat
 getAAMass cp aa =  aaMassTable cp ! aa
 
 

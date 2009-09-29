@@ -57,12 +57,12 @@ data SpectrumCollection = SpectrumCollection
 -- information about the m/z of the intact ion that generated the spectrum,
 -- known as the "precursor".
 --
-type Peak = (Float, Float)
+type Peak = (CFloat, CFloat)
 
 data Spectrum = Spectrum
     {
-        precursor :: Float,             -- The precursor mass; (M+zH)/z
-        charge    :: Float,             -- Peptide charge state
+        precursor :: CFloat,            -- The precursor mass; (M+zH)/z
+        charge    :: CFloat,            -- Peptide charge state
         peaks     :: [Peak]             -- The actual mass/charge ratio intensity measurements
     }
     deriving (Eq, Show)
@@ -70,7 +70,7 @@ data Spectrum = Spectrum
 --
 -- Find the m/z range of the recorded peaks
 --
-mzRange      :: Spectrum -> (Float, Float)
+mzRange      :: Spectrum -> (CFloat, CFloat)
 mzRange spec =  minmax (peaks spec)
     where
         minmax []       = error "Spectrum.mzRange: empty list"
@@ -83,7 +83,7 @@ mzRange spec =  minmax (peaks spec)
 --
 data XCorrSpecExp = XCorrSpecExp
         (Int,Int)                       -- bounds of the array
-        (G.DevicePtr Float)             -- array data, stored on the device
+        (G.DevicePtr CFloat)            -- array data, stored on the device
 
 
 --------------------------------------------------------------------------------
@@ -123,7 +123,7 @@ buildExpSpecXCorr cp spec =
 --   3. Since this must mimic a FFT in real space, we need to include space for
 --      the "wings" in the (-75,+75) region in calculateXCorr
 --
-observedIntensity :: ConfigParams -> Spectrum -> Array Int Float
+observedIntensity :: ConfigParams -> Spectrum -> Array Int CFloat
 observedIntensity cp spec =
     accumArray max 0 bnds [(bin x,sqrt y) | (x,y) <- filter limits (peaks spec)]
     where
@@ -152,10 +152,10 @@ observedIntensity cp spec =
 -- This means that some values from the input will not be considered, and be set
 -- to zero.
 --
-normaliseByRegion :: Array Int Float -> Array Int Float
+normaliseByRegion :: Array Int CFloat -> Array Int CFloat
 normaliseByRegion a = array (bounds a) [ (i,norm i) | i <- indices a ]
     where
-        rgn_max :: Array Int Float
+        rgn_max :: Array Int CFloat
         rgn_max =  accumArray max 0 (0,10) [(rgn i,e) | (i,e) <- assocs a]
 
         norm i  = let m = rgn_max ! (rgn i)  in
@@ -170,7 +170,7 @@ normaliseByRegion a = array (bounds a) [ (i,norm i) | i <- indices a ]
 -- Each sequest matching score is then a dot product between a theoretical input
 -- and this pre-processed spectrum.
 --
-calculateXCorr :: Array Int Float -> Array Int Float
+calculateXCorr :: Array Int CFloat -> Array Int CFloat
 calculateXCorr a  = listArray (0, ceilPow2 n - 1) (repeat 0) // [(i,xcorr i e) | (i,e) <- assocs a]
     where
         (m,n)     = bounds a

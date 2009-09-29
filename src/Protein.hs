@@ -29,6 +29,7 @@ import Kernels
 
 import Data.List
 import qualified Bio.Sequence as S
+import qualified Data.ByteString.Lazy as W
 import qualified Data.ByteString.Lazy.Char8 as L
 
 import C2HS
@@ -49,7 +50,7 @@ data Protein = Protein
     {
         header    :: L.ByteString,      -- Description of the protein
         seqdata   :: L.ByteString,      -- Amino acid character sequence
-        seqladder :: DevicePtr Float,   -- Sequence ladder of y-ion series fragments
+        seqladder :: DevicePtr CFloat,  -- Sequence ladder of y-ion series fragments
         fragments :: [Peptide]          -- Peptide fragments digested from this protein
     }
     deriving (Eq, Show)
@@ -68,8 +69,8 @@ description = L.unpack . header
 data Peptide = Peptide
     {
         parent    :: Protein,           -- Protein this fragment derives from
-        residual  :: Float,             -- The sum of the residual masses of this peptide
-        offset    :: Int,
+        residual  :: CFloat,            -- The sum of the residual masses of this peptide
+        offset    :: CUInt,
         terminals :: (Int64, Int64)     -- Location in the parent protein of this peptide
     }
     deriving (Eq, Show)
@@ -79,7 +80,7 @@ data Peptide = Peptide
 -- mass of the water molecule released in forming the peptide bond (plus one;
 -- from Eq. 1 of Eng.[1])
 --
-pmass   :: Peptide -> Float
+pmass   :: Peptide -> CFloat
 pmass p =  residual p + (massH2O + massH)
 
 --
@@ -209,13 +210,14 @@ digestProtein cp protein =
            in  p { fragments = filter inrange $ zipWith3 (Peptide p) r_res r_off splices }
   where
     inrange p = minPeptideMass cp <= pmass p && pmass p <= maxPeptideMass cp
-    bytes x   = fromIntegral x * fromIntegral (sizeOf (undefined::Float))
+    bytes x   = fromIntegral x * fromIntegral (sizeOf (undefined::CFloat))
 
     indices   = L.findIndices ((fst . digestionRule) cp) (seqdata protein)
     splices   = simpleSplice cp . simpleFragment protein $ indices
 
     lengths   = map (\(m,n) -> fromIntegral (n - m + 1)) splices
-    ions      = L.unpack . foldl' (\a -> L.append a . seqextract (seqdata protein)) L.empty $ splices
+    ions      = map fromIntegral . W.unpack
+                . foldl' (\a -> L.append a . seqextract (seqdata protein)) L.empty $ splices
 --    masses    = map (getAAMass cp) . L.unpack $ ions
 
 

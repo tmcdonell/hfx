@@ -41,7 +41,7 @@ import qualified Foreign.CUDA as G
 -- XXX: Changed to a dense array on the device, to facilitate eventual dot
 -- product operation (and because my cuda-fu is weak...)
 --
-type XCorrSpecThry = G.DevicePtr Int
+type XCorrSpecThry = G.DevicePtr CInt
 
 
 --data XCorrSpecThry = XCorrSpecThry

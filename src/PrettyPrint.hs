@@ -45,10 +45,10 @@ printConfig cp fp spec = displayIO . ppAsRows 0 . map (intersperse (text "::")) 
     [ [text "Spectrum"   , text fp]
     , [text "Database"   , text (fromJust (databasePath cp))]
     , [text "Enzyme"     , hsep $ map text (tail enzyme)]
-    , [text "(M+H)+ Mass", float mass <+> text "~" <+> float (massTolerance cp)]
+    , [text "(M+H)+ Mass", float mass <+> text "~" <+> float (realToFrac $ massTolerance cp)]
     ]
     where
-        mass   = (precursor spec * charge spec) - ((charge spec * massH) - 1)
+        mass   = realToFrac $ (precursor spec * charge spec) - ((charge spec * massH) - 1)
         enzyme = words . snd . digestionRule $ cp
 
 --------------------------------------------------------------------------------
@@ -63,10 +63,10 @@ toDoc :: Int -> Float -> Match -> [Doc]
 toDoc n s0 (Match pep sc) =
     [ space <> int n <> char '.'
     , float' (pmass pep)
-    , float' ((s0 - sc)/s0)
-    , float' sc
-    , text  (name (parent pep))
-    , text  (slice pep)
+    , float' (realToFrac ((s0 - sc)/s0))
+    , float' (realToFrac sc)
+    , text   (name (parent pep))
+    , text   (slice pep)
     ]
     where float' = text . flip (showFFloat (Just 4)) ""
 

@@ -16,7 +16,7 @@ module Mass where
 --
 -- The monoisotopic mass of several elements and molecules
 --
-massH2O, massNH3, massCO, massO, massH :: Float
+massH2O, massNH3, massCO, massO, massH :: Floating a => a
 massH2O = 18.01056
 massNH3 = 17.02655
 massCO  = 27.9949
@@ -31,7 +31,7 @@ massH   = 1.0078246
 -- This corresponds to the mass of the residue, where the mass of the
 -- peptide/protein is the mass of the residue plus the mass of water.
 --
-getAAMassMono     :: Char -> Float
+getAAMassMono     :: Floating a => Char -> a
 getAAMassMono 'A' =   71.037114         -- Alanine              Alg     C3H5NO
 getAAMassMono 'R' =  156.101111         -- Arginine             Arg     C6H12N4O
 getAAMassMono 'N' =  114.042927         -- Asparagine           Asn     C4H6N2O2
@@ -70,7 +70,7 @@ getAAMassMono  x  = error $ "Unknown amino acid abbreviation: " ++ [x]
 -- Return the average (molecular) mass of an amino acid residue in atomic mass
 -- units, for the given short abbreviation.
 --
-getAAMassAvg     :: Char -> Float
+getAAMassAvg     :: Floating a => Char -> a
 getAAMassAvg 'A' =   71.0788            -- Alanine              Alg
 getAAMassAvg 'R' =  156.1875            -- Arginine             Arg
 getAAMassAvg 'N' =  114.1038            -- Asparagine           Asn
