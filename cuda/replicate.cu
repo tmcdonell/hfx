@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "kernels.h"
 #include "operator.h"
+#include "cudpp/cudpp_globals.h"
 
 
 static void
@@ -17,7 +18,7 @@ replicate_control
     unsigned int        &threads
 )
 {
-    threads = min(ceilPow2(n), 512);
+    threads = min(ceilPow2(n), CTA_SIZE);
     blocks  = (n + threads - 1) / threads;
 }
 

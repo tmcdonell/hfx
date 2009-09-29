@@ -7,6 +7,8 @@
 #include "utils.h"
 #include "kernels.h"
 #include "operator.h"
+#include "cudpp/cudpp_globals.h"
+
 
 /*
  * Combine two arrays using the given binary operator function. A single thread
@@ -39,7 +41,7 @@ zipWith
     int length
 )
 {
-    unsigned int threads = min(ceilPow2(length), 512);
+    unsigned int threads = min(ceilPow2(length), CTA_SIZE);
     unsigned int blocks  = (length + threads - 1) / threads;
 
     if (isPow2(length))
