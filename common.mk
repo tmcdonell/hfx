@@ -112,7 +112,7 @@ COMMONFLAGS     += $(INCLUDES) -DUNIX
 ifeq ($(dbg),1)
     COMMONFLAGS += -g
     GHCFLAGS	+= -prof -auto-all -fhpc
-    NVCCFLAGS   += -D_DEBUG
+    NVCCFLAGS   += -D_DEBUG -G
     CXXFLAGS    += -D_DEBUG
     CFLAGS      += -D_DEBUG
     BINSUBDIR   := debug
@@ -212,7 +212,12 @@ else
     TARGETDIR   := $(BINDIR)/$(BINSUBDIR)
     TARGET      := $(TARGETDIR)/$(EXECUTABLE)
     ifneq ($(HSMAIN),)
-        LINKLINE =  $(GHC) -o $(TARGET) $(LIB) $(GHCFLAGS) $(HSMAIN)
+        ifeq ($(dbg),1)
+            OBJS     += $(OBJDIR)/ptxvars.cu.o
+            LINKLINE  = $(GHC) -o $(TARGET) $(LIB) $(OBJDIR)/ptxvars.cu.o $(GHCFLAGS) $(HSMAIN)
+        else
+            LINKLINE  = $(GHC) -o $(TARGET) $(LIB) $(GHCFLAGS) $(HSMAIN)
+        endif
     else
         LINKLINE = $(LINK) -o $(TARGET) $(OBJS) $(LIB)
     endif
@@ -287,6 +292,8 @@ PTXBINS += $(patsubst %.cu,$(PTXDIR)/%.ptx,$(notdir $(PTXFILES)))
 # ------------------------------------------------------------------------------
 # Rules
 # ------------------------------------------------------------------------------
+default: $(TARGET)
+
 %.subdir :
 	$(VERBOSE)$(MAKE) -C $* $(MAKECMDGOALS)
 
@@ -295,6 +302,9 @@ $(OBJDIR)/%.c.o : $(SRCDIR)/%.c $(C_DEPS)
 
 $(OBJDIR)/%.cpp.o : $(SRCDIR)/%.cpp $(C_DEPS)
 	$(VERBOSE)$(CXX) $(CXXFLAGS) -o $@ -c $<
+
+$(OBJDIR)/ptxvars.cu.o: makedirectories
+	$(VERBOSE)$(NVCC) -g -G --host-compilation=C -define-always-macro __DEVICE_LAUNCH_PARAMETERS_H__ -Xptxas -fext -o $@ -c $(CUDA_INSTALL_PATH)/bin/ptxvars.cu
 
 $(OBJDIR)/%.cu.o : $(SRCDIR)/%.cu $(CU_DEPS)
 	$(VERBOSE)$(NVCC) $(NVCCFLAGS) $(SMVERSIONFLAGS) -o $@ -c $<
