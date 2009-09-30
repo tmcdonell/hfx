@@ -160,7 +160,7 @@ sequestXC _cp (XCorrSpecExp (m,n) d_exp) d_thry =
     zipWith_timesif d_thry d_exp d_xs len
     fold_plusf d_xs len >>= \x -> return (x / 10000)
     where
-      len   = (n-m)
+      len   = (n-m+1)
       bytes = fromIntegral len * fromIntegral (sizeOf (undefined::Float))
 
 
