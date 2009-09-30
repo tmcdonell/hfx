@@ -77,6 +77,11 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
     , withDevicePtr* `DevicePtr CFloat'
     ,                `Int'              } -> `()' #}
 
+{# fun unsafe scanl1Seg_plusui
+    { withDevicePtr* `DevicePtr CUInt'
+    , withDevicePtr* `DevicePtr CUInt'
+    , withDevicePtr* `DevicePtr CUInt'
+    ,                `Int'             } -> `()' #}
 
 --------------------------------------------------------------------------------
 -- Permute
@@ -87,6 +92,12 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
     , withDevicePtr* `DevicePtr CUInt'
     , withDevicePtr* `DevicePtr CUInt'
     ,                `Int'             } -> `()' #}
+
+{# fun unsafe bpermute_ui
+    { withDevicePtr* `DevicePtr CUInt'
+    , withDevicePtr* `DevicePtr CUInt'
+    , withDevicePtr* `DevicePtr CUInt'
+    ,                `Int'              } -> `()' #}
 
 {# fun unsafe bpermute_f
     { withDevicePtr* `DevicePtr CFloat'
@@ -105,7 +116,7 @@ import Foreign.CUDA (DevicePtr, withDevicePtr)
 --------------------------------------------------------------------------------
 
 {# fun unsafe map_getAAMass
-    { withDevicePtr* `DevicePtr CInt'
+    { withDevicePtr* `DevicePtr CUInt'
     , withDevicePtr* `DevicePtr CFloat'
     ,                `Int'              } -> `()' #}
 

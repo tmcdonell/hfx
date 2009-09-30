@@ -144,6 +144,11 @@ void permute_ui(unsigned int *in, unsigned int *out, unsigned int *indices, int 
 }
 
 
+void bpermute_ui(unsigned int *in, unsigned int *out, unsigned int *indices, int length)
+{
+    permute<unsigned int,true,false>(in, out, indices, length);
+}
+
 void bpermute_f(float *in, float *out, unsigned int *indices, int length)
 {
     permute<float,true,false>(in, out, indices, length);

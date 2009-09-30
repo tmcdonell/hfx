@@ -285,3 +285,8 @@ void scanr1Seg_plusf(float *in, unsigned int *flags, float *out, int N)
     segmented_scan< Plus<float>, float, true, false >(in, flags, out, N);
 }
 
+void scanl1Seg_plusui(unsigned int *in, unsigned int *flags, unsigned int *out, int N)
+{
+    segmented_scan< Plus<unsigned int>, unsigned int, false, false >(in, flags, out, N);
+}
+

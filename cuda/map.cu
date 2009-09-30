@@ -90,8 +90,8 @@ map
 // Instances
 // -----------------------------------------------------------------------------
 
-void map_getAAMass(int *ions, float *masses, int N)
+void map_getAAMass(unsigned int *ions, float *masses, int N)
 {
-    map< getAAMass<int,float> >(ions, masses, N);
+    map< getAAMass<unsigned int,float> >(ions, masses, N);
 }
 
