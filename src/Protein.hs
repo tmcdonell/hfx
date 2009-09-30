@@ -216,9 +216,7 @@ digestProtein cp protein =
     splices   = simpleSplice cp . simpleFragment protein $ indices
 
     lengths   = map (\(m,n) -> fromIntegral (n - m + 1)) splices
-    ions      = map fromIntegral . W.unpack
-                . foldl' (\a -> L.append a . seqextract (seqdata protein)) L.empty $ splices
---    masses    = map (getAAMass cp) . L.unpack $ ions
+    ions      = concatMap (W.foldr (\x xs -> fromIntegral x : xs) [] . seqextract (seqdata protein)) splices
 
 
 --
