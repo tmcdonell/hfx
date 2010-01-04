@@ -10,6 +10,8 @@
 
 module PrettyPrint
   (
+    Pretty(..),
+
     printConfig,
     printResults,
     printResultsDetail
@@ -26,7 +28,16 @@ import Numeric
 import Data.List
 import Data.Maybe
 import Text.PrettyPrint
+import System.IO
 
+import qualified Data.ByteString.Lazy.Char8 as B
+
+class Pretty a where ppr :: a -> Doc
+
+instance Pretty Bool            where ppr = text . show
+instance Pretty Char            where ppr = char
+instance Pretty B.ByteString    where ppr = ppr . B.unpack
+instance Pretty a => Pretty [a] where ppr s = hcat $ map ppr s
 
 --------------------------------------------------------------------------------
 -- Doc -> IO
@@ -34,6 +45,23 @@ import Text.PrettyPrint
 
 displayIO :: Doc -> IO ()
 displayIO =  putStrLn . flip (++) "\n" . render
+
+--
+-- stolen from $fptools/ghc/compiler/utils/Pretty.lhs
+--
+-- This code has a BSD-style license
+--
+printDoc :: Mode -> Handle -> Doc -> IO ()
+printDoc m hdl doc = do
+  fullRender m cols 1.5 put done doc
+  hFlush hdl
+  where
+    put (Chr c) next  = hPutChar hdl c >> next
+    put (Str s) next  = hPutStr  hdl s >> next
+    put (PStr s) next = hPutStr  hdl s >> next
+
+    done = hPutChar hdl '\n'
+    cols = 80
 
 
 --------------------------------------------------------------------------------

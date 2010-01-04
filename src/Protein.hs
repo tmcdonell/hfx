@@ -345,6 +345,10 @@ simpleSplice cp pep@(p:ps)
 -- Return a representation of the amino acid sequence of a peptide, including
 -- the flanking residuals (if present)
 --
+--instance Pretty Peptide where
+--  ppr = text . slice
+
+
 slice :: Peptide -> String
 slice peptide = [ca,'.'] ++ (L.unpack (lyse peptide)) ++ ['.',na]
     where
