@@ -14,4 +14,5 @@ EXTRALIBS        = $(addsuffix $(LIBSUFFIX),$(ALGORITHMS))
 # ------------------------------------------------------------------------------
 # Haskell/CUDA build system
 # ------------------------------------------------------------------------------
+ROOTDIR := .
 include ../common/common.mk
