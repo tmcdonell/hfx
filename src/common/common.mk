@@ -1,4 +1,20 @@
 # ------------------------------------------------------------------------------
+#
+# Copyright 1993-2009 NVIDIA Corporation.  All rights reserved.
+#
+# NVIDIA Corporation and its licensors retain all intellectual property and 
+# proprietary rights in and to this software and related documentation. 
+# Any use, reproduction, disclosure, or distribution of this software 
+# and related documentation without an express license agreement from
+# NVIDIA Corporation is strictly prohibited.
+#
+# Please refer to the applicable NVIDIA end user license agreement (EULA) 
+# associated with this source code for terms and conditions that govern 
+# your use of this NVIDIA software.
+#
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
 # Common Haskell/CUDA build system
 # ------------------------------------------------------------------------------
 
@@ -28,14 +44,16 @@ HP_64           := $(strip $(shell uname -m | grep 64))
 CUDA_INSTALL_PATH ?= /usr/local/cuda
 CUDA_SDK_PATH     ?= /Developer/GPU\ Computing/C
 
-SRCDIR          ?= src
-DISTROOT        ?= dist
-BINDIR          := $(DISTROOT)/bin
-LIBDIR          := $(DISTROOT)/lib
-ROOTOBJDIR      := $(DISTROOT)/obj
+SRCDIR          ?= .
+ROOTDIR         ?= ..
+ROOTBINDIR      := $(ROOTDIR)/../../dist/bin
+BINDIR          := $(ROOTBINDIR)
+ROOTOBJDIR      := obj
+LIBDIR          := $(ROOTDIR)/../../dist/lib
+COMMONDIR       := $(ROOTDIR)/../common
 
 # Compilers
-NVCC            := nvcc
+NVCC            := $(CUDA_INSTALL_PATH)/bin/nvcc
 GHC             := ghc
 C2HS            := c2hs
 HSC2HS          := hsc2hs
@@ -44,7 +62,7 @@ CC              := gcc
 LINK            := g++ -fPIC
 
 # Includes
-INCLUDES        += -I. -I$(CUDA_INSTALL_PATH)/include
+INCLUDES        += -I. -I$(CUDA_INSTALL_PATH)/include -I$(COMMONDIR)/include -I$(COMMONDIR)/src
 
 # architecture flag for cubin build
 CUBIN_ARCH_FLAG :=
@@ -100,7 +118,7 @@ endif
 
 # Compiler-specific flags
 NVCCFLAGS       +=
-GHCFLAGS        += $(GHCWARN_FLAGS) -i$(SRCDIR) -i$(OBJDIR) -odir $(OBJDIR) -hidir $(OBJDIR) --make
+GHCFLAGS        += $(GHCWARN_FLAGS) -i$(SRCDIR) -i$(COMMONDIR)/src -i$(OBJDIR) -odir $(OBJDIR) -hidir $(OBJDIR) --make
 CXXFLAGS        += $(CXXWARN_FLAGS) $(CXX_ARCH_FLAGS)
 CFLAGS          += $(CWARN_FLAGS) $(CXX_ARCH_FLAGS)
 LINK		+= $(CXX_ARCH_FLAGS)
@@ -134,6 +152,8 @@ ifeq ($(emu),1)
     BINSUBDIR   := emu$(BINSUBDIR)
     LIBSUFFIX   := $(LIBSUFFIX)_emu
     # consistency, makes developing easier
+    C2HSFLAGS   += --cppopts=-D__DEVICE_EMULATION__
+    GHCFLAGS    += -D__DEVICE_EMULATION__
     CXXFLAGS    += -D__DEVICE_EMULATION__
     CFLAGS      += -D__DEVICE_EMULATION__
 endif
@@ -194,12 +214,12 @@ endif
 # Library/executable configuration
 ifneq ($(STATIC_LIB),)
     TARGETDIR   := $(LIBDIR)
-    TARGET      := $(subst .a,$(LIBSUFFIX).a,$(LIBDIR)/$(STATIC_LIB))
+    TARGET      := $(LIBDIR)/$(basename $(STATIC_LIB))$(LIBSUFFIX)$(suffix $(STATIC_LIB))
     LINKLINE     = ar rucv $(TARGET) $(OBJS); ranlib $(TARGET)
 else
 ifneq ($(DYNAMIC_LIB),)
     TARGETDIR   := $(LIBDIR)
-    TARGET      := $(subst .dylib,$(LIBSUFFIX).dylib,$(LIBDIR)/$(DYNAMIC_LIB))
+    TARGET      := $(LIBDIR)/$(basename $(DYNAMIC_LIB))$(LIBSUFFIX)$(suffix $(DYNAMIC_LIB))
     CFLAGS      += -fPIC
     CXXFLAGS    += -fPIC
     NVCCFLAGS   += -Xcompiler -fPIC
@@ -212,11 +232,17 @@ else
     TARGETDIR   := $(BINDIR)/$(BINSUBDIR)
     TARGET      := $(TARGETDIR)/$(EXECUTABLE)
     ifneq ($(HSMAIN),)
+        ifeq ($(suffix $(HSMAIN)),.chs)
+            FOO      := $(HSMAIN)
+            CHSFILES += $(FOO)
+            HSMAIN    = $(OBJDIR)/$(basename $(FOO)).hs
+        endif
+
         ifeq ($(dbg),1)
 #            OBJS     += $(OBJDIR)/ptxvars.cu.o
-            LINKLINE  = $(GHC) -o $(TARGET) $(LIB) $(GHCFLAGS) $(HSMAIN)
+            LINKLINE  = $(GHC) -o $(TARGET) $(LIB) $(OBJS) $(GHCFLAGS) $(HSMAIN)
         else
-            LINKLINE  = $(GHC) -o $(TARGET) $(LIB) $(GHCFLAGS) $(HSMAIN)
+            LINKLINE  = $(GHC) -o $(TARGET) $(LIB) $(OBJS) $(GHCFLAGS) $(HSMAIN)
         endif
     else
         LINKLINE = $(LINK) -o $(TARGET) $(OBJS) $(LIB)
@@ -310,7 +336,7 @@ $(OBJDIR)/%.cu.o : $(SRCDIR)/%.cu $(CU_DEPS)
 	$(VERBOSE)$(NVCC) $(NVCCFLAGS) $(SMVERSIONFLAGS) -o $@ -c $<
 
 $(OBJDIR)/%.hs : $(SRCDIR)/%.chs
-	$(VERBOSE)$(C2HS) --include=$(OBJDIR) $(addprefix --cppopts=,$(INCLUDES)) --output-dir=$(OBJDIR) --output=$(notdir $@) $<
+	$(VERBOSE)$(C2HS) $(C2HSFLAGS) --include=$(OBJDIR) $(addprefix --cppopts=,$(INCLUDES)) --output-dir=$(OBJDIR) --output=$(notdir $@) $<
 
 $(OBJDIR)/%.hs : $(SRCDIR)/%.hsc
 	$(VERBOSE)$(HSC2HS) $(INCLUDES) -o $@ $<
@@ -371,12 +397,15 @@ clean : tidy
 	$(VERBOSE)rm -f $(PTXBINS)
 	$(VERBOSE)rm -f $(TARGET)
 	$(VERBOSE)rm -f $(NVCC_KEEP_CLEAN)
+	$(VERBOSE)rm -f $(ROOTBINDIR)/$(OSLOWER)/$(BINSUBDIR)/*.ppm
+	$(VERBOSE)rm -f $(ROOTBINDIR)/$(OSLOWER)/$(BINSUBDIR)/*.pgm
+	$(VERBOSE)rm -f $(ROOTBINDIR)/$(OSLOWER)/$(BINSUBDIR)/*.bin
+	$(VERBOSE)rm -f $(ROOTBINDIR)/$(OSLOWER)/$(BINSUBDIR)/*.bmp
 
 clobber : clean
 	$(VERBOSE)rm -rf $(ROOTOBJDIR)
 
-spotless:
-	$(VERBOSE)rm -rf $(DISTROOT)
+spotless : clobber
 	$(VERBOSE)rm -rf .hpc
 	$(VERBOSE)rm -f $(EXECUTABLE).{aux,hp,prof,ps}
 	$(VERBOSE)rm -f *.html
