@@ -29,7 +29,6 @@ import Spectrum
 import Numeric
 import Control.Monad (liftM2)
 import Text.ParserCombinators.Parsec
-import Foreign.C.Types
 
 
 --------------------------------------------------------------------------------
@@ -40,7 +39,7 @@ import Foreign.C.Types
 -- The DTA file contains at least one line, each of which is terminated by an
 -- end-of-line character (eol)
 --
-dtaFile :: Parser [(CFloat, CFloat)]
+dtaFile :: Parser [(Float, Float)]
 dtaFile =  endBy line eol
 
 -- 
@@ -48,7 +47,7 @@ dtaFile =  endBy line eol
 -- are returned as a pair of (mass/charge ratio, intensity) values. Detecting
 -- signed values isn't really necessary, but is done for completeness.
 --
-line :: Parser (CFloat, CFloat)
+line :: Parser (Float, Float)
 line =  liftM2 (,) fval fval
     where fval = (fst . head . readSigned readFloat) `fmap` value
 
@@ -80,7 +79,7 @@ eol =  try (string "\n\r")
 --
 -- Encase the values read from the DTA file into a data structure
 --
-mkSpec              :: [(CFloat, CFloat)] -> Either String Spectrum
+mkSpec              :: [(Float, Float)] -> Either String Spectrum
 mkSpec []           =  Left "Error: empty spectrum"
 mkSpec ((m,c):ss)
     | trunc' c /= c =  Left "Error: invalid peptide charge state\nexpecting integer"

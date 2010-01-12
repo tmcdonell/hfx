@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Sequest
@@ -21,7 +20,6 @@
 --     Spectrometry, 5(11):976-989, November 1994.
 --
 --------------------------------------------------------------------------------
-
 module Sequest
   (
     Match(..),
@@ -32,17 +30,14 @@ module Sequest
 
 import Mass
 import Config
-import Kernels
 import Protein
 import Spectrum
 import IonSeries
-import Bio.Util (sequence')
 
 import Data.List
 import Data.Maybe
-
-import C2HS
-import qualified Foreign.CUDA as G
+import Data.Function
+import Data.Array.Unboxed
 
 
 --------------------------------------------------------------------------------
@@ -68,43 +63,9 @@ data Match = Match
 --------------------------------------------------------------------------------
 
 --
--- Left fold with strict accumulator and monadic operator
---
-foldlM' :: Monad m => (a -> b -> m a) -> a -> [b] -> m a
-foldlM' f z0 xs0 = go z0 xs0
-  where go z []     = return z
-        go z (x:xs) = do z'  <-   f z x
-                         z' `seq` go z' xs
-
---
 -- Search the database for amino acid sequences within a defined mass tolerance.
 -- Only peptides which fall within this range will be considered.
 --
-searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> IO MatchCollection
-searchForMatches cp database spec = do
-    specExp    <- buildExpSpecXCorr cp spec
-    candidates <- findCandidates cp spec `fmap` sequence' (map (digestProtein cp) database)
-
-    finish `fmap` foldlM' record nomatch [ score specExp peptide |
-                                            protein <- candidates,
-                                            peptide <- fragments protein
-                                         ]
-    where
-        specThry b = buildThrySpecXCorr cp b (round (charge spec))
-        finish     = reverse . catMaybes
-
-        record l   = fmap $ tail . flip (insertBy cmp) l . Just
-        n          = max (numMatches cp) (numMatchesDetail cp)
-        nomatch    = replicate n Nothing
-
-        score e p  = Match p `fmap` (specThry (bnds e) p >>= sequestXC cp e)
-
-        bnds (XCorrSpecExp b _) = b
-        cmp (Just x) (Just y)   = compare (scoreXC x) (scoreXC y)
-        cmp _        _          = GT
-
-
-#if 0
 searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> MatchCollection
 searchForMatches cp database spec = finish $
     foldl' record nomatch [ score peptide |
@@ -113,23 +74,18 @@ searchForMatches cp database spec = finish $
                           ]
     where
         specExp    = buildExpSpecXCorr  cp spec
-        specThry   = buildThrySpecXCorr cp (charge spec)
+        specThry   = buildThrySpecXCorr cp (charge spec) (bounds specExp)
         candidates = findCandidates cp spec . map (digestProtein cp)
         finish     = reverse . catMaybes
 
-        record l   = tail . flip (insertBy cmp) l . Just
+        record l x = tail $ insertBy (compare `on` (fmap scoreXC)) (Just x) l
         n          = max (numMatches cp) (numMatchesDetail cp)
         nomatch    = replicate n Nothing
 
         score p    = Match {
-            scoreXC   = sequestXC cp spec specExp (specThry p),
+            scoreXC   = sequestXC specExp (specThry p),
             candidate = p
           }
-
-        cmp (Just x) (Just y) = compare (scoreXC x) (scoreXC y)
-        cmp _        _        = GT
-#endif
-
 
 --
 -- Search the protein database for candidate peptides within the specified mass
@@ -153,42 +109,6 @@ findCandidates cp spec =
 -- correlation is the dot product between the theoretical representation and the
 -- preprocessed experimental spectra.
 --
-sequestXC :: ConfigParams -> XCorrSpecExp -> XCorrSpecThry -> IO Float
-sequestXC _cp (XCorrSpecExp (m,n) d_exp) d_thry =
-  do
-    G.allocaBytes bytes $ \d_xs -> do
-    zipWith_timesif d_thry d_exp d_xs len
-    fold_plusf d_xs len >>= \x -> return (x / 10000)
-    where
-      len   = (n-m+1)
-      bytes = fromIntegral len * fromIntegral (sizeOf (undefined::Float))
-
-
-#if 0
---
--- Explicitly de-forested array dot product [P. Walder, Deforestation, 1988]
---
-dot     :: (Ix a, Num a, Num e) => Array a e -> Array a e -> e
-dot v w =  loop m 0
-    where
-        (m,n)                  = bounds v
-        loop i acc | i > n     = acc
-                   | otherwise = loop (i+1) (v!i * w!i + acc)
-
---
--- Score a peptide against the observed intensity spectrum. The sequest cross
--- correlation is the dot product between the theoretical representation and the
--- preprocessed experimental spectra.
---
-sequestXC :: ConfigParams -> Spectrum -> XCorrSpecExp -> XCorrSpecThry -> Float
-sequestXC cp spec v sv = (dot v w) / 10000
-    where
-        w      = accumArray max 0 bnds [(bin i,e) | (i,e) <- sv, inRange bnds (bin i)]
-        bin mz = round (mz / width)
-        width  = if aaMassTypeMono cp then 1.0005079 else 1.0011413
-
-        cutoff = 50 + precursor spec * charge spec
-        (m,n)  = bounds v
-        bnds   = (m, min n (bin cutoff))
-#endif
+sequestXC :: XCorrSpecExp -> XCorrSpecThry -> Float
+sequestXC v sv = sum [ x * v!i | (i,x) <- sv ] / 10000
 

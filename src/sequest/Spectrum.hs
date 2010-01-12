@@ -14,9 +14,10 @@ module Spectrum
   (
     Spectrum(..),
     SpectrumCollection(..),
-    XCorrSpecExp(..),
+    XCorrSpecExp,
 
-    buildExpSpecXCorr
+    buildExpSpecXCorr,
+    specBinWidth
   )
   where
 
@@ -26,9 +27,6 @@ import Utils
 import Data.List
 import Data.Array.Unboxed
 import Data.ByteString.Lazy (ByteString)
-
-import C2HS
-import qualified Foreign.CUDA as G
 
 
 --------------------------------------------------------------------------------
@@ -57,12 +55,12 @@ data SpectrumCollection = SpectrumCollection
 -- information about the m/z of the intact ion that generated the spectrum,
 -- known as the "precursor".
 --
-type Peak = (CFloat, CFloat)
+type Peak = (Float, Float)
 
 data Spectrum = Spectrum
     {
-        precursor :: CFloat,            -- The precursor mass; (M+zH)/z
-        charge    :: CFloat,            -- Peptide charge state
+        precursor :: Float,             -- The precursor mass; (M+zH)/z
+        charge    :: Float,             -- Peptide charge state
         peaks     :: [Peak]             -- The actual mass/charge ratio intensity measurements
     }
     deriving (Eq, Show)
@@ -70,7 +68,7 @@ data Spectrum = Spectrum
 --
 -- Find the m/z range of the recorded peaks
 --
-mzRange      :: Spectrum -> (CFloat, CFloat)
+mzRange      :: Spectrum -> (Float, Float)
 mzRange spec =  minmax (peaks spec)
     where
         minmax []       = error "Spectrum.mzRange: empty list"
@@ -81,14 +79,19 @@ mzRange spec =  minmax (peaks spec)
 -- A mz/intensity spectrum array of experimental data suitable for sequest
 -- cross-correlation ranking
 --
-data XCorrSpecExp = XCorrSpecExp
-        (Int,Int)                       -- bounds of the array
-        (G.DevicePtr CFloat)            -- array data, stored on the device
+type XCorrSpecExp = UArray Int Float
 
 
 --------------------------------------------------------------------------------
 -- Experimental Intensity Spectrum
 --------------------------------------------------------------------------------
+
+--
+-- Width of the mass/charge ratio bins used to discretize the spectra. These are
+-- stolen from Crux.
+--
+specBinWidth    :: ConfigParams -> Float
+specBinWidth cp =  if aaMassTypeMono cp then 1.0005079 else 1.0011413
 
 --
 -- Process the observed spectral peaks and generate an array suitable for
@@ -98,22 +101,14 @@ data XCorrSpecExp = XCorrSpecExp
 --       use a StorableArray and copy directly from that memory. Otherwise,
 --       investigate the use of an STUArray for fast construction.
 --
-buildExpSpecXCorr :: ConfigParams
-                  -> Spectrum
-                  -> IO XCorrSpecExp
-buildExpSpecXCorr cp spec =
-    let sp = calculateXCorr . normaliseByRegion . observedIntensity cp $ spec
-    in do
-      d_ptr <- G.newArray . elems $ sp
-      return $ XCorrSpecExp (bounds sp) d_ptr
+buildExpSpecXCorr    :: ConfigParams -> Spectrum -> XCorrSpecExp
+buildExpSpecXCorr cp =  calculateXCorr . normaliseByRegion . observedIntensity cp
 
 
 --
 -- Generate an intensity array for the observed spectrum. The square root of the
 -- input intensity is taken, and only the most intense sample in a given bin is
 -- recorded.
---
--- The bin width index for a given mass/charge ratio is stolen from crux...(?)
 --
 -- Some slight-of-hand going on here. The boundaries of the array are not
 -- entirely clear, and determined by several limits:
@@ -123,11 +118,11 @@ buildExpSpecXCorr cp spec =
 --   3. Since this must mimic a FFT in real space, we need to include space for
 --      the "wings" in the (-75,+75) region in calculateXCorr
 --
-observedIntensity :: ConfigParams -> Spectrum -> Array Int CFloat
+observedIntensity :: ConfigParams -> Spectrum -> UArray Int Float
 observedIntensity cp spec =
     accumArray max 0 bnds [(bin x,sqrt y) | (x,y) <- filter limits (peaks spec)]
     where
-        bin mz = round (mz / width)
+        bin mz = round (mz / specBinWidth cp)
         mass   = precursor spec
         (m,n)  = mzRange spec
         bnds   = (max 0 ((floor m)-75), 75 + ceiling cutoff)
@@ -135,8 +130,6 @@ observedIntensity cp spec =
         cutoff = let mzcut = 50 + mass * charge spec
                      mzlim = fromInteger (truncate (n/10) * 10)
                  in  min mzcut mzlim
-
-        width  = if aaMassTypeMono cp then 1.0005079 else 1.0011413
 
         limits (x,_) = if removePrecursorPeak cp
                        then x <= cutoff && (x <= (mass-15) || (mass+15) <= x)
@@ -152,10 +145,10 @@ observedIntensity cp spec =
 -- This means that some values from the input will not be considered, and be set
 -- to zero.
 --
-normaliseByRegion :: Array Int CFloat -> Array Int CFloat
+normaliseByRegion :: UArray Int Float -> UArray Int Float
 normaliseByRegion a = array (bounds a) [ (i,norm i) | i <- indices a ]
     where
-        rgn_max :: Array Int CFloat
+        rgn_max :: UArray Int Float
         rgn_max =  accumArray max 0 (0,10) [(rgn i,e) | (i,e) <- assocs a]
 
         norm i  = let m = rgn_max ! (rgn i)  in
@@ -165,12 +158,13 @@ normaliseByRegion a = array (bounds a) [ (i,norm i) | i <- indices a ]
         sel     = cutoff `div` 10
         cutoff  = (snd (bounds a)) - 75
 
+
 --
 -- Calculate the sequest cross-correlation function for the given input array.
 -- Each sequest matching score is then a dot product between a theoretical input
 -- and this pre-processed spectrum.
 --
-calculateXCorr :: Array Int CFloat -> Array Int CFloat
+calculateXCorr :: UArray Int Float -> UArray Int Float
 calculateXCorr a  = listArray (0, ceilPow2 n - 1) (repeat 0) // [(i,xcorr i e) | (i,e) <- assocs a]
     where
         (m,n)     = bounds a

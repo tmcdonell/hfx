@@ -37,15 +37,17 @@ class Pretty a where ppr :: a -> Doc
 instance Pretty Bool            where ppr = text . show
 instance Pretty Char            where ppr = char
 instance Pretty B.ByteString    where ppr = ppr . B.unpack
-instance Pretty a => Pretty [a] where ppr s = hcat $ map ppr s
+instance Pretty a => Pretty [a] where ppr = hcat . map ppr
+instance Pretty Peptide         where ppr = text . slice
 
 --------------------------------------------------------------------------------
 -- Doc -> IO
 --------------------------------------------------------------------------------
 
 displayIO :: Doc -> IO ()
-displayIO =  putStrLn . flip (++) "\n" . render
+displayIO =  putStrLn . (++ "\n") . render
 
+{-
 --
 -- stolen from $fptools/ghc/compiler/utils/Pretty.lhs
 --
@@ -62,7 +64,7 @@ printDoc m hdl doc = do
 
     done = hPutChar hdl '\n'
     cols = 80
-
+-}
 
 --------------------------------------------------------------------------------
 -- Configuration -> Render

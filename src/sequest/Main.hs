@@ -46,16 +46,15 @@ main = do
 search :: ConfigParams -> FilePath -> IO ()
 search cp fp = do
     dta         <- readDTA fp
-
     proteins    <- case databasePath cp of
         Nothing -> error "Protein database not specified"
         Just db -> readFasta db
 
-    let spec = forceEitherStr dta
+    let spec    = forceEitherStr dta
+        matches = searchForMatches cp proteins spec
 
     printConfig cp fp spec
 
-    matches            <- searchForMatches cp proteins spec
     printResults       $! (take (numMatches cp)       matches)
     printResultsDetail $! (take (numMatchesDetail cp) matches)
 

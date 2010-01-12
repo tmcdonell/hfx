@@ -12,7 +12,7 @@ module Utils where
 
 import Data.Int
 import Data.Bits
-import Data.Array
+import Data.Array.IArray
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as L
 
@@ -25,7 +25,7 @@ import qualified Data.ByteString.Lazy.Char8 as L
 -- Strict left fold over a given subset of a one-dimensional array. The given
 -- indices must lie within the bounds of the array.
 --
-subFoldA' :: Ix k => (a -> b -> a) -> a -> Array k b -> [k] -> a
+subFoldA' :: (IArray a e, Ix i) => (b -> e -> b) -> b -> a i e -> [i] -> b
 subFoldA' f q a i = go q i
     where go s (j:js) = let s' = f s (a ! j)
                         in  s' `seq` go s' js
@@ -35,7 +35,7 @@ subFoldA' f q a i = go q i
 -- Strict left fold over a given subset of an array, using the first index as
 -- the starting value.
 --
-subFoldA1' :: Ix k => (a -> a -> a) -> Array k a -> [k] -> a
+subFoldA1' :: (IArray a e, Ix i) => (e -> e -> e) -> a i e -> [i] -> e
 subFoldA1' f a i = subFoldA' f (a ! head i) a (tail i)
 
 
