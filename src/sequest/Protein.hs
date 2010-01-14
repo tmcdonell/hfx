@@ -27,7 +27,7 @@ import Mass
 import Config
 
 import Data.Int
-import Data.List
+import Data.Vector.Storable (Storable)
 import qualified Bio.Sequence               as S
 import qualified Data.ByteString.Lazy.Char8 as L
 
@@ -36,23 +36,23 @@ import qualified Data.ByteString.Lazy.Char8 as L
 -- Data Structures
 --------------------------------------------------------------------------------
 
-type ProteinDatabase = [Protein]
+type ProteinDatabase a = [Protein a]
 
 --
 -- A protein, represented by its amino acid character code sequence
 --
-data Protein = Protein
+data Protein a = Protein
   {
     header    :: L.ByteString,          -- Description of the protein
     seqdata   :: L.ByteString,          -- Amino acid character sequence
-    fragments :: [Peptide]              -- Peptide fragments digested from this protein
+    fragments :: [Peptide a]            -- Peptide fragments digested from this protein
   }
   deriving (Eq, Show)
 
 --
 -- Extract the name and full description of a protein
 --
-name, description :: Protein -> String
+name, description :: Protein a -> String
 name        = L.unpack . head . L.words . header
 description = L.unpack . header
 
@@ -60,10 +60,10 @@ description = L.unpack . header
 -- A subsequence of a protein. Copy the bytestring sequence so that the garbage
 -- collector might recover the much larger parent protein.
 --
-data Peptide = Peptide
+data Peptide a = Peptide
   {
-    parent    :: Protein,               -- Protein this fragment derives from
-    residual  :: Float,                 -- The sum of the residual masses of this peptide
+    parent    :: Protein a,             -- Protein this fragment derives from
+    residual  :: a,                     -- The sum of the residual masses of this peptide
     terminals :: (Int64, Int64)         -- Location in the parent protein of this peptide
   }
   deriving (Eq, Show)
@@ -73,13 +73,13 @@ data Peptide = Peptide
 -- mass of the water molecule released in forming the peptide bond (plus one;
 -- from Eq. 1 of Eng.[1])
 --
-pmass :: Peptide -> Float
+pmass :: Fractional a => Peptide a -> a
 pmass p = residual p + (massH2O + massH)
 
 --
 -- Lyse the parent to extract the amino acid sequence of this peptide
 --
-lyse :: Peptide -> L.ByteString
+lyse :: Peptide a -> L.ByteString
 lyse pep = (L.take (n-c+1) . L.drop c . seqdata . parent) pep
   where (c,n) = terminals pep
 
@@ -88,10 +88,10 @@ lyse pep = (L.take (n-c+1) . L.drop c . seqdata . parent) pep
 -- the C- to N-terminus. Don't include the last element of the sequence, which
 -- corresponds to the mass of the unbroken peptide.
 --
-bIonLadder :: ConfigParams -> Peptide -> [Float]
+bIonLadder :: (Fractional a, Storable a) => ConfigParams a -> Peptide a -> [a]
 bIonLadder cp = tail . scanl (\m c -> m + getAAMass cp c) 0 . L.unpack . L.init . lyse
 
-yIonLadder :: ConfigParams -> Peptide -> [Float]
+yIonLadder :: (Fractional a, Storable a) => ConfigParams a -> Peptide a -> [a]
 yIonLadder cp p = map (\x -> residual p - x) (bIonLadder cp p)
 
 
@@ -105,7 +105,7 @@ yIonLadder cp p = map (\x -> residual p - x) (bIonLadder cp p)
 -- Each entry consists of a header (with a prefix of >) followed by a series of
 -- lines containing the sequence data.
 --
-readFasta :: FilePath -> IO ProteinDatabase
+readFasta :: FilePath -> IO (ProteinDatabase a)
 readFasta fasta = do
   database <- S.readFasta fasta
   return   $  map (\(S.Seq h d _) -> Protein h d []) database
@@ -119,7 +119,7 @@ readFasta fasta = do
 -- Record a new protein fragment by lysing the parent protein at the given amino
 -- acid locations.
 --
-fragment :: ConfigParams -> Protein -> (Int64, Int64) -> Peptide
+fragment :: (Fractional a, Storable a) => ConfigParams a -> Protein a -> (Int64, Int64) -> Peptide a
 fragment cp protein indices = pep
   where
     pep = Peptide {
@@ -137,7 +137,7 @@ fragment cp protein indices = pep
 --
 -- This almost supports special digestion rules...
 --
-digestProtein :: ConfigParams -> Protein -> Protein
+digestProtein :: (Fractional a, Ord a, Storable a) => ConfigParams a -> Protein a -> Protein a
 digestProtein cp protein = protein { fragments = seqs }
   where
     seqs      = filter inrange splices
@@ -152,7 +152,7 @@ digestProtein cp protein = protein { fragments = seqs }
 -- Split a protein at the given amino acid locations. Be sure to include the
 -- final fragment, with a dummy cleavage point at the end of the sequence.
 --
-simpleFragment :: ConfigParams -> Protein -> [Int64] -> [Peptide]
+simpleFragment :: (Fractional a, Storable a) => ConfigParams a -> Protein a -> [Int64] -> [Peptide a]
 simpleFragment _  _ []     = []
 simpleFragment cp p (i:is)
     | i+1 > n              = []
@@ -171,7 +171,7 @@ simpleFragment cp p (i:is)
 -- The input list must consist of sorted and adjacent breaks of the original
 -- protein sequence, but the output is unordered.
 --
-simpleSplice :: ConfigParams -> [Peptide] -> [Peptide]
+simpleSplice :: Num a => ConfigParams a -> [Peptide a] -> [Peptide a]
 simpleSplice _  []         = []
 simpleSplice cp pep@(p:ps)
     | null ps              = [p]
@@ -194,7 +194,7 @@ simpleSplice cp pep@(p:ps)
 -- Return a representation of the amino acid sequence of a peptide, including
 -- the flanking residuals (if present)
 --
-slice :: Peptide -> String
+slice :: Peptide a -> String
 slice peptide = [ca,'.'] ++ (L.unpack (lyse peptide)) ++ ['.',na]
   where
     chain = seqdata (parent peptide)

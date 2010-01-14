@@ -28,7 +28,6 @@ import Numeric
 import Data.List
 import Data.Maybe
 import Text.PrettyPrint
-import System.IO
 
 import qualified Data.ByteString.Lazy.Char8 as B
 
@@ -38,7 +37,7 @@ instance Pretty Bool            where ppr = text . show
 instance Pretty Char            where ppr = char
 instance Pretty B.ByteString    where ppr = ppr . B.unpack
 instance Pretty a => Pretty [a] where ppr = hcat . map ppr
-instance Pretty Peptide         where ppr = text . slice
+instance Pretty (Peptide a)     where ppr = text . slice
 
 --------------------------------------------------------------------------------
 -- Doc -> IO
@@ -70,7 +69,7 @@ printDoc m hdl doc = do
 -- Configuration -> Render
 --------------------------------------------------------------------------------
 
-printConfig :: ConfigParams -> FilePath -> Spectrum -> IO ()
+printConfig :: RealFrac a => ConfigParams a -> FilePath -> Spectrum a -> IO ()
 printConfig cp fp spec = displayIO . ppAsRows 0 . map (intersperse (text "::")) $
     [ [text "Spectrum"   , text fp]
     , [text "Database"   , text (fromJust (databasePath cp))]
@@ -89,7 +88,7 @@ title :: [[Doc]]
 title = map (map text) [[" # ", " (M+H)+  ", "deltCn", "XCorr", "Reference", "Peptide"],
                         ["---", "---------", "------", "-----", "---------", "-------"]]
 
-toDoc :: Int -> Float -> Match -> [Doc]
+toDoc :: RealFloat a => Int -> a -> Match a -> [Doc]
 toDoc n s0 (Match pep sc) =
     [ space <> int n <> char '.'
     , float' (pmass pep)
@@ -100,19 +99,19 @@ toDoc n s0 (Match pep sc) =
     ]
     where float' = text . flip (showFFloat (Just 4)) ""
 
-toDocDetail :: Int -> Match -> [Doc]
+toDocDetail :: Int -> Match a -> [Doc]
 toDocDetail n (Match pep _)  =
     [ space <> int n <> char '.'
     , text (description (parent pep))
     ]
 
-printResults   :: MatchCollection -> IO ()
+printResults   :: RealFloat a => MatchCollection a -> IO ()
 printResults m =  displayIO . ppAsRows 1 . (++) title . snd . mapAccumL k 1 $ m
     where
         s0    = scoreXC (head m)
         k n z = (n+1, toDoc n s0 z)
 
-printResultsDetail   :: MatchCollection -> IO ()
+printResultsDetail   :: RealFloat a => MatchCollection a -> IO ()
 printResultsDetail m =  displayIO . ppAsRows 1 . snd . mapAccumL k 1 $ m
     where
         k n z = (n+1, toDocDetail n z)

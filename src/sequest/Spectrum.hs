@@ -24,9 +24,9 @@ module Spectrum
 import Config
 import Utils
 
-import Data.List
-import Data.Array.Unboxed
 import Data.ByteString.Lazy (ByteString)
+import Data.Vector.Storable (Vector, Storable)
+import qualified Data.Vector.Storable as V
 
 
 --------------------------------------------------------------------------------
@@ -36,9 +36,9 @@ import Data.ByteString.Lazy (ByteString)
 --
 -- A group of multiple spectra, read from the same experimental results file.
 --
-data SpectrumCollection = SpectrumCollection
+data SpectrumCollection a = SpectrumCollection
     {
-        spectra :: [Spectrum],          -- Collection of measurements
+        spectra :: [Spectrum a],        -- Collection of measurements
         header  :: ByteString           -- Description/header from the input file
     }
     deriving (Eq, Show)
@@ -55,20 +55,20 @@ data SpectrumCollection = SpectrumCollection
 -- information about the m/z of the intact ion that generated the spectrum,
 -- known as the "precursor".
 --
-type Peak = (Float, Float)
+type Peak a = (a, a)
 
-data Spectrum = Spectrum
+data Spectrum a = Spectrum
     {
-        precursor :: Float,             -- The precursor mass; (M+zH)/z
-        charge    :: Float,             -- Peptide charge state
-        peaks     :: [Peak]             -- The actual mass/charge ratio intensity measurements
+        precursor :: a,                 -- The precursor mass; (M+zH)/z
+        charge    :: a,                 -- Peptide charge state
+        peaks     :: [Peak a]           -- The actual mass/charge ratio intensity measurements
     }
     deriving (Eq, Show)
 
 --
 -- Find the m/z range of the recorded peaks
 --
-mzRange      :: Spectrum -> (Float, Float)
+mzRange      :: Ord a => Spectrum a -> (a, a)
 mzRange spec =  minmax (peaks spec)
     where
         minmax []       = error "Spectrum.mzRange: empty list"
@@ -79,7 +79,7 @@ mzRange spec =  minmax (peaks spec)
 -- A mz/intensity spectrum array of experimental data suitable for sequest
 -- cross-correlation ranking
 --
-type XCorrSpecExp = UArray Int Float
+type XCorrSpecExp a = Vector a
 
 
 --------------------------------------------------------------------------------
@@ -90,18 +90,14 @@ type XCorrSpecExp = UArray Int Float
 -- Width of the mass/charge ratio bins used to discretize the spectra. These are
 -- stolen from Crux.
 --
-specBinWidth    :: ConfigParams -> Float
+specBinWidth    :: Fractional a => ConfigParams a -> a
 specBinWidth cp =  if aaMassTypeMono cp then 1.0005079 else 1.0011413
 
 --
 -- Process the observed spectral peaks and generate an array suitable for
 -- Sequest cross correlation analysis
 --
--- TODO: This goes via a temporary IArray, but it might have been possible to
---       use a StorableArray and copy directly from that memory. Otherwise,
---       investigate the use of an STUArray for fast construction.
---
-buildExpSpecXCorr    :: ConfigParams -> Spectrum -> XCorrSpecExp
+buildExpSpecXCorr    :: (Floating a, RealFrac a, Storable a) => ConfigParams a -> Spectrum a -> XCorrSpecExp a
 buildExpSpecXCorr cp =  calculateXCorr . normaliseByRegion . observedIntensity cp
 
 
@@ -118,22 +114,21 @@ buildExpSpecXCorr cp =  calculateXCorr . normaliseByRegion . observedIntensity c
 --   3. Since this must mimic a FFT in real space, we need to include space for
 --      the "wings" in the (-75,+75) region in calculateXCorr
 --
-observedIntensity :: ConfigParams -> Spectrum -> UArray Int Float
+observedIntensity :: (Floating a, RealFrac a, Storable a) => ConfigParams a -> Spectrum a -> XCorrSpecExp a
 observedIntensity cp spec =
-    accumArray max 0 bnds [(bin x,sqrt y) | (x,y) <- filter limits (peaks spec)]
-    where
-        bin mz = round (mz / specBinWidth cp)
-        mass   = precursor spec
-        (m,n)  = mzRange spec
-        bnds   = (max 0 ((floor m)-75), 75 + ceiling cutoff)
+  V.accum max (V.replicate (75 + ceiling cutoff) 0) [(bin x,sqrt y) | (x,y) <- filter limits (peaks spec)]
+  where
+    bin mz = round (mz / specBinWidth cp)
+    mass   = precursor spec
+    (_,n)  = mzRange spec
 
-        cutoff = let mzcut = 50 + mass * charge spec
-                     mzlim = fromInteger (truncate (n/10) * 10)
-                 in  min mzcut mzlim
+    cutoff = let mzcut = 50 + mass * charge spec
+                 mzlim = fromInteger (truncate (n/10) * 10)
+             in  min mzcut mzlim
 
-        limits (x,_) = if removePrecursorPeak cp
-                       then x <= cutoff && (x <= (mass-15) || (mass+15) <= x)
-                       else x <= cutoff
+    limits (x,_) = if removePrecursorPeak cp
+                   then x <= cutoff && (x <= (mass-15) || (mass+15) <= x)
+                   else x <= cutoff
 
 --
 -- Normalise each element of the input array according to the maximum value in
@@ -145,18 +140,19 @@ observedIntensity cp spec =
 -- This means that some values from the input will not be considered, and be set
 -- to zero.
 --
-normaliseByRegion :: UArray Int Float -> UArray Int Float
-normaliseByRegion a = array (bounds a) [ (i,norm i) | i <- indices a ]
-    where
-        rgn_max :: UArray Int Float
-        rgn_max =  accumArray max 0 (0,10) [(rgn i,e) | (i,e) <- assocs a]
+--normaliseByRegion :: UArray Int Float -> UArray Int Float
+normaliseByRegion :: (Fractional a, Ord a, Storable a) => XCorrSpecExp a -> XCorrSpecExp a
+normaliseByRegion a = V.zipWith norm ix a
+  where
+    rgn_max  = V.accum max (V.replicate 11 0) [(rgn i, a V.! i) | i <- [0 .. V.length a - 1]]
 
-        norm i  = let m = rgn_max ! (rgn i)  in
-                  if  m > 1E-6 && i < sel*10 then 50 * ((a!i) / m) else 0
+    rgn i    = i `div` sel
+    sel      = cutoff `div` 10
+    cutoff   = V.length a - 75
 
-        rgn i   = i `div` sel
-        sel     = cutoff `div` 10
-        cutoff  = (snd (bounds a)) - 75
+    ix       = V.enumFromTo 0 (V.length a - 1)
+    norm i e = let m = rgn_max V.! (rgn i)  in
+               if  m > 1E-6 && i < sel*10 then 50 * (e / m) else 0
 
 
 --
@@ -164,10 +160,10 @@ normaliseByRegion a = array (bounds a) [ (i,norm i) | i <- indices a ]
 -- Each sequest matching score is then a dot product between a theoretical input
 -- and this pre-processed spectrum.
 --
-calculateXCorr :: UArray Int Float -> UArray Int Float
-calculateXCorr a  = listArray (0, ceilPow2 n - 1) (repeat 0) // [(i,xcorr i e) | (i,e) <- assocs a]
-    where
-        (m,n)     = bounds a
-        xcorr i e = e - (subFoldA1' (+) a (xrange i)) / 150
-        xrange i  = [(max m (i-75)) .. (min n (i+75))]
+calculateXCorr :: (Fractional a, Storable a) => XCorrSpecExp a -> XCorrSpecExp a
+calculateXCorr a = V.zipWith xcorr ix a
+  where
+    ix        = V.enumFromTo 0 (ceilPow2 (V.length a) - 1)
+    xcorr i e = e - (V.foldl' (+) 0 (subv i)) / 150
+    subv  i   = V.take 151 . V.drop (i-75) $ a
 

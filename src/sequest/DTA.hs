@@ -39,7 +39,7 @@ import Text.ParserCombinators.Parsec
 -- The DTA file contains at least one line, each of which is terminated by an
 -- end-of-line character (eol)
 --
-dtaFile :: Parser [(Float, Float)]
+dtaFile :: RealFrac a => Parser [(a,a)]
 dtaFile =  endBy line eol
 
 -- 
@@ -47,7 +47,7 @@ dtaFile =  endBy line eol
 -- are returned as a pair of (mass/charge ratio, intensity) values. Detecting
 -- signed values isn't really necessary, but is done for completeness.
 --
-line :: Parser (Float, Float)
+line :: RealFrac a => Parser (a,a)
 line =  liftM2 (,) fval fval
     where fval = (fst . head . readSigned readFloat) `fmap` value
 
@@ -79,7 +79,7 @@ eol =  try (string "\n\r")
 --
 -- Encase the values read from the DTA file into a data structure
 --
-mkSpec              :: [(Float, Float)] -> Either String Spectrum
+mkSpec :: RealFrac a => [(a,a)] -> Either String (Spectrum a)
 mkSpec []           =  Left "Error: empty spectrum"
 mkSpec ((m,c):ss)
     | trunc' c /= c =  Left "Error: invalid peptide charge state\nexpecting integer"
@@ -95,7 +95,7 @@ mkSpec ((m,c):ss)
 --
 -- Read the given file and return either an error or the MS/MS spectrum data.
 --
-readDTA      :: FilePath -> IO (Either String Spectrum)
+readDTA :: RealFrac a => FilePath -> IO (Either String (Spectrum a))
 readDTA name =  do
     dta <- parseFromFile dtaFile name
     case dta of

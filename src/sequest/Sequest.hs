@@ -37,22 +37,23 @@ import IonSeries
 import Data.List
 import Data.Maybe
 import Data.Function
-import Data.Array.Unboxed
+import Data.Vector.Storable (Storable)
+import qualified Data.Vector.Storable as V
 
 
 --------------------------------------------------------------------------------
 -- Data Structures
 --------------------------------------------------------------------------------
 
-type MatchCollection = [Match]
+type MatchCollection a = [Match a]
 
 --
 -- A structure to store the result of a peptide/spectrum similarity test
 --
-data Match = Match
+data Match a = Match
     {
-        candidate :: Peptide,           -- The fragment that was examined
-        scoreXC   :: Float              -- Sequest cross-correlation score
+        candidate :: Peptide a,         -- The fragment that was examined
+        scoreXC   :: a                  -- Sequest cross-correlation score
 --        scoreSP   :: (Int, Int)         -- Matched ions / total ions
     }
     deriving (Eq, Show)
@@ -66,7 +67,8 @@ data Match = Match
 -- Search the database for amino acid sequences within a defined mass tolerance.
 -- Only peptides which fall within this range will be considered.
 --
-searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> MatchCollection
+searchForMatches :: (RealFrac a, Floating a, Enum a, Storable a)
+                 => ConfigParams a -> ProteinDatabase a -> Spectrum a -> MatchCollection a
 searchForMatches cp database spec = finish $
     foldl' record nomatch [ score peptide |
                               protein <- candidates database,
@@ -74,7 +76,7 @@ searchForMatches cp database spec = finish $
                           ]
     where
         specExp    = buildExpSpecXCorr  cp spec
-        specThry   = buildThrySpecXCorr cp (charge spec) (bounds specExp)
+        specThry   = buildThrySpecXCorr cp (charge spec) (0, V.length specExp - 1)
         candidates = findCandidates cp spec . map (digestProtein cp)
         finish     = reverse . catMaybes
 
@@ -91,7 +93,7 @@ searchForMatches cp database spec = finish $
 -- Search the protein database for candidate peptides within the specified mass
 -- tolerance that should be examined by spectral cross-correlation.
 --
-findCandidates :: ConfigParams -> Spectrum -> ProteinDatabase -> ProteinDatabase
+findCandidates :: (Fractional a, Ord a) => ConfigParams a -> Spectrum a -> ProteinDatabase a -> ProteinDatabase a
 findCandidates cp spec =
     filter (not.null.fragments) . map (\p -> p {fragments = filter inrange (fragments p)})
     where
@@ -109,6 +111,6 @@ findCandidates cp spec =
 -- correlation is the dot product between the theoretical representation and the
 -- preprocessed experimental spectra.
 --
-sequestXC :: XCorrSpecExp -> XCorrSpecThry -> Float
-sequestXC v sv = sum [ x * v!i | (i,x) <- sv ] / 10000
+sequestXC :: (Fractional a, Storable a) => XCorrSpecExp a -> XCorrSpecThry Int a -> a
+sequestXC v sv = sum [ x * v V.! i | (i,x) <- sv ] / 10000
 

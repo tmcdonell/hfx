@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Config
@@ -13,13 +14,13 @@ module Config
     ConfigParams(..),
     sequestConfig,
     getAAMass
-  ) where
+  )
+  where
 
 import Mass
 import Utils
 
 import Control.Monad
-import Data.Array.Unboxed
 import Data.Char
 import Data.List
 import Data.Maybe
@@ -27,7 +28,12 @@ import System
 import System.Console.GetOpt
 import System.Directory
 import System.IO
+import Text.Show.Functions()
 import Text.ParserCombinators.Parsec
+
+import Data.Ix
+import Data.Vector.Storable (Vector, Storable)
+import qualified Data.Vector.Storable as V
 
 
 --------------------------------------------------------------------------------
@@ -38,25 +44,25 @@ import Text.ParserCombinators.Parsec
 -- A ginormous data structure to hold all of the configurable parameters
 -- threaded throughout the program
 --
-data ConfigParams = ConfigParams
+data ConfigParams a = ConfigParams
     {
         databasePath        :: Maybe FilePath,  -- Path to the protein database file
 
         --
         -- Enzyme search parameters
         --
-        massTolerance       :: Float,                    -- Search peptides within ± this value of the spectrum mass
+        massTolerance       :: a,                        -- Search peptides within ± this value of the spectrum mass
         removePrecursorPeak :: Bool,                     -- Remove a ±5 da window surrounding the precursor mass
         missedCleavages     :: Int,                      -- Number of missed cleavage sites to consider
         digestionRule       :: ((Char -> Bool), String), -- Protein fragmentation rule and description text
-        minPeptideMass      :: Float,                    -- Minimum mass of peptides to be considered
-        maxPeptideMass      :: Float,                    -- Maximum peptide mass
+        minPeptideMass      :: a,                        -- Minimum mass of peptides to be considered
+        maxPeptideMass      :: a,                        -- Maximum peptide mass
 
         --
         -- Allow static modifications to an amino acid mass, which affects every
         -- occurrence of that residue/terminus
         --
-        aaMassTable         :: UArray Char Float,
+        aaMassTable         :: Vector a,
         aaMassTypeMono      :: Bool,
 
         --
@@ -65,6 +71,7 @@ data ConfigParams = ConfigParams
         numMatches          :: Int,             -- Number of matches to show (summary statistics)
         numMatchesDetail    :: Int              -- Number of full protein descriptions to show
     }
+    deriving (Show)
 
 
 --------------------------------------------------------------------------------
@@ -79,8 +86,8 @@ data ConfigParams = ConfigParams
 --
 -- XXX: Shouldn't really live here...
 --
-getAAMass       :: ConfigParams -> Char -> Float
-getAAMass cp aa =  aaMassTable cp ! aa
+getAAMass       :: (Fractional a, Storable a) => ConfigParams a -> Char -> a
+getAAMass cp aa =  aaMassTable cp V.! index ('A','Z') aa
 
 
 --------------------------------------------------------------------------------
@@ -93,7 +100,7 @@ getAAMass cp aa =  aaMassTable cp ! aa
 -- the list of non-option arguments, which is typically the list of input
 -- spectrum files to analyse.
 --
-sequestConfig :: FilePath -> [String] -> IO (ConfigParams, [String])
+sequestConfig :: (Fractional a, Storable a, Read a) => FilePath -> [String] -> IO (ConfigParams a, [String])
 sequestConfig fp argv = do
     p  <- doesFileExist fp
     cp <- case p of
@@ -113,7 +120,7 @@ sequestConfig fp argv = do
 -- Read a configuration file, returning a modified configuration set as well as
 -- list of unprocessed options.
 --
-readConfigFile :: FilePath -> ConfigParams -> IO ConfigParams
+readConfigFile :: (Fractional a, Storable a, Read a) => FilePath -> ConfigParams a -> IO (ConfigParams a)
 readConfigFile fp cp = do
     params   <- parseFromFile configFile fp
 
@@ -145,7 +152,7 @@ readConfigFile fp cp = do
 -- immediately to the given configuration set, removing the command from the
 -- argument key/value list
 --
-processMods :: ConfigParams -> [(String, String)] -> (ConfigParams, [(String, String)])
+processMods :: (Fractional a, Storable a, Read a) => ConfigParams a -> [(String, String)] -> (ConfigParams a, [(String, String)])
 processMods config = foldr fn (config,[])
     where
         fn (k,v) (cp,acc) = case stripPrefix "add_" k of
@@ -153,7 +160,7 @@ processMods config = foldr fn (config,[])
                               Just (c:[]) -> (apply cp c v, acc)
                               _           -> error ("Unrecognised modification: " ++ k)
 
-        apply cp c v = cp { aaMassTable = aaMassTable cp // [(c, read v)] }
+        apply cp c v = cp { aaMassTable = aaMassTable cp V.// [(index ('A','Z') c, read v)] }
 
 
 --------------------------------------------------------------------------------
@@ -163,7 +170,7 @@ processMods config = foldr fn (config,[])
 --
 -- The basic (almost empty) configuration set
 --
-baseParams :: ConfigParams
+baseParams :: (Fractional a, Storable a) => ConfigParams a
 baseParams =  ConfigParams
     {
         databasePath        = Nothing,
@@ -175,7 +182,7 @@ baseParams =  ConfigParams
         minPeptideMass      = 400,
         maxPeptideMass      = 7200,
 
-        aaMassTable         = listArray ('A','Z') (repeat 0) // [('C',57.0)],
+        aaMassTable         = V.replicate (rangeSize ('A','Z')) 0 V.// [(index ('A','Z') 'C',57.0)],
         aaMassTypeMono      = True,
 
         numMatches          = 5,
@@ -186,9 +193,10 @@ baseParams =  ConfigParams
 -- Add the base residue masses for all amino acid groups to the mass table,
 -- which currently only holds user-defined modifications (if any).
 --
-initializeAAMasses :: ConfigParams -> ConfigParams
-initializeAAMasses cp = cp { aaMassTable = accum (+) (aaMassTable cp) (zip alphabet isolatedAAMass) }
+initializeAAMasses :: (Fractional a, Storable a) => ConfigParams a -> ConfigParams a
+initializeAAMasses cp = cp { aaMassTable = V.accum (+) (aaMassTable cp) (zipWith f alphabet isolatedAAMass) }
     where
+        f c m          = (index ('A','Z') c, m)
         isolatedAAMass = map aaMasses alphabet
         aaMasses       = if aaMassTypeMono cp then getAAMassMono else getAAMassAvg
         alphabet       = ['A'..'Z']
@@ -209,7 +217,7 @@ initializeAAMasses cp = cp { aaMassTable = accum (+) (aaMassTable cp) (zip alpha
 -- NOTE: the parameters option must remain at the head of the list, as this will
 -- be dropped when reading parameters from file to prevent silly behaviour...
 --
-options :: [ OptDescr (ConfigParams -> IO ConfigParams) ]
+options :: (Fractional a, Storable a, Read a) => [ OptDescr (ConfigParams a -> IO (ConfigParams a)) ]
 options =
     [ Option "p" ["parameters"]
         (ReqArg (\fp cp -> readConfigFile fp cp) "FILE")
@@ -269,7 +277,8 @@ options =
 
     , Option "h" ["help"]
         (NoArg (\_ -> do prg <- getProgName
-                         hPutStrLn stderr (usageInfo ("Usage: " ++ prg ++ " [OPTIONS...] dta_files...") options)
+                         hPutStrLn stderr (usageInfo ("Usage: " ++ prg ++ " [OPTIONS...] dta_files...")
+                            (options :: [(OptDescr (ConfigParams Double -> IO (ConfigParams Double)))]))
                          hPutStrLn stderr digestionRuleHelp
                          exitWith ExitSuccess))
         "This help text"
