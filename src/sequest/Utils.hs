@@ -12,6 +12,7 @@ module Utils where
 
 import Data.Int
 import Data.Bits
+import Data.List
 import Data.Array.IArray
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as L
@@ -83,6 +84,28 @@ subScanBS' f q bs (c,n) = go q [c..n]
 --
 subFoldBS' :: (a -> Char -> a) -> a -> ByteString -> (Int64, Int64) -> a
 subFoldBS' f q bs (c,n) = (L.foldl' f q . L.take (n-c+1) . L.drop c) bs
+
+
+--------------------------------------------------------------------------------
+-- Statistics
+--------------------------------------------------------------------------------
+
+--
+-- Statistics about the elements of a list. Uses a single pass algorithm for
+-- variance, which may be imprecise if the standard deviation is small relative
+-- to the mean.
+--
+-- Calculates: (minimum, maximum, average, variance, standard deviation, length)
+--
+stats :: (Floating a, Ord a) => [a] -> (a,a,a,a,a,a)
+stats []     = error "Utils.stats: empty list"
+stats (x:xs) = finish . foldl' stats' (x,x,x,x*x,1) $ xs
+  where
+    stats' (mn,mx,s,ss,n) v = (min v mn, max v mx, s+v, ss+v*v, n+1)
+    finish (mn,mx,s,ss,n)   = let av    = s/n
+                                  var   = (1/(n-1))*ss - (n/(n-1))*av*av
+                                  stdev = sqrt var
+                              in (mn, mx, av, var, stdev, n)
 
 
 --------------------------------------------------------------------------------
