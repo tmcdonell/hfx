@@ -20,6 +20,14 @@ extern "C" {
 void
 smvm_f(float *d_y, float *d_x, float *d_data, unsigned int *d_rowPtr, unsigned int *d_colIdx, unsigned int num_rows);
 
+
+/*
+ * Sort (in-place)
+ */
+void sort_f(float *d_keys, void *d_vals, unsigned int length);
+void sort_i(unsigned int *d_keys, void *d_vals, unsigned int length);
+
+
 #ifdef __cplusplus
 }
 #endif
