@@ -8,8 +8,9 @@
 EXECUTABLE      := sequest
 HSMAIN          := Main.hs
 
-ALGORITHMS	:= smvm
-EXTRALIBS        = $(addsuffix $(LIBSUFFIX),$(ALGORITHMS))
+USECUDPP        := 1
+ALGORITHMS      := smvm sort
+EXTRALIBS        = stdc++ $(addsuffix $(LIBSUFFIX),$(ALGORITHMS))
 
 # ------------------------------------------------------------------------------
 # Haskell/CUDA build system
