@@ -55,7 +55,7 @@ void sort_f(float *d_keys, void *d_vals, unsigned int length)
     radix_sort<float>(length, d_keys, d_vals);
 }
 
-void sort_i(unsigned int *d_keys, void *d_vals, unsigned int length)
+void sort_ui(unsigned int *d_keys, void *d_vals, unsigned int length)
 {
     radix_sort<unsigned int>(length, d_keys, d_vals);
 }
