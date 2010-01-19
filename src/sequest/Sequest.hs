@@ -24,6 +24,7 @@ module Sequest
   (
     Match(..),
     MatchCollection,
+    findCandidates,
     searchForMatches
   )
   where
