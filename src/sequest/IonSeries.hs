@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : IonSeries
@@ -23,7 +24,6 @@ import Protein
 import Spectrum                                 (specBinWidth)
 
 import Data.List
-import Data.Array
 import Data.Function
 import Data.Vector.Storable (Storable)
 
@@ -51,7 +51,7 @@ type XCorrSpecThry i e = [(i, e)]
 -- peptide, retaining only the most intense peak in each bin. Incidentally, the
 -- output is also sorted by bin index.
 --
-buildThrySpecXCorr :: (RealFrac a, Enum a, Storable a, Integral i, Ix i)
+buildThrySpecXCorr :: (RealFrac a, Enum a, Storable a, Integral i)
                    => ConfigParams a -> a -> (i,i) -> Peptide a -> XCorrSpecThry i a
 buildThrySpecXCorr cp charge bnds peptide =
   finish [ (bin x,y) | ions  <- map addIons [1.. max 1 (charge-1)]
@@ -63,6 +63,8 @@ buildThrySpecXCorr cp charge bnds peptide =
 
     bin mz    = round (mz / specBinWidth cp)
     finish    = filter (inRange bnds . fst) . map (foldl1' max) . groupBy ((==) `on` fst) . sort
+
+    inRange (!m,!n) !i = m <= i && i <= n
 
 --
 -- Convert mass to mass/charge ratio
