@@ -37,7 +37,7 @@ import IonSeries
 
 import Data.List
 import Data.Maybe
-import Data.Function
+import Data.Ord
 import Data.Vector.Storable (Storable)
 import qualified Data.Vector.Storable as V
 
@@ -81,7 +81,7 @@ searchForMatches cp database spec = finish $
         candidates = findCandidates cp spec . map (digestProtein cp)
         finish     = reverse . catMaybes
 
-        record l x = tail $ insertBy (compare `on` (fmap scoreXC)) (Just x) l
+        record l x = tail $ insertBy (comparing (fmap scoreXC)) (Just x) l
         n          = max (numMatches cp) (numMatchesDetail cp)
         nomatch    = replicate n Nothing
 
