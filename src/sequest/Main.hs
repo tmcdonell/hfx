@@ -1,4 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Main
@@ -18,13 +17,15 @@ import DTA
 import Utils
 import Config
 import Protein
-import Sequest
 import PrettyPrint
+
+import Sequest.Base
+import qualified Sequest.CUDA as C
 
 --
 -- System libraries
 --
-import Data.Vector.Storable (Storable)
+import Foreign.C.Types
 import System.Environment (getArgs)
 
 
@@ -45,23 +46,24 @@ main = do
     argv           <- getArgs
     (cp, dtaFiles) <- sequestConfig defaultConfigFile argv
 
-    mapM_ (search (cp :: ConfigParams Float)) dtaFiles
+    mapM_ (search cp) dtaFiles
 
 
 --
 -- Search the protein database for a match to the experimental spectra
 --
-search :: (RealFloat a, Storable a, Read a, Enum a) => ConfigParams a -> FilePath -> IO ()
+search :: ConfigParams CFloat -> FilePath -> IO ()
 search cp fp = do
     dta         <- readDTA fp
     proteins    <- case databasePath cp of
         Nothing -> error "Protein database not specified"
         Just db -> readFasta db
 
-    let spec    = forceEitherStr dta
-        matches = searchForMatches cp proteins spec
+    let spec = forceEitherStr dta
+        ref  = searchForMatches cp proteins spec
 
     printConfig cp fp spec
+    matches <- C.searchForMatches cp proteins spec
 
     printResults       $! (take (numMatches cp)       matches)
     printResultsDetail $! (take (numMatchesDetail cp) matches)

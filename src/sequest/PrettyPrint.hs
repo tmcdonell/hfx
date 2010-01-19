@@ -21,8 +21,8 @@ module PrettyPrint
 import Mass
 import Config
 import Protein
-import Sequest
 import Spectrum
+import Sequest.Base                             (MatchCollection, Match(..))
 
 import Numeric
 import Data.List

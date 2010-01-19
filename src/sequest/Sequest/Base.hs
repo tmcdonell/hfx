@@ -20,7 +20,8 @@
 --     Spectrometry, 5(11):976-989, November 1994.
 --
 --------------------------------------------------------------------------------
-module Sequest
+
+module Sequest.Base
   (
     Match(..),
     MatchCollection,
