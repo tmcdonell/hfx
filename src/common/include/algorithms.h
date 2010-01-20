@@ -15,6 +15,11 @@ extern "C" {
 #endif
 
 /*
+ * Scan
+ */
+void prescanl_plusui(const unsigned int *in, unsigned int *out, const unsigned int N);
+
+/*
  * Sparse-matrix dense-vector multiplication
  */
 void
