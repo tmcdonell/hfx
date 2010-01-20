@@ -9,12 +9,15 @@
 
 module Sequest.CUDA where
 
+import Time
 import Config
 import Protein
 import Spectrum
 import IonSeries
 import Sequest.Base                     (MatchCollection, Match(..), findCandidates)
 
+import Control.Monad                    (when)
+import System.IO
 import Foreign
 import Foreign.C
 import Foreign.CUDA (DevicePtr, withDevicePtr)
@@ -27,20 +30,28 @@ import qualified Data.Vector.Storable   as V
 --------------------------------------------------------------------------------
 
 searchForMatches :: ConfigParams CFloat -> ProteinDatabase CFloat -> Spectrum CFloat -> IO (MatchCollection CFloat)
-searchForMatches cp db spec =
+searchForMatches cp db spec = do
+  t1 <- getTime
+
   -- setup
   --
-  C.withListArray offsets                   $ \d_rowPtr ->
-  C.withListArray ix                        $ \d_colIdx ->
-  C.withListArray val                       $ \d_data   ->
-  C.withListArray (V.toList specExp)        $ \d_x      ->
-  C.allocaArray num_peptides                $ \d_y      ->
+  C.withListArray offsets                   $ \d_rowPtr -> do
+  C.withListArray ix                        $ \d_colIdx -> do
+  C.withListArray val                       $ \d_data   -> do
+  C.withListArray (V.toList specExp)        $ \d_x      -> do
+  C.allocaArray num_peptides                $ \d_y      -> do
   C.withListArray [0 .. (num_peptides - 1)] $ \d_i      -> do
+
+    t2 <- getTime
+    when (verbose cp) (hPutStrLn stderr $ "Setup: " ++ showTime (elapsedTime t1 t2))
 
     -- score
     --
-    cu_smvm_f d_y d_x d_data d_rowPtr d_colIdx num_peptides
-    cu_sort_f d_y d_i num_peptides
+    (tm,_) <- bracketTime $ cu_smvm_f d_y d_x d_data d_rowPtr d_colIdx num_peptides
+    (ts,_) <- bracketTime $ cu_sort_f d_y d_i num_peptides
+
+    when (verbose cp) (hPutStrLn stderr $ "SMVM:  " ++ showTime tm)
+    when (verbose cp) (hPutStrLn stderr $ "Sort:  " ++ showTime ts)
 
     -- retrieve results
     --

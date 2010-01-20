@@ -26,7 +26,9 @@ import qualified Sequest.CUDA as C
 -- System libraries
 --
 import Foreign.C.Types
-import System.Environment (getArgs)
+import Control.Monad					(when)
+import System.Environment				(getArgs)
+import System.IO
 
 
 --------------------------------------------------------------------------------
@@ -64,6 +66,9 @@ search cp fp = do
 
     printConfig cp fp spec
     matches <- C.searchForMatches cp proteins spec
+
+    when (verbose cp) (hPutStrLn stderr $ "Valid: " ++ show (matches == ref))
+    when (verbose cp) (hPutStrLn stderr "")
 
     printResults       $! (take (numMatches cp)       matches)
     printResultsDetail $! (take (numMatchesDetail cp) matches)
