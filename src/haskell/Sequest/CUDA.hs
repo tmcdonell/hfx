@@ -31,17 +31,15 @@ import qualified Data.Vector.Storable   as V
 
 searchForMatches :: ConfigParams CFloat -> ProteinDatabase CFloat -> Spectrum CFloat -> IO (MatchCollection CFloat)
 searchForMatches cp db spec = do
-  t1 <- getTime
-
   -- setup
   --
+  t1 <- getTime
   C.withListArray offsets                   $ \d_rowPtr -> do
   C.withListArray ix                        $ \d_colIdx -> do
   C.withListArray val                       $ \d_data   -> do
   C.withListArray (V.toList specExp)        $ \d_x      -> do
   C.allocaArray num_peptides                $ \d_y      -> do
   C.withListArray [0 .. (num_peptides - 1)] $ \d_i      -> do
-
     t2 <- getTime
     when (verbose cp) (hPutStrLn stderr $ "Setup: " ++ showTime (elapsedTime t1 t2))
 

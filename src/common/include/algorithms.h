@@ -22,8 +22,7 @@ void prescanl_plusui(const unsigned int *in, unsigned int *out, const unsigned i
 /*
  * Sparse-matrix dense-vector multiplication
  */
-void
-smvm_f(float *d_y, float *d_x, float *d_data, unsigned int *d_rowPtr, unsigned int *d_colIdx, unsigned int num_rows);
+void smvm_f(float *d_y, float *d_x, float *d_data, unsigned int *d_rowPtr, unsigned int *d_colIdx, unsigned int num_rows);
 
 
 /*

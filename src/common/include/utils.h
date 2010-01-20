@@ -38,6 +38,9 @@
 
 /*
  * Macro to insert __syncthreads() in device emulation mode
+ *
+ * In emulation mode, this is required inside warp-synchronous code, to recreate
+ * the behaviour of the warp threads executing in lock-step on the GPU.
  */
 #ifdef __DEVICE_EMULATION__
 #define __EMUSYNC               __syncthreads()
