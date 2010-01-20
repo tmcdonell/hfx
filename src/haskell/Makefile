@@ -8,7 +8,7 @@
 EXECUTABLE      := sequest
 HSMAIN          := Main.hs
 
-ALGORITHMS      := smvm sort
+ALGORITHMS      := radix_sort scan smvm
 EXTRALIBS       += stdc++ $(addsuffix $(LIBSUFFIX),$(ALGORITHMS))
 
 # ------------------------------------------------------------------------------
