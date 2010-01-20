@@ -26,9 +26,10 @@ import qualified Sequest.CUDA as C
 -- System libraries
 --
 import Foreign.C.Types
-import Control.Monad					(when)
-import System.Environment				(getArgs)
+import Control.Monad                                    (when)
+import System.Environment                               (getArgs)
 import System.IO
+import qualified Foreign.CUDA as C
 
 
 --------------------------------------------------------------------------------
@@ -47,6 +48,10 @@ main :: IO ()
 main = do
     argv           <- getArgs
     (cp, dtaFiles) <- sequestConfig defaultConfigFile argv
+
+    when (verbose cp) $ do
+      props <- C.get >>= C.props
+      hPutStrLn stderr $ "Device      :: " ++ C.deviceName props
 
     mapM_ (search cp) dtaFiles
 
