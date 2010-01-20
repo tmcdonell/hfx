@@ -4,7 +4,7 @@
 #
 
 ALGORITHMS := $(shell find src/cuda -name Makefile)
-PROJECTS   := $(ALGORITHMS) src/sequest/Makefile
+PROJECTS   := $(ALGORITHMS) src/haskell/Makefile
 
 
 %.do :
