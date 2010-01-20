@@ -72,9 +72,12 @@ search cp fp = do
     printConfig cp fp spec
     matches <- C.searchForMatches cp proteins spec
 
-    when (verbose cp) (hPutStrLn stderr $ "Valid: " ++ show (matches == ref))
+    when (verbose cp) (hPutStrLn stderr $ "Valid: " ++ show (zipWith verify matches ref))
     when (verbose cp) (hPutStrLn stderr "")
 
     printResults       $! (take (numMatches cp)       matches)
     printResultsDetail $! (take (numMatchesDetail cp) matches)
+
+    where
+      verify (Match p s) (Match p' s') = p == p' && (s-s')/(s+s'+0.0005) < 0.0005
 
