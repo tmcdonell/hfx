@@ -27,10 +27,9 @@ smvm_f(float *d_y, float *d_x, float *d_data, unsigned int *d_rowPtr, unsigned i
 
 
 /*
- * Sort (in-place)
+ * Radix sort (in-place)
  */
-void sort_f(float *d_keys, void *d_vals, unsigned int length);
-void sort_ui(unsigned int *d_keys, void *d_vals, unsigned int length);
+void radixsort_f(float *d_keys, void *d_vals, unsigned int N);
 
 
 #ifdef __cplusplus

@@ -94,7 +94,7 @@ cu_smvm_f d_y d_x d_vals d_ptr d_idx num_rows =
     cu_smvm_f' p_y p_x p_vals p_ptr p_idx (fromIntegral num_rows)
 
 
-foreign import ccall unsafe "algorithms.h sort_f" cu_sort_f'
+foreign import ccall unsafe "algorithms.h radixsort_f" cu_sort_f'
   :: Ptr CFloat -> Ptr () -> CUInt -> IO ()
 
 foreign import ccall unsafe "algorithms.h smvm_f" cu_smvm_f'
