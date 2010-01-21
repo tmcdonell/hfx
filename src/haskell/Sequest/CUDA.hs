@@ -7,7 +7,7 @@
 --
 --------------------------------------------------------------------------------
 
-module Sequest.CUDA where
+module Sequest.CUDA (searchForMatches) where
 
 import Time
 import Config
@@ -17,6 +17,7 @@ import IonSeries
 import Sequest.Base                     (MatchCollection, Match(..), findCandidates)
 
 import Control.Monad                    (when)
+import Control.Exception.Extensible     (assert)
 import System.IO
 import Foreign
 import Foreign.C
@@ -34,12 +35,12 @@ searchForMatches cp db spec = do
   -- setup
   --
   t1 <- getTime
-  C.withListArray offsets                   $ \d_rowPtr -> do
-  C.withListArray ix                        $ \d_colIdx -> do
-  C.withListArray val                       $ \d_data   -> do
-  C.withListArray (V.toList specExp)        $ \d_x      -> do
-  C.allocaArray num_peptides                $ \d_y      -> do
-  C.withListArray [0 .. (num_peptides - 1)] $ \d_i      -> do
+  C.withListArray offsets            $ \d_rowPtr -> do
+  C.withListArray col                $ \d_colIdx -> do
+  C.withListArray val                $ \d_data   -> do
+  C.withListArray ident              $ \d_i      -> do
+  C.withListArray (V.toList specExp) $ \d_x      -> do
+  C.allocaArray   num_peptides       $ \d_y      -> do
     t2 <- getTime
     when (verbose cp) (hPutStrLn stderr $ "Setup: " ++ showTime (elapsedTime t1 t2))
 
@@ -58,11 +59,12 @@ searchForMatches cp db spec = do
     return $ reverse (zipWith k i r)
   where
     n            = max (numMatches cp) (numMatchesDetail cp)
-    k i r        = Match (concatMap fragments candidates !! i) (r/10000)
+    k i r        = Match (concatMap fragments candidates !! cIntConv i) (r/10000)
     bnds         = (0, fromIntegral (V.length specExp -1))
     offsets      = scanl (+) 0 . map (fromIntegral . length) $ specThry
-    (ix,val)     = unzip . concat $ specThry
+    (col,val)    = unzip . concat $ specThry
     num_peptides = length offsets - 1
+    ident        = enumFromTo 0 (cIntConv num_peptides - 1) :: [CUInt]
 
     candidates   = findCandidates cp spec . map (digestProtein cp) $ db
     specExp      = buildExpSpecXCorr cp spec
@@ -72,11 +74,23 @@ searchForMatches cp db spec = do
 
 
 --------------------------------------------------------------------------------
+-- Misc/Info
+--------------------------------------------------------------------------------
+
+cIntConv :: (Integral a, Integral b) => a -> b
+cIntConv =  fromIntegral
+
+
+--------------------------------------------------------------------------------
 -- FFI Bindings
 --------------------------------------------------------------------------------
 
-cu_sort_f :: DevicePtr CFloat -> DevicePtr a -> Int -> IO ()
+sizeOfPtr :: Storable a => DevicePtr a -> Int
+sizeOfPtr =  sizeOf . (undefined :: DevicePtr a -> a)
+
+cu_sort_f :: Storable a => DevicePtr CFloat -> DevicePtr a -> Int -> IO ()
 cu_sort_f d_keys d_vals l =
+  assert (sizeOfPtr d_vals == 4) $
   withDevicePtr d_keys $ \keys ->
   withDevicePtr d_vals $ \vals -> do
     cu_sort_f' keys (castPtr vals) (fromIntegral l)
