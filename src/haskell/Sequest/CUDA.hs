@@ -54,8 +54,8 @@ searchForMatches cp db spec = do
 
     -- retrieve results
     --
-    r <- C.peekListArray n (d_y `C.plusDevPtr` ((num_peptides-n) * sizeOf (undefined::CFloat)))
-    i <- C.peekListArray n (d_i `C.plusDevPtr` ((num_peptides-n) * sizeOf (undefined::CUInt)))
+    r <- C.peekListArray n (d_y `C.advanceDevPtr` (num_peptides-n))
+    i <- C.peekListArray n (d_i `C.advanceDevPtr` (num_peptides-n))
     return $ reverse (zipWith k i r)
   where
     n            = max (numMatches cp) (numMatchesDetail cp)
