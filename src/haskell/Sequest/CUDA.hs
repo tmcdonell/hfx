@@ -16,8 +16,10 @@ import Spectrum
 import IonSeries
 import Sequest.Base                     (MatchCollection, Match(..), findCandidates)
 
+import Numeric
 import Control.Monad                    (when)
 import Control.Exception.Extensible     (assert)
+import Data.List
 import System.IO
 import Foreign
 import Foreign.C
@@ -42,15 +44,16 @@ searchForMatches cp db spec = do
   C.withListArray (V.toList specExp) $ \d_x      -> do
   C.allocaArray   num_peptides       $ \d_y      -> do
     t2 <- getTime
-    when (verbose cp) (hPutStrLn stderr $ "Setup: " ++ showTime (elapsedTime t1 t2))
+    let tc = elapsedTime t1 t2
+    vprint cp ["Setup: " ++ showTime tc, showRate mb_copy tc " MB", shows num_peptides " peptides", shows num_nonzeros " non-zeros"]
 
     -- score
     --
     (tm,_) <- bracketTime $ cu_smvm_f d_y d_x d_data d_rowPtr d_colIdx num_peptides
     (ts,_) <- bracketTime $ cu_sort_f d_y d_i num_peptides
 
-    when (verbose cp) (hPutStrLn stderr $ "SMVM:  " ++ showTime tm)
-    when (verbose cp) (hPutStrLn stderr $ "Sort:  " ++ showTime ts)
+    vprint cp ["SMVM:  " ++ showTime tm, showRate gflops tm " GFLOPS", showRate mb_smvm tm " MB"]
+    vprint cp ["Sort:  " ++ showTime ts, showRate mpairs ts " MPairs"]
 
     -- retrieve results
     --
@@ -72,10 +75,33 @@ searchForMatches cp db spec = do
                       | protein <- candidates
                       , peptide <- fragments protein ]
 
+    -- misc / info
+    --
+    mb_copy      = (\x -> fromIntegral x/1E6)
+                 $ (length offsets + length col + num_peptides) * sizeOf (undefined::CUInt)
+                 + (V.length specExp + length val)              * sizeOf (undefined::CFloat)
+
+    num_nonzeros = fromIntegral $ last offsets
+    mb_smvm      = (\x -> fromIntegral x/1E6)
+                 $ 2 * num_peptides * sizeOf (undefined::CUInt)       -- row pointer
+                 + 1 * num_nonzeros * sizeOf (undefined::CUInt)       -- column index
+                 + 2 * num_nonzeros * sizeOf (undefined::CFloat)      -- values, A(i,j) and x(j)
+                 + 1 * num_peptides * sizeOf (undefined::CFloat)      -- y(i) = ...
+
+    mpairs       = fromIntegral num_peptides / 1E6
+    gflops       = (2 * fromIntegral num_nonzeros) / 1E9
+
 
 --------------------------------------------------------------------------------
 -- Misc/Info
 --------------------------------------------------------------------------------
+
+vprint :: ConfigParams a -> [String] -> IO ()
+vprint cp s = when (verbose cp) (hPutStrLn stderr . concat . intersperse ", " $ s)
+
+showRate :: Double -> Time -> String -> String
+showRate _ (Time 0) u = "--" ++ u ++ "/s"
+showRate n t        u = showFFloat (Just 3) (1000 * n / (fromInteger (timeIn millisecond t))) (u++"/s")
 
 cIntConv :: (Integral a, Integral b) => a -> b
 cIntConv =  fromIntegral
