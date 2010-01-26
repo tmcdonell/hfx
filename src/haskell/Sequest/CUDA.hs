@@ -15,6 +15,7 @@ import Protein
 import Spectrum
 import IonSeries
 import Sequest.Base                     (MatchCollection, Match(..), findCandidates)
+import qualified Sequest.Base           as B
 
 import Numeric
 import Control.Monad                    (when)
@@ -59,7 +60,12 @@ searchForMatches cp db spec = do
     --
     r <- C.peekListArray n (d_y `C.advanceDevPtr` (num_peptides-n))
     i <- C.peekListArray n (d_i `C.advanceDevPtr` (num_peptides-n))
-    return $ reverse (zipWith k i r)
+
+    let res = reverse (zipWith k i r)
+    vprint cp ["Valid: " ++ show (zipWith verify res (B.searchForMatches cp db spec))]
+    vprint cp [""]
+
+    return res
   where
     n            = max (numMatches cp) (numMatchesDetail cp)
     k i r        = Match (concatMap fragments candidates !! cIntConv i) (r/10000)
@@ -77,6 +83,8 @@ searchForMatches cp db spec = do
 
     -- misc / info
     --
+    verify (Match p s) (Match p' s') = p == p' && (s-s')/(s+s'+0.0005) < 0.0005
+
     mb_copy      = (\x -> fromIntegral x/1E6)
                  $ (length offsets + length col + num_peptides) * sizeOf (undefined::CUInt)
                  + (V.length specExp + length val)              * sizeOf (undefined::CFloat)

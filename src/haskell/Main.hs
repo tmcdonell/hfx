@@ -61,23 +61,14 @@ main = do
 --
 search :: ConfigParams CFloat -> FilePath -> IO ()
 search cp fp = do
-    dta         <- readDTA fp
-    proteins    <- case databasePath cp of
-        Nothing -> error "Protein database not specified"
-        Just db -> readFasta db
+    dta      <- forceEitherStr `fmap` readDTA fp
+    proteins <- maybe (error "Protein database not specified") readFasta (databasePath cp)
 
-    let spec = forceEitherStr dta
-        ref  = searchForMatches cp proteins spec
-
-    printConfig cp fp spec
-    matches <- C.searchForMatches cp proteins spec
-
-    when (verbose cp) (hPutStrLn stderr $ "Valid: " ++ show (zipWith verify matches ref))
-    when (verbose cp) (hPutStrLn stderr "")
+    printConfig cp fp dta
+    matches <- if useCPU cp
+      then return (searchForMatches cp proteins dta)
+      else C.searchForMatches cp proteins dta
 
     printResults       $! (take (numMatches cp)       matches)
     printResultsDetail $! (take (numMatchesDetail cp) matches)
-
-    where
-      verify (Match p s) (Match p' s') = p == p' && (s-s')/(s+s'+0.0005) < 0.0005
 
