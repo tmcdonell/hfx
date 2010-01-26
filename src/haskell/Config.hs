@@ -66,6 +66,11 @@ data ConfigParams a = ConfigParams
         aaMassTypeMono      :: Bool,
 
         --
+        -- Process configuration
+        --
+        useCPU              :: Bool,
+
+        --
         -- Output configuration
         --
         verbose             :: Bool,
@@ -186,6 +191,8 @@ baseParams =  ConfigParams
         aaMassTable         = V.replicate (rangeSize ('A','Z')) 0 V.// [(index ('A','Z') 'C',57.0)],
         aaMassTypeMono      = True,
 
+        useCPU              = False,
+
         verbose             = False,
         numMatches          = 5,
         numMatchesDetail    = 3
@@ -271,6 +278,10 @@ options =
     , Option "N" ["num-matches-detail"]
         (ReqArg (\v cp -> return cp { numMatchesDetail = read v}) "INT")
         "Number of full protein descriptions to show"
+
+    , Option "" ["cpu"]
+        (NoArg (\cp -> return cp { useCPU = True }))
+        "Use CPU backend"
 
     , Option "v" ["verbose"]
         (NoArg (\cp -> return cp { verbose = True }))

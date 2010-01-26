@@ -49,7 +49,7 @@ main = do
     argv           <- getArgs
     (cp, dtaFiles) <- sequestConfig defaultConfigFile argv
 
-    when (verbose cp) $ do
+    when (verbose cp && not (useCPU cp)) $ do
       props <- C.get >>= C.props
       hPutStrLn stderr $ "Device      :: " ++ C.deviceName props
 
