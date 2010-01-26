@@ -31,6 +31,11 @@ void smvm_f(float *d_y, float *d_x, float *d_data, unsigned int *d_rowPtr, unsig
 void radixsort_f(float *d_keys, void *d_vals, unsigned int N);
 
 
+/*
+ * Enum
+ */
+void enumFromTo_i(int *out, int from, int to);
+
 #ifdef __cplusplus
 }
 #endif
