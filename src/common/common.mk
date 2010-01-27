@@ -128,8 +128,8 @@ COMMONFLAGS     += $(INCLUDES) -DUNIX
 
 # Debug/release configuration
 ifeq ($(dbg),1)
-    COMMONFLAGS += -g
-    GHCFLAGS	+= -prof -auto-all -fhpc
+    COMMONFLAGS += -g -O
+    GHCFLAGS	+= -prof -auto-all -fhpc -O
     NVCCFLAGS   += -D_DEBUG
     CXXFLAGS    += -D_DEBUG
     CFLAGS      += -D_DEBUG
