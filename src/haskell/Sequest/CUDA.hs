@@ -45,14 +45,11 @@ newV l = Vec l `fmap` mallocArray l
 --
 writeV :: Storable a => Vec a -> Int -> a -> IO (Vec a)
 writeV !(Vec l p) n e
-  | n < l     = do pokeElemOff p n e
-                   return (Vec l p)
-
+  | n < l     = do pokeElemOff p n e >> return (Vec l p)
   | otherwise = do let l' = ceiling (growthFactor * fromIntegral l)
                    p' <- reallocArray p l'
                    pokeElemOff p' n e
                    return (Vec l' p')
-
   where
     growthFactor = 1.5 :: Double
 
@@ -137,7 +134,7 @@ searchForMatches cp db spec = do
     vprint cp ["Enum:  " ++ showTime te]
     vprint cp ["Sort:  " ++ showTime ts, showRate mps ts " MPairs"]
 
-    -- retrieve the highest ranked results
+    -- retrieve the highest ranked results (ascending sort)
     --
     sc <- C.peekListArray n (d_y `C.advanceDevPtr` (numRows-n))
     ix <- C.peekListArray n (d_i `C.advanceDevPtr` (numRows-n))
@@ -148,78 +145,9 @@ searchForMatches cp db spec = do
     candidates   = concatMap fragments . findCandidates cp spec . map (digestProtein cp) $ db
 
     finish sc ix = return . reverse $ zipWith (\s i -> Match (candidates !! cIntConv i) (s/10000)) sc ix
-
     n            = max (numMatches cp) (numMatchesDetail cp)
     bnds         = (0, cIntConv (V.length specExp -1))
 
-
-{-
-searchForMatches :: ConfigParams CFloat -> ProteinDatabase CFloat -> Spectrum CFloat -> IO (MatchCollection CFloat)
-searchForMatches cp db spec = do
-  -- setup
-  --
-  t1 <- getTime
-  C.withListArray offsets            $ \d_rowPtr -> do
-  C.withListArray col                $ \d_colIdx -> do
-  C.withListArray val                $ \d_data   -> do
-  C.withListArray ident              $ \d_i      -> do
-  C.withListArray (V.toList specExp) $ \d_x      -> do
-  C.allocaArray   num_peptides       $ \d_y      -> do
-    t2 <- getTime
-    let tc = elapsedTime t1 t2
-    vprint cp ["Setup: " ++ showTime tc, showRate mb_copy tc " MB", shows num_peptides " peptides", shows num_nonzeros " non-zeros"]
-
-    -- score
-    --
-    (tm,_) <- bracketTime $ cu_smvm_f d_y d_x d_data d_rowPtr d_colIdx num_peptides
-    (ts,_) <- bracketTime $ cu_sort_f d_y d_i num_peptides
-
-    vprint cp ["SMVM:  " ++ showTime tm, showRate gflops tm " GFLOPS", showRate mb_smvm tm " MB"]
-    vprint cp ["Sort:  " ++ showTime ts, showRate mpairs ts " MPairs"]
-
-    -- retrieve results
-    --
-    r <- C.peekListArray n (d_y `C.advanceDevPtr` (num_peptides-n))
-    i <- C.peekListArray n (d_i `C.advanceDevPtr` (num_peptides-n))
-
-    let res = reverse (zipWith k i r)
-    vprint cp ["Valid: " ++ show (zipWith verify res (B.searchForMatches cp db spec))]
-    vprint cp [""]
-
-    return res
-  where
-    n            = max (numMatches cp) (numMatchesDetail cp)
-    k i r        = Match (concatMap fragments candidates !! cIntConv i) (r/10000)
-    bnds         = (0, fromIntegral (V.length specExp -1))
-    offsets      = scanl (+) 0 . map (fromIntegral . length) $ specThry
-    (col,val)    = unzip . concat $ specThry
-    num_peptides = length offsets - 1
-    ident        = enumFromTo 0 (cIntConv num_peptides - 1) :: [CUInt]
-
-    candidates   = findCandidates cp spec . map (digestProtein cp) $ db
-    specExp      = buildExpSpecXCorr cp spec
-    specThry     = [ buildThrySpecXCorr cp (charge spec) bnds peptide
-                      | protein <- candidates
-                      , peptide <- fragments protein ]
-
-    -- misc / info
-    --
-    verify (Match p s) (Match p' s') = p == p' && (s-s')/(s+s'+0.0005) < 0.0005
-
-    mb_copy      = (\x -> fromIntegral x/1E6)
-                 $ (length offsets + length col + num_peptides) * sizeOf (undefined::CUInt)
-                 + (V.length specExp + length val)              * sizeOf (undefined::CFloat)
-
-    num_nonzeros = fromIntegral $ last offsets
-    mb_smvm      = (\x -> fromIntegral x/1E6)
-                 $ 2 * num_peptides * sizeOf (undefined::CUInt)       -- row pointer
-                 + 1 * num_nonzeros * sizeOf (undefined::CUInt)       -- column index
-                 + 2 * num_nonzeros * sizeOf (undefined::CFloat)      -- values, A(i,j) and x(j)
-                 + 1 * num_peptides * sizeOf (undefined::CFloat)      -- y(i) = ...
-
-    mpairs       = fromIntegral num_peptides / 1E6
-    gflops       = (2 * fromIntegral num_nonzeros) / 1E9
--}
 
 --------------------------------------------------------------------------------
 -- Misc/Info
