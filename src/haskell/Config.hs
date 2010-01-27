@@ -295,7 +295,7 @@ options =
     , Option "h" ["help"]
         (NoArg (\_ -> do prg <- getProgName
                          hPutStrLn stderr (usageInfo ("Usage: " ++ prg ++ " [OPTIONS...] dta_files...")
-                            (options :: [(OptDescr (ConfigParams Double -> IO (ConfigParams Double)))]))
+                            (options :: [(OptDescr (ConfigParams Float -> IO (ConfigParams Float)))]))
                          hPutStrLn stderr digestionRuleHelp
                          exitWith ExitSuccess))
         "This help text"

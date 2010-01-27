@@ -140,7 +140,6 @@ observedIntensity cp spec =
 -- This means that some values from the input will not be considered, and be set
 -- to zero.
 --
---normaliseByRegion :: UArray Int Float -> UArray Int Float
 normaliseByRegion :: (Fractional a, Ord a, Storable a) => XCorrSpecExp a -> XCorrSpecExp a
 normaliseByRegion a = V.zipWith norm ix a
   where
