@@ -65,10 +65,18 @@ search cp fp = do
     proteins <- maybe (error "Protein database not specified") readFasta (databasePath cp)
 
     printConfig cp fp dta
+    let ref = searchForMatches cp proteins dta
+
     matches <- if useCPU cp
-      then return (searchForMatches cp proteins dta)
+      then return ref
       else C.searchForMatches cp proteins dta
+
+    when (verbose cp && not (useCPU cp)) $
+      hPutStrLn stderr ("Valid: " ++ shows (zipWith verify ref matches) "\n")
 
     printResults       $! (take (numMatches cp)       matches)
     printResultsDetail $! (take (numMatchesDetail cp) matches)
+
+    where
+      verify (Match p s) (Match p' s') = p == p' && (s-s')/(s+s'+0.0005) < 0.0005
 
