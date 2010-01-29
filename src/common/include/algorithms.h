@@ -35,6 +35,11 @@ void radixsort_f(float *d_keys, void *d_vals, unsigned int N);
  */
 void enumFromTo_i(int *d_out, int from, int to);
 
+/*
+ * Permute
+ */
+unsigned int compact_ui(const unsigned int *d_in, unsigned int *d_out, const unsigned int *d_flags, const unsigned int length);
+
 
 #ifdef __cplusplus
 }
