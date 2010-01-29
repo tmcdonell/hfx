@@ -175,15 +175,15 @@ template <class op, typename T, bool backward, bool exclusive>
 void
 scan
 (
-    const T             *in,
-    T                   *out,
+    const T             *d_in,
+    T                   *d_out,
     const unsigned int  length
 )
 {
     scan_plan<T> plan;
     scan_init<T>(length, &plan);
 
-    scan_recursive<op, T, backward, exclusive>(in, out, &plan, length, 0);
+    scan_recursive<op, T, backward, exclusive>(d_in, d_out, &plan, length, 0);
 
     scan_finalise<T>(&plan);
 }
@@ -193,8 +193,13 @@ scan
 // Instances
 // -----------------------------------------------------------------------------
 
-void prescanl_plusui(const unsigned int *in, unsigned int *out, const unsigned int N)
+void prescanl_plusui(const unsigned int *d_in, unsigned int *d_out, const unsigned int N)
 {
-    scan< Plus<unsigned int>, unsigned int, false, true >(in, out, N);
+    scan< Plus<unsigned int>, unsigned int, false, true >(d_in, d_out, N);
+}
+
+void prescanr_plusui(const unsigned int *d_in, unsigned int *d_out, const unsigned int N)
+{
+    scan< Plus<unsigned int>, unsigned int, true, true >(d_in, d_out, N);
 }
 
