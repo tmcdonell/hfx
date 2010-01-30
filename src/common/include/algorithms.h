@@ -40,6 +40,10 @@ void enumFromTo_i(int *d_out, int from, int to);
  */
 unsigned int compact_ui(const unsigned int *d_in, unsigned int *d_out, const unsigned int *d_flags, const unsigned int length);
 
+/*
+ * Replicate
+ */
+void replicate(void *d_out, const unsigned int symbol, const unsigned int N);
 
 #ifdef __cplusplus
 }
