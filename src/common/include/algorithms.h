@@ -41,12 +41,14 @@ void radixsort_f(float *d_keys, void *d_vals, unsigned int N);
 void enumFromTo_i(int *d_out, int from, int to);
 
 /*
- * Permute
+ * Permute (32-bit payload)
  */
-unsigned int compact_ui(const unsigned int *d_in, unsigned int *d_out, const unsigned int *d_flags, const unsigned int length);
+void permute(const void *d_in, void *d_out, const unsigned int *d_indices, const unsigned int length);
+void bpermute(const void *d_in, void *d_out, const unsigned int *d_indices, const unsigned int length);
+unsigned int compact(const void *d_in, void *d_out, const unsigned int *d_flags, const unsigned int length);
 
 /*
- * Replicate
+ * Replicate (32-bit symbol)
  */
 void replicate(void *d_out, const unsigned int symbol, const unsigned int N);
 

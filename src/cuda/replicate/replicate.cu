@@ -46,7 +46,7 @@ replicate_core
 void
 replicate
 (
-    void*               *d_out,
+    void                *d_out,
     const uint32_t      symbol,
     const uint32_t      length
 )

@@ -138,19 +138,19 @@ compact
 // Instances
 // -----------------------------------------------------------------------------
 
-void permute_ui(const uint32_t *d_in, uint32_t *d_out, const uint32_t *d_indices, const uint32_t length)
+void permute(const void *d_in, void *d_out, const uint32_t *d_indices, const uint32_t length)
 {
-    permute<uint32_t,false,false>(d_in, d_out, d_indices, length);
+    permute<uint32_t,false,false>((const uint32_t*) d_in, (uint32_t*) d_out, d_indices, length);
 }
 
-void bpermute_ui(const uint32_t *d_in, uint32_t *d_out, const uint32_t *d_indices, const uint32_t length)
+void bpermute(const void *d_in, void *d_out, const uint32_t *d_indices, const uint32_t length)
 {
-    permute<uint32_t,true,false>(d_in, d_out, d_indices, length);
+    permute<uint32_t,true,false>((const uint32_t*) d_in, (uint32_t*) d_out, d_indices, length);
 }
 
-unsigned int compact_ui(const uint32_t *d_in, uint32_t *d_out, const uint32_t *d_flags, const uint32_t length)
+unsigned int compact(const void *d_in, void *d_out, const uint32_t *d_flags, const uint32_t length)
 {
-    unsigned int N = compact<uint32_t,false>(d_in, d_out, d_flags, length);
+    unsigned int N = compact<uint32_t,false>((const uint32_t*) d_in, (uint32_t*) d_out, d_flags, length);
     return N;
 }
 
