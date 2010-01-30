@@ -11,6 +11,7 @@
 module Time where
 
 import Numeric
+import Data.List
 import System.CPUTime
 import Control.Monad
 
@@ -37,15 +38,33 @@ timeIn u (Time t) = u t
 elapsedTime :: Time -> Time -> Time
 elapsedTime (Time t1) (Time t2) = Time (t2 - t1)
 
+
+-- Show time in nearest SI unit
+--
 showTime :: Time -> String
-showTime t
-  | timeIn picosecond  t <= 1000 = shows (timeIn picosecond  t) " ps"
-  | timeIn nanosecond  t <= 1000 = showT (timeIn picosecond  t) " ns"
-  | timeIn microsecond t <= 1000 = showT (timeIn nanosecond  t) " us"
-  | timeIn millisecond t <= 1000 = showT (timeIn microsecond t) " ms"
-  | otherwise                    = showT (timeIn millisecond t) " s"
+showTime (Time t) = showsT . nubBy (\a b -> a == ' ' && b == ' ') $ ' ':si_unit:"s"
   where
-    showT n = showFFloat (Just 3) (fromInteger n / 1000::Float)
+    showsT  = showFFloat (Just 3) (fromInteger t / (1000 ^^ pow :: Double))
+    pow     = min 4 . floor $ logBase 1000 (fromInteger t :: Double)
+    si_unit = "pnum " !! pow
+
+
+-- Shows with SI prefix
+--
+showFFloatSI :: RealFloat a => a -> ShowS
+showFFloatSI n = showString . nubBy (\a b -> a == ' ' && b == ' ') $ showFFloat (Just 3) n' (' ':si_unit:[])
+  where
+    n'      = n / (1000 ^^ (pow-4))
+    pow     = max 0 . min 8 . (+) 4 . floor $ logBase 1000 n
+    si_unit = "pnum kMGT" !! pow
+
+
+-- Show the rate of "things / second", with SI unit prefix
+--
+showRateSI :: Integral a => a -> Time -> String -> String
+showRateSI _ (Time 0) unit = "-- " ++ unit ++ "/s"
+showRateSI n (Time t) unit = showFFloatSI (fromInteger t * fromIntegral n / 1E12::Double) (unit ++ "/s")
+
 
 -- Simple timing/benchmarking
 --
