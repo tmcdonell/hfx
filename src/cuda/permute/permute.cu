@@ -41,12 +41,12 @@ permute_control(uint32_t n, uint32_t &blocks, uint32_t &threads)
  * We return the number of valid elements found via `num_valid', but blunder on
  * ahead regardless of whether the `out' array is large enough or not.
  */
-template <typename T, bool backward, bool compact>
+template <typename T, bool backward, bool compact, bool lengthIsPow2>
 __global__ static void
 permute_core
 (
-    const T             *in,
-    T                   *out,
+    const T             *d_in,
+    T                   *d_out,
     const uint32_t      *indices,
     const uint32_t      length,
     const uint32_t      *valid     = NULL,
@@ -66,14 +66,14 @@ permute_core
             num_valid[0] = valid[length-1] + indices[length-1];
     }
 
-    if (idx < length)
+    if (lengthIsPow2 || idx < length)
     {
 	if (compact && valid[idx])
-	    out[indices[idx]] = in[idx];
+	    d_out[indices[idx]] = d_in[idx];
 	else if (backward)
-	    out[idx] = in[indices[idx]];
+	    d_out[idx] = d_in[indices[idx]];
 	else
-	    out[indices[idx]] = in[idx];
+	    d_out[indices[idx]] = d_in[idx];
     }
 }
 
@@ -82,8 +82,8 @@ template <typename T, bool backward, bool compact>
 static void
 permute
 (
-    const T             *in,
-    T                   *out,
+    const T             *d_in,
+    T                   *d_out,
     const uint32_t      *indices,
     const uint32_t      length,
     const uint32_t      *valid     = NULL,
@@ -94,8 +94,9 @@ permute
     uint32_t blocks;
 
     permute_control(length, blocks, threads);
-    permute_core< T,backward,compact >
-        <<<blocks,threads>>>(in, out, indices, length, valid, num_valid);
+
+    if (isPow2(length)) permute_core< T,backward,compact,true  ><<<blocks,threads>>>(d_in, d_out, indices, length, valid, num_valid);
+    else                permute_core< T,backward,compact,false ><<<blocks,threads>>>(d_in, d_out, indices, length, valid, num_valid);
 }
 
 
@@ -103,9 +104,9 @@ template <typename T, bool backward>
 static unsigned int
 compact
 (
-    const T             *in,
-    T                   *out,
-    const uint32_t      *flags,
+    const T             *d_in,
+    T                   *d_out,
+    const uint32_t      *d_flags,
     const uint32_t      length
 )
 {
@@ -116,14 +117,14 @@ compact
     cudaMalloc((void**) &num, sizeof(uint32_t));
     cudaMalloc((void**) &indices, length * sizeof(uint32_t));
 
-    if (backward) prescanr_plusui(flags, indices, length);
-    else          prescanl_plusui(flags, indices, length);
+    if (backward) prescanr_plusui(d_flags, indices, length);
+    else          prescanl_plusui(d_flags, indices, length);
 
     /*
      * At this point, we know exactly how many elements will be required for the
      * `out' array. Maybe we should allocate that array here?
      */
-    permute<T,backward,true>(in, out, indices, length, flags, num);
+    permute<T,backward,true>(d_in, d_out, indices, length, d_flags, num);
 
     cudaMemcpy(&N, num, sizeof(uint32_t), cudaMemcpyDeviceToHost);
     cudaFree(num);
