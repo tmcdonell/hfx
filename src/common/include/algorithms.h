@@ -46,6 +46,7 @@ void enumFromTo_i(int *d_out, int from, int to);
 void permute(const void *d_in, void *d_out, const unsigned int *d_indices, const unsigned int length);
 void bpermute(const void *d_in, void *d_out, const unsigned int *d_indices, const unsigned int length);
 unsigned int compact(const void *d_in, void *d_out, const unsigned int *d_flags, const unsigned int length);
+unsigned int compactIndices(unsigned int *d_out, const unsigned int *d_flags, const unsigned int length);
 
 /*
  * Replicate (32-bit symbol)
