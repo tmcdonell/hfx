@@ -63,7 +63,7 @@ showFFloatSI n = showString . nubBy (\a b -> a == ' ' && b == ' ') $ showFFloat 
 --
 showRateSI :: Integral a => a -> Time -> String -> String
 showRateSI _ (Time 0) unit = "-- " ++ unit ++ "/s"
-showRateSI n (Time t) unit = showFFloatSI (fromInteger t * fromIntegral n / 1E12::Double) (unit ++ "/s")
+showRateSI n (Time t) unit = showFFloatSI (fromIntegral n / fromInteger t * 1E12::Double) (unit ++ "/s")
 
 
 -- Simple timing/benchmarking
