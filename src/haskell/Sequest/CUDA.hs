@@ -16,7 +16,6 @@ import Spectrum
 import IonSeries
 import Sequest.Base                     (MatchCollection, Match(..), findCandidates)
 
-import Numeric
 import Control.Monad                    (when, foldM)
 import Control.Exception.Extensible     (assert)
 import Data.List
@@ -117,12 +116,12 @@ searchForMatches cp db spec = do
     --
     tc2 <- getTime
     let tc  = elapsedTime tc1 tc2
-        mbc = fromIntegral (2*numNZ + V.length specExp + numRows + 1) * 4 / 1E6
-        mbm = fromIntegral (3*numNZ + 3*numRows) * 4 / 1E6
-        gfm = fromIntegral (2*numNZ) / 1E9
-        mps = fromIntegral numRows / 1E6
+        mbc = (2*numNZ + V.length specExp + numRows + 1) * 4
+        mbm = (3*numNZ + 3*numRows) * 4
+        gfm = 2*numNZ
+        mps = numRows
 
-    vprint cp ["Setup: " ++ showTime tc, showRate mbc tc " MB", shows numRows " peptides", shows numNZ " non-zeros"]
+    vprint cp ["Setup: " ++ showTime tc, showRateSI mbc tc "b", shows numRows " peptides", shows numNZ " non-zeros"]
 
     -- score each candidate peptide, and sort based on that ranking
     --
@@ -130,9 +129,9 @@ searchForMatches cp db spec = do
     (te,_) <- bracketTime $ cu_enum_i d_i 0 (numRows-1)
     (ts,_) <- bracketTime $ cu_sort_f d_y d_i numRows
 
-    vprint cp ["SMVM:  " ++ showTime tm, showRate gfm tm " GFLOPS", showRate mbm tm " MB"]
+    vprint cp ["SMVM:  " ++ showTime tm, showRateSI gfm tm "FLOPS", showRateSI mbm tm "b"]
     vprint cp ["Enum:  " ++ showTime te]
-    vprint cp ["Sort:  " ++ showTime ts, showRate mps ts " MPairs"]
+    vprint cp ["Sort:  " ++ showTime ts, showRateSI mps ts "Pairs"]
 
     -- retrieve the highest ranked results (ascending sort)
     --
@@ -155,10 +154,6 @@ searchForMatches cp db spec = do
 
 vprint :: ConfigParams a -> [String] -> IO ()
 vprint cp s = when (verbose cp) (hPutStrLn stderr . concat . intersperse ", " $ s)
-
-showRate :: Double -> Time -> String -> String
-showRate _ (Time 0) u = "--" ++ u ++ "/s"
-showRate n t        u = showFFloat (Just 3) (1000 * n / (fromInteger (timeIn millisecond t))) (u++"/s")
 
 cIntConv :: (Integral a, Integral b) => a -> b
 cIntConv =  fromIntegral

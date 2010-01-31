@@ -42,10 +42,11 @@ import Data.Ord
 import Data.Vector.Storable (Storable)
 import qualified Data.Vector.Storable as V
 
+{-
 import GHC.Conc                                 (numCapabilities)
 import Control.Parallel
 import Control.Parallel.Strategies
-
+-}
 
 --------------------------------------------------------------------------------
 -- Data Structures
@@ -68,7 +69,7 @@ data Match a = Match
 --------------------------------------------------------------------------------
 -- Parallel MapReduce
 --------------------------------------------------------------------------------
-
+{-
 mapReduce
   :: Strategy b -> (a -> b)     -- evaluation strategy for mapping function
   -> Strategy c -> ([b] -> c)   -- evaluation strategy for reduction
@@ -79,6 +80,7 @@ mapReduce mapStrat mapFunc reduceStrat reduceFunc input =
   where
     mapResult    = parMap mapStrat mapFunc input
     reduceResult = reduceFunc mapResult `using` reduceStrat
+-}
 
 --------------------------------------------------------------------------------
 -- Database search
