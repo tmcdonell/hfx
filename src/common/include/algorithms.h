@@ -53,6 +53,12 @@ unsigned int compactIndices(unsigned int *d_out, const unsigned int *d_flags, co
  */
 void replicate(void *d_out, const unsigned int symbol, const unsigned int N);
 
+/*
+ * Filter
+ */
+unsigned int filterInRange_f(const float *d_in, float *d_out, const unsigned int length, const float min, const float max);
+unsigned int findIndicesInRange_f(const float *d_in, unsigned int *d_out, const unsigned int length, const float min, const float max);
+
 #ifdef __cplusplus
 }
 #endif

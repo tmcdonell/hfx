@@ -5,14 +5,13 @@
 # ------------------------------------------------------------------------------
 # Input files
 # ------------------------------------------------------------------------------
-EXECUTABLE      := sequest
-HSMAIN          := Main.hs
+STATIC_LIB      := libfilter.a
 
-ALGORITHMS      := enum filter permute radix_sort replicate scan smvm
-EXTRALIBS       += stdc++ $(addsuffix $(LIBSUFFIX),$(ALGORITHMS))
+CUFILES         := filter.cu
+
+EXTRALIBS       := stdc++
 
 # ------------------------------------------------------------------------------
 # Haskell/CUDA build system
 # ------------------------------------------------------------------------------
-ROOTDIR := .
-include ../common/common.mk
+include ../../common/common.mk
