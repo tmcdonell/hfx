@@ -102,7 +102,7 @@ copyDB ss = do
 -- Database search, CUDA version
 --------------------------------------------------------------------------------
 
-searchForMatches :: ConfigParams CFloat -> ProteinDatabase CFloat -> Spectrum CFloat -> IO (MatchCollection CFloat)
+searchForMatches :: ConfigParams CFloat -> [Protein CFloat] -> Spectrum CFloat -> IO (MatchCollection CFloat)
 searchForMatches cp db spec = do
   tc1 <- getTime
 

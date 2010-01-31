@@ -13,12 +13,11 @@ module Protein
   (
     Peptide(..),
     Protein(..),
-    ProteinDatabase,
 
     readFasta,
     digestProtein,
 
-    pmass, name, description, slice,
+    lyse, pmass, name, description, slice,
     bIonLadder, yIonLadder
   )
   where
@@ -35,8 +34,6 @@ import qualified Data.ByteString.Lazy.Char8 as L
 --------------------------------------------------------------------------------
 -- Data Structures
 --------------------------------------------------------------------------------
-
-type ProteinDatabase a = [Protein a]
 
 --
 -- A protein, represented by its amino acid character code sequence
@@ -105,7 +102,7 @@ yIonLadder cp p = map (\x -> residual p - x) (bIonLadder cp p)
 -- Each entry consists of a header (with a prefix of >) followed by a series of
 -- lines containing the sequence data.
 --
-readFasta :: FilePath -> IO (ProteinDatabase a)
+readFasta :: FilePath -> IO [Protein a]
 readFasta fasta = do
   database <- S.readFasta fasta
   return   $  map (\(S.Seq h d _) -> Protein h d []) database

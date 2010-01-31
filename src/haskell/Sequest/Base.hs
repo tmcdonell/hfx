@@ -89,7 +89,7 @@ mapReduce mapStrat mapFunc reduceStrat reduceFunc input =
 -- Only peptides which fall within this range will be considered.
 --
 searchForMatches :: (RealFrac a, Floating a, Enum a, Storable a)
-                 => ConfigParams a -> ProteinDatabase a -> Spectrum a -> MatchCollection a
+                 => ConfigParams a -> [Protein a] -> Spectrum a -> MatchCollection a
 searchForMatches cp database spec
     = finish
 --    . mapReduce rwhnf score rwhnf (foldl' record nomatch)
@@ -117,7 +117,7 @@ searchForMatches cp database spec
 -- Search the protein database for candidate peptides within the specified mass
 -- tolerance that should be examined by spectral cross-correlation.
 --
-findCandidates :: (Fractional a, Ord a) => ConfigParams a -> Spectrum a -> ProteinDatabase a -> ProteinDatabase a
+findCandidates :: (Fractional a, Ord a) => ConfigParams a -> Spectrum a -> [Protein a] -> [Protein a]
 findCandidates cp spec
     = filter (not . null . fragments)
     . map (\p -> p {fragments = filter inrange (fragments p)})
