@@ -11,11 +11,16 @@
 
 module CUDA.Database (ProteinDatabase(..), withPDB) where
 
+import C2HS
+import Time
 import Config
 import Protein
 
+import Data.List
+import Data.Word
 import Foreign
-import Foreign.C
+import System.IO
+import Control.Monad                            (when)
 import Control.Exception.Extensible             (assert, bracket)
 import Foreign.CUDA                             (DevicePtr, withDevicePtr)
 import Data.Vector                              (Vector)
@@ -33,8 +38,8 @@ import Unsafe.Coerce
 data ProteinDatabase a = ProteinDatabase
   {
     peptides     :: Vector (Peptide a), -- The peptide fragments
-    rowOffsets   :: DevicePtr CUInt,    -- index of each of the head flags
-    headFlags    :: DevicePtr CUInt,    -- start of a peptide block
+    rowOffsets   :: DevicePtr Word32,   -- index of each of the head flags
+    headFlags    :: DevicePtr Word32,   -- start of a peptide block
     yIonLadders  :: DevicePtr a,        -- mass ladder, y-ion
     residuals    :: DevicePtr a         -- sum of residual masses for each peptide
   }
@@ -57,6 +62,7 @@ freePDB (ProteinDatabase _  rp hf yi rm) =
 --
 newPDB :: (Fractional a, Ord a, Storable a) => ConfigParams a -> [Protein a] -> IO (ProteinDatabase a)
 newPDB cp ps = do
+  t1 <- getTime
 
   -- The offset index for the start of each peptide sequence, and corresponding
   -- head-flags array.
@@ -75,6 +81,11 @@ newPDB cp ps = do
   yIons <- C.newListArray . concatMap (scanr1 (+)) $ seqs
   resi  <- C.newListArray . map sum $ seqs
 
+  t2 <- getTime
+  let t = elapsedTime t1 t2
+      b = fromIntegral $ (2*numPeps + 2*seqLen + 1) * sizeOf (undefined::Word32)
+  whenVerbose cp [ "> Setup: " ++ showTime t , shows numPeps " peptides" , showFFloatSI (b::Double) "B" ]
+
   return (ProteinDatabase peps rowP headF yIons resi)
   where
     -- Do some extra conversion work to return the peptides in an O(1) indexable form
@@ -89,24 +100,25 @@ newPDB cp ps = do
 -- FFI Bindings
 --------------------------------------------------------------------------------
 
+whenVerbose      :: ConfigParams a -> [String] -> IO ()
+whenVerbose cp s =  when (verbose cp) (hPutStrLn stderr . concat . intersperse ", " $ s)
+
 sizeOfPtr :: Storable a => DevicePtr a -> Int
 sizeOfPtr =  sizeOf . (undefined :: DevicePtr a -> a)
 
-cIntConv :: (Integral a, Integral b) => a -> b
-cIntConv =  fromIntegral
 
 -- Permute
 --
-cu_permute :: Storable a => DevicePtr a -> DevicePtr a -> DevicePtr CUInt -> Int -> IO ()
+cu_permute :: Storable a => DevicePtr a -> DevicePtr a -> DevicePtr Word32 -> Int -> IO ()
 cu_permute d_src d_dst d_idx n =
   assert (sizeOfPtr d_src == 4) $
   withDevicePtr d_src $ \src ->
   withDevicePtr d_dst $ \dst ->
   withDevicePtr d_idx $ \idx ->
-    cu_permute' (castPtr src) (castPtr dst) idx (cIntConv n)
+    cu_permute'_ (castPtr src) (castPtr dst) idx (cIntConv n)
 
-foreign import ccall unsafe "algorithms.h permute" cu_permute'
-  :: Ptr () -> Ptr () -> Ptr CUInt -> CUInt -> IO ()
+foreign import ccall unsafe "algorithms.h permute"
+  cu_permute'_ :: Ptr () -> Ptr () -> Ptr Word32 -> Word32 -> IO ()
 
 -- Replicate
 --
@@ -114,8 +126,8 @@ cu_replicate :: Storable a => DevicePtr a -> a -> Int -> IO ()
 cu_replicate d_xs x n =
   assert (sizeOf x == 4) $
   withDevicePtr d_xs     $ \xs ->
-    cu_replicate' (castPtr xs) (unsafeCoerce x) (cIntConv n)
+    cu_replicate'_ (castPtr xs) (unsafeCoerce x) (cIntConv n)
 
-foreign import ccall unsafe "algorithms.h replicate" cu_replicate'
-  :: Ptr () -> CUInt -> CUInt -> IO ()
+foreign import ccall unsafe "algorithms.h replicate"
+  cu_replicate'_ :: Ptr () -> Word32 -> Word32 -> IO ()
 
