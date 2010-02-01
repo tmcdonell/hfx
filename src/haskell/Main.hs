@@ -19,8 +19,8 @@ import Config
 import Protein
 import PrettyPrint
 
-import Sequest.Base
-import qualified Sequest.CUDA as C
+import Sequest
+import qualified CUDA.SMVM as C
 
 --
 -- System libraries

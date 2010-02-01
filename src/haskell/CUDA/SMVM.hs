@@ -1,20 +1,22 @@
 {-# LANGUAGE ForeignFunctionInterface, BangPatterns #-}
 --------------------------------------------------------------------------------
 -- |
--- Module    : Sequest.CUDA
+-- Module    : CUDA.SMVM
 -- Copyright : (c) 2009 Trevor L. McDonell
 -- License   : BSD
 --
+-- Sequest matching based on sparse-matrix vector multiplication
+--
 --------------------------------------------------------------------------------
 
-module Sequest.CUDA (searchForMatches) where
+module CUDA.SMVM (searchForMatches) where
 
 import Time
 import Config
 import Protein
 import Spectrum
 import IonSeries
-import Sequest.Base                     (MatchCollection, Match(..), findCandidates)
+import Sequest                          (MatchCollection, Match(..), findCandidates)
 
 import Control.Monad                    (when, foldM)
 import Control.Exception.Extensible     (assert)

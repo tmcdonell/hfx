@@ -21,7 +21,7 @@
 --
 --------------------------------------------------------------------------------
 
-module Sequest.Base
+module Sequest
   (
     Match(..),
     MatchCollection,

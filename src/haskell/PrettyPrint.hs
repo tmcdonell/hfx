@@ -22,7 +22,7 @@ import Mass
 import Config
 import Protein
 import Spectrum
-import Sequest.Base                             (MatchCollection, Match(..))
+import Sequest                                  (MatchCollection, Match(..))
 
 import Numeric
 import Data.List

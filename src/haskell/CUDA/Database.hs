@@ -1,7 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 --------------------------------------------------------------------------------
 -- |
--- Module    : Database
+-- Module    : CUDA.Database
 -- Copyright : (c) 2009 Trevor L. McDonell
 -- License   : BSD
 --
@@ -9,7 +9,7 @@
 --
 --------------------------------------------------------------------------------
 
-module Database (ProteinDatabase(..), withPDB) where
+module CUDA.Database (ProteinDatabase(..), withPDB) where
 
 import Config
 import Protein
