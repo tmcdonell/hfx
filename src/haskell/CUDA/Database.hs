@@ -84,7 +84,7 @@ newPDB cp ps = do
   t2 <- getTime
   let t = elapsedTime t1 t2
       b = fromIntegral $ (2*numPeps + 2*seqLen + 1) * sizeOf (undefined::Word32)
-  whenVerbose cp [ "> Setup: " ++ showTime t , shows numPeps " peptides" , showFFloatSI (b::Double) "B" ]
+  whenVerbose cp [ "> setup: " ++ showTime t , shows numPeps " peptides" , showFFloatSI (b::Double) "B" ]
 
   return (ProteinDatabase peps rowP headF yIons resi)
   where

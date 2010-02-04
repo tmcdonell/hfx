@@ -21,11 +21,11 @@ import Sequest                          (MatchCollection, Match(..), findCandida
 import Control.Monad                    (when, foldM)
 import Control.Exception.Extensible     (assert)
 import Data.List
-import Data.Vector.Storable             (Vector(..))
 import System.IO
 import Foreign
-import Foreign.C
-import Foreign.CUDA (DevicePtr, withDevicePtr)
+import Foreign.C.Types
+import Foreign.CUDA                     (DevicePtr, withDevicePtr)
+import Data.Vector.Storable             (Vector(..))
 
 import qualified Foreign.CUDA           as C
 import qualified Data.Vector.Storable   as V
