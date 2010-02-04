@@ -8,7 +8,7 @@
 EXECUTABLE      := sequest
 HSMAIN          := Main.hs
 
-ALGORITHMS      := enum filter permute radix_sort replicate scan smvm
+ALGORITHMS      := enum filter ion_series mvm permute radix_sort replicate scan smvm
 EXTRALIBS       += stdc++ $(addsuffix $(LIBSUFFIX),$(ALGORITHMS))
 
 # ------------------------------------------------------------------------------

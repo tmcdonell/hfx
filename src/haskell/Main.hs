@@ -20,12 +20,13 @@ import Protein
 import PrettyPrint
 
 import Sequest
-import qualified CUDA.SMVM as C
+import CUDA.Database
+import qualified CUDA.PDB       as PDB
+import qualified CUDA.SMVM      as SMVM
 
 --
 -- System libraries
 --
-import Foreign.C.Types
 import Control.Monad                                    (when)
 import System.Environment                               (getArgs)
 import System.IO
@@ -46,37 +47,33 @@ defaultConfigFile =  "sequest.params"
 
 main :: IO ()
 main = do
-    argv           <- getArgs
-    (cp, dtaFiles) <- sequestConfig defaultConfigFile argv
+  (cp,files) <- sequestConfig defaultConfigFile =<< getArgs
+  proteins   <- maybe (error "Protein database not specified") readFasta (databasePath cp)
 
-    when (verbose cp && not (useCPU cp)) $ do
-      props <- C.get >>= C.props
-      hPutStrLn stderr $ "Device      :: " ++ C.deviceName props
+  when (verbose cp && not (useCPU cp)) $ do
+    dev   <- C.get
+    props <- C.props dev
+    hPutStrLn stderr $ "> device " ++ shows dev ": " ++ C.deviceName props
 
-    mapM_ (search cp) dtaFiles
+  withPDB cp proteins $ \pdb -> mapM_ (search cp proteins pdb) files
 
 
 --
 -- Search the protein database for a match to the experimental spectra
 --
-search :: ConfigParams CFloat -> FilePath -> IO ()
-search cp fp = do
-    dta <- forceEitherStr `fmap` readDTA fp
-    db  <- maybe (error "Protein database not specified") readFasta (databasePath cp)
+search :: ConfigParams Float -> [Protein Float] -> ProteinDatabase Float -> FilePath -> IO ()
+search cp proteins pdb fp = do
+  dta     <- forceEitherStr `fmap` readDTA fp
+  matches <- PDB.searchForMatches cp pdb dta
 
-    printConfig cp fp dta
-    let ref = searchForMatches cp db dta
+  when (verbose cp) $
+    let ref = searchForMatches cp proteins dta in
+    hPutStrLn stderr $ "> verify: " ++ shows (zipWith verify ref matches) "\n"
 
-    matches <- if useCPU cp
-      then return ref
-      else C.searchForMatches cp db dta
+  printConfig cp fp dta
+  printResults       $! (take (numMatches cp)       matches)
+  printResultsDetail $! (take (numMatchesDetail cp) matches)
 
-    when (verbose cp && not (useCPU cp)) $
-      hPutStrLn stderr ("Valid: " ++ shows (zipWith verify ref matches) "\n")
-
-    printResults       $! (take (numMatches cp)       matches)
-    printResultsDetail $! (take (numMatchesDetail cp) matches)
-
-    where
-      verify (Match p s) (Match p' s') = p == p' && (s-s')/(s+s'+0.0005) < 0.0005
+  where
+    verify (Match p s) (Match p' s') = p == p' && (s-s')/(s+s'+0.0005) < 0.0005
 
