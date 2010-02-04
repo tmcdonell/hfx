@@ -65,6 +65,11 @@ unsigned int findIndicesInRange_f(const float *d_in, unsigned int *d_out, const 
  */
 void addIons(unsigned int *d_spec, const float *d_ladder, const unsigned int *d_rowPtr, const unsigned int *d_inRangeIdx, const unsigned int num_inRange, const unsigned int max_charge, const unsigned int len_spec);
 
+/*
+ * Dense matrix-vector multiplication
+ */
+void mvm_if(float *d_y, const unsigned int *d_A, const float *d_x, const unsigned int m, const unsigned int n);
+
 
 #ifdef __cplusplus
 }

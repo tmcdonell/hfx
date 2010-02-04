@@ -20,6 +20,7 @@ dotp_f4(const float4 &a, const float4 &b)
 }
 #endif
 
+
 /*
  * Matrix-vector multiplication: y = A*x
  * The matrix is stored in row-major order.
@@ -108,7 +109,6 @@ mvm_core
     if (threadIdx.x == 0 && rowIdx < rows)
         d_y[rowIdx] = s_data[tid];
 }
-
 
 
 static void
