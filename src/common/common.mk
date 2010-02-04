@@ -253,6 +253,7 @@ endif
 # check if verbose
 ifeq ($(verbose),1)
     VERBOSE     :=
+    NVCCFLAGS   += --ptxas-options=-v
 else
     VERBOSE     := @
 endif
