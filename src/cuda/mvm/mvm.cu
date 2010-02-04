@@ -28,7 +28,7 @@ __global__ static void
 mvm_core
 (
     float               *d_y,
-    const float         *d_A,
+    const uint32_t      *d_A,
     const float         *d_x,
     const uint32_t      rows,
     const uint32_t      cols
@@ -36,10 +36,10 @@ mvm_core
 {
     __shared__ float    s_data[BLOCKDIM_X * BLOCKDIM_Y];
 
-    const uint32_t      tid    = threadIdx.x + threadIdx.y * BLOCKDIM_X;
-    const uint32_t      rowIdx = threadIdx.y + blockIdx.y  * BLOCKDIM_Y;
-    const uint32_t      full   = cols & ~(BLOCKDIM_X * BLOCKDIM_Y - 1);
-    const float         *d_row = &d_A[cols * rowIdx];
+    const uint32_t      tid    = threadIdx.x + threadIdx.y * blockDim.x;
+    const uint32_t      rowIdx = threadIdx.y + blockIdx.y  * blockDim.y;
+    const uint32_t      full   = cols & ~(blockDim.x * blockDim.y - 1);
+    const uint32_t      *d_row = &d_A[cols * rowIdx];
 
     float               sum    = 0;
 
@@ -60,7 +60,7 @@ mvm_core
         for (uint32_t i = threadIdx.x; i < BLOCKDIM_X * BLOCKDIM_Y; i += BLOCKDIM_X)
         {
             /*
-             * TODO: change to read a float4 from the matrix at a time.
+             * TODO: change BLOCKDIM_X to 8 and read d_A as float4 ~~> 128bytes/row
              */
             sum += d_row[j+i] * s_data[i];
         }
@@ -125,7 +125,7 @@ static void
 mvm
 (
     float               *d_y,
-    const float         *d_A,
+    const uint32_t      *d_A,
     const float         *d_x,
     uint32_t            rows,
     uint32_t            cols
@@ -144,7 +144,7 @@ mvm
  * ---------------------------------------------------------------------------*/
 
 void
-mvm_f(float *d_y, const float *d_A, const float *d_x, const uint32_t m, const uint32_t n)
+mvm_if(float *d_y, const uint32_t *d_A, const float *d_x, const uint32_t m, const uint32_t n)
 {
     mvm(d_y, d_A, d_x, m, n);
 }
