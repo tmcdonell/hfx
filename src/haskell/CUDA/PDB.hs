@@ -58,8 +58,8 @@ searchForMatches cp db dta =
 
       -- Score each peptide
       --
-      (tm,_) <- bracketTime $ mvm d_score d_specThry d_specExp nr (S.length spec)
-      let elm = 2 * (sizeOfPtr d_specThry) * (nr * S.length spec + S.length spec)
+      (tm,_) <- bracketTime $ mvm d_score d_specThry d_specExp nr specLen
+      let elm = 2 * (sizeOfPtr d_specThry) * (nr * specLen + specLen)
       whenVerbose cp ["> mvm: " ++ showTime tm, showRateSI elm tm "FLOPS"]
 
       -- Sort results and retrieve the best matches
@@ -76,7 +76,7 @@ searchForMatches cp db dta =
     results      = max (numMatches cp) (numMatchesDetail cp)
 
     spec         = buildExpSpecXCorr cp dta
-    specLen      = ceilPow2 (S.length spec)
+    specLen      = S.length spec
     chrg         = max 1 (charge dta - 1)
 
     finish sc ix = return . reverse $ zipWith (\s i -> Match (peptides db V.! cIntConv i) (s/10000)) sc ix
