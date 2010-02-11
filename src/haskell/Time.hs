@@ -46,7 +46,7 @@ showTime (Time t) = showsT . nubBy (\a b -> a == ' ' && b == ' ') $ ' ':si_unit:
   where
     showsT  = showFFloat (Just 3) (fromInteger t / (1000 ^^ pow :: Double))
     pow     = min 4 . floor $ logBase 1000 (fromInteger t :: Double)
-    si_unit = "pnum " !! pow
+    si_unit = "pnµm " !! pow
 
 
 -- Shows with SI prefix
@@ -56,7 +56,7 @@ showFFloatSI n = showString . nubBy (\a b -> a == ' ' && b == ' ') $ showFFloat 
   where
     n'      = n / (1000 ^^ (pow-4))
     pow     = max 0 . min 8 . (+) 4 . floor $ logBase 1000 n
-    si_unit = "pnum kMGT" !! pow
+    si_unit = "pnµm kMGT" !! pow
 
 
 -- Show the rate of "things / second", with SI unit prefix
