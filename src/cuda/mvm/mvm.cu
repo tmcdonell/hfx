@@ -54,16 +54,24 @@ mvm_core
         __syncthreads();
 
         /*
-         * Every thread fetches data from the x-vector, so we can step over
-         * several sub-blocks.
+         * All threads in this block must remain active to share loading chunks
+         * of the x-vector, but we still need to be careful that they don't read
+         * out-of-bounds
          */
-#pragma unroll
-        for (uint32_t i = threadIdx.x; i < BLOCKDIM_X * BLOCKDIM_Y; i += BLOCKDIM_X)
+        if (rowIdx < rows)
         {
             /*
-             * TODO: change BLOCKDIM_X to 8 and read d_A as float4 ~~> 128bytes/row
+             * Every thread fetches data from the x-vector, so we can step over
+             * several sub-blocks.
              */
-            sum += d_row[j+i] * s_data[i];
+#pragma unroll
+            for (uint32_t i = threadIdx.x; i < BLOCKDIM_X * BLOCKDIM_Y; i += BLOCKDIM_X)
+            {
+                /*
+                 * TODO: change BLOCKDIM_X to 8 and read d_A as float4 ~~> 128bytes/row
+                 */
+                sum += d_row[j+i] * s_data[i];
+            }
         }
 
         /*
@@ -78,12 +86,17 @@ mvm_core
      */
     if (full != cols)
     {
-        s_data[tid] = d_x[tid + full];
+        if (tid + full < cols)
+            s_data[tid] = d_x[tid + full];
+
         __syncthreads();
 
-        for (uint32_t i = threadIdx.x; i < (cols - full); i += BLOCKDIM_X)
+        if (rowIdx < rows)
         {
-            sum+= d_row[full+i] * s_data[i];
+            for (uint32_t i = threadIdx.x;i < (cols - full); i += BLOCKDIM_X)
+            {
+                sum+= d_row[full+i] * s_data[i];
+            }
         }
         __syncthreads();
     }
