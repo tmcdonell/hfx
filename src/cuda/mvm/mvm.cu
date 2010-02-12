@@ -42,7 +42,7 @@ mvm_core
     const uint32_t      full   = cols & ~(blockDim.x * blockDim.y - 1);
     const uint32_t      *d_row = &d_A[cols * rowIdx];
 
-    float               sum    = 0;
+    float               sum    = 0.0f;
 
     /*
      * Loop over sub-blocks of the matrix A across its width. At the end, we
