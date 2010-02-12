@@ -106,13 +106,23 @@ mvm_core
      * required since we support blockDim.x <= 64 only, meaning warps process an
      * entire row(s) in lockstep.
      */
-    s_data[tid] = sum;                                                  __EMUSYNC;
-    if (64 <= BLOCKDIM_X) { s_data[tid] = sum = sum + s_data[tid + 32]; __EMUSYNC; }
-    if (32 <= BLOCKDIM_X) { s_data[tid] = sum = sum + s_data[tid + 16]; __EMUSYNC; }
-    if (16 <= BLOCKDIM_X) { s_data[tid] = sum = sum + s_data[tid +  8]; __EMUSYNC; }
-    if ( 8 <= BLOCKDIM_X) { s_data[tid] = sum = sum + s_data[tid +  4]; __EMUSYNC; }
-    if ( 4 <= BLOCKDIM_X) { s_data[tid] = sum = sum + s_data[tid +  2]; __EMUSYNC; }
-    if ( 2 <= BLOCKDIM_X) { s_data[tid] = sum = sum + s_data[tid +  1]; __EMUSYNC; }
+#ifndef __DEVICE_EMULATION__
+    s_data[tid] = sum;
+    if (BLOCKDIM_X >= 64) s_data[tid] = sum = sum + s_data[tid + 32];
+    if (BLOCKDIM_X >= 32) s_data[tid] = sum = sum + s_data[tid + 16];
+    if (BLOCKDIM_X >= 16) s_data[tid] = sum = sum + s_data[tid +  8];
+    if (BLOCKDIM_X >=  8) s_data[tid] = sum = sum + s_data[tid +  4];
+    if (BLOCKDIM_X >=  4) s_data[tid] = sum = sum + s_data[tid +  2];
+    if (BLOCKDIM_X >=  2) s_data[tid] = sum = sum + s_data[tid +  1];
+#else
+    s_data[tid] = sum;                                                             __EMUSYNC;
+    if (BLOCKDIM_X >= 64 && threadIdx.x < 32) { s_data[tid] += s_data[tid + 32]; } __EMUSYNC;
+    if (BLOCKDIM_X >= 32 && threadIdx.x < 16) { s_data[tid] += s_data[tid + 16]; } __EMUSYNC;
+    if (BLOCKDIM_X >= 16 && threadIdx.x <  8) { s_data[tid] += s_data[tid +  8]; } __EMUSYNC;
+    if (BLOCKDIM_X >=  8 && threadIdx.x <  4) { s_data[tid] += s_data[tid +  4]; } __EMUSYNC;
+    if (BLOCKDIM_X >=  4 && threadIdx.x <  2) { s_data[tid] += s_data[tid +  2]; } __EMUSYNC;
+    if (BLOCKDIM_X >=  2 && threadIdx.x <  1) { s_data[tid] += s_data[tid +  1]; } __EMUSYNC;
+#endif
 
     /*
      * If the number of rows is not evenly divisible by the block size, these
