@@ -86,10 +86,10 @@ lyse pep = (L.take (n-c+1) . L.drop c . seqdata . parent) pep
 -- corresponds to the mass of the unbroken peptide.
 --
 bIonLadder :: (Fractional a, Storable a) => ConfigParams a -> Peptide a -> [a]
-bIonLadder cp = tail . scanl (\m c -> m + getAAMass cp c) 0 . L.unpack . L.init . lyse
+bIonLadder cp = scanl1 (+) . map (getAAMass cp) . L.unpack . L.init . lyse
 
 yIonLadder :: (Fractional a, Storable a) => ConfigParams a -> Peptide a -> [a]
-yIonLadder cp p = map (\x -> residual p - x) (bIonLadder cp p)
+yIonLadder cp = tail . scanr1 (+) . map (getAAMass cp) . L.unpack . lyse
 
 
 --------------------------------------------------------------------------------
