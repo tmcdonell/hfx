@@ -14,7 +14,7 @@ module CUDA.PDB where
 import Time
 import Mass
 import C2HS
-import Utils
+--import Utils
 import Config
 import Spectrum
 import Sequest                                  (MatchCollection, Match(..))

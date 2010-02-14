@@ -16,19 +16,16 @@ import Time
 import Config
 import Protein
 
-import Data.List
-import Data.Word
-import Foreign
+import Foreign.Storable
 import System.IO
+import Data.Word
+import Data.List                                (intersperse)
 import Control.Monad                            (when)
-import Control.Exception.Extensible             (assert, bracket)
-import Foreign.CUDA                             (DevicePtr, withDevicePtr)
-import Data.Vector                              (Vector)
-import qualified Data.Vector                    as V
-import qualified Foreign.CUDA                   as C
+import Control.Exception.Extensible             (bracket)
+import Foreign.CUDA                             (DevicePtr)
+import Data.Vector                              (Vector, fromList)
+import qualified Foreign.CUDA                   as CUDA
 import qualified Data.ByteString.Lazy.Char8     as L
-
-import Unsafe.Coerce
 
 
 --------------------------------------------------------------------------------
@@ -39,7 +36,6 @@ data ProteinDatabase a = ProteinDatabase
   {
     peptides     :: Vector (Peptide a), -- The peptide fragments
     rowOffsets   :: DevicePtr Word32,   -- index of each of the head flags
-    headFlags    :: DevicePtr Word32,   -- start of a peptide block
     yIonLadders  :: DevicePtr a,        -- mass ladder, y-ion
     residuals    :: DevicePtr a         -- sum of residual masses for each peptide
   }
@@ -50,16 +46,42 @@ data ProteinDatabase a = ProteinDatabase
 --------------------------------------------------------------------------------
 
 withPDB :: (Fractional a, Ord a, Storable a) => ConfigParams a -> [Protein a] -> (ProteinDatabase a -> IO b) -> IO b
-withPDB cp ps = bracket (newPDB cp ps) freePDB
+withPDB cp ps = flip bracket freePDB $ do
+  (t,db) <- bracketTime (newPDB cp ps)
+  whenVerbose cp [ "> setup: " ++ showTime t ]
+  return db
 
 freePDB :: ProteinDatabase a -> IO ()
-freePDB (ProteinDatabase _  rp hf yi rm) =
-  C.free rp >> C.free hf >> C.free yi >> C.free rm
+freePDB (ProteinDatabase _  rp yi rm) =
+  CUDA.free rp >> CUDA.free yi >> CUDA.free rm
 
+--
+-- Generate a new protein database on the graphics device.
+--
+-- This consists of a flattened description of the fragment mass ladders for
+-- each peptide in the database. This is the y-ion ladder ladder (C->N terminus)
+-- except that we also include the mass of the unbroken peptide in the sequence.
+--
+-- Also includes the list of peptides in an O(1) indexable form, for fast
+-- reverse lookup.
+--
+newPDB :: (Fractional a, Ord a, Storable a) => ConfigParams a -> [Protein a] -> IO (ProteinDatabase a)
+newPDB cp proteins = do
+  rowP   <- CUDA.newListArray . scanl (+) 0 . map (cIntConv . length) $ seqs
+  ladder <- CUDA.newListArray . concatMap (scanr1 (+))                $ seqs
+  resi   <- CUDA.newListArray . map sum                               $ seqs
+
+  return $ ProteinDatabase (fromList peps) rowP ladder resi
+  where
+    peps = concatMap fragments . map (digestProtein cp) $ proteins
+    seqs = map (map (getAAMass cp) . L.unpack . lyse)   $ peps
 
 --
 -- Generate a new protein database on the graphics device
 --
+
+
+{-
 newPDB :: (Fractional a, Ord a, Storable a) => ConfigParams a -> [Protein a] -> IO (ProteinDatabase a)
 newPDB cp ps = do
   t1 <- getTime
@@ -94,6 +116,7 @@ newPDB cp ps = do
     numPeps = V.length peps
     seqs    = V.toList . V.map (map (getAAMass cp) . L.unpack . lyse) $ peps
     seqLen  = sum . map length $ seqs
+-}
 
 
 --------------------------------------------------------------------------------
@@ -103,9 +126,9 @@ newPDB cp ps = do
 whenVerbose      :: ConfigParams a -> [String] -> IO ()
 whenVerbose cp s =  when (verbose cp) (hPutStrLn stderr . concat . intersperse ", " $ s)
 
+{-
 sizeOfPtr :: Storable a => DevicePtr a -> Int
 sizeOfPtr =  sizeOf . (undefined :: DevicePtr a -> a)
-
 
 -- Permute
 --
@@ -131,3 +154,15 @@ cu_replicate d_xs x n =
 foreign import ccall unsafe "algorithms.h replicate"
   cu_replicate'_ :: Ptr () -> Word32 -> Word32 -> IO ()
 
+-- Segmented scan
+--
+cu_postsegscanr_plusf :: DevicePtr Float -> DevicePtr Word32 -> DevicePtr Float -> Int -> IO ()
+cu_postsegscanr_plusf d_src d_flags d_dst n =
+  withDevicePtr d_src   $ \d_src'   ->
+  withDevicePtr d_dst   $ \d_dst'   ->
+  withDevicePtr d_flags $ \d_flags' ->
+    cu_postsegscanr_plusf'_ d_src' d_flags' d_dst' (cIntConv n)
+
+foreign import ccall unsafe "algorithms.h postsegscanr_plusf"
+  cu_postsegscanr_plusf'_ :: Ptr Float -> Ptr Word32 -> Ptr Float -> Word32 -> IO ()
+-}

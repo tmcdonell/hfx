@@ -22,7 +22,7 @@ import PrettyPrint
 import Sequest
 import CUDA.Database
 import qualified CUDA.PDB       as PDB
-import qualified CUDA.SMVM      as SMVM
+--import qualified CUDA.SMVM      as SMVM
 
 --
 -- System libraries
