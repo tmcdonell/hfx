@@ -8,6 +8,7 @@
 
 #include "mvm.h"
 #include "utils.h"
+#include "texture.h"
 #include "algorithms.h"
 
 #include <stdint.h>
@@ -25,6 +26,7 @@ dotp_f4(const float4 &a, const float4 &b)
  * Matrix-vector multiplication: y = A*x
  * The matrix is stored in row-major order.
  */
+template <bool UseCache>
 __global__ static void
 mvm_core
 (
@@ -50,7 +52,7 @@ mvm_core
      */
     for (uint32_t j = 0; j < full;  j += BLOCKDIM_X * BLOCKDIM_Y)
     {
-        s_data[tid] = d_x[tid + j];
+        s_data[tid] = fetch_x<UseCache>(tid + j, d_x);
         __syncthreads();
 
         /*
@@ -87,7 +89,7 @@ mvm_core
     if (full != cols)
     {
         if (tid + full < cols)
-            s_data[tid] = d_x[tid + full];
+            s_data[tid] = fetch_x<UseCache>(tid + full, d_x);
 
         __syncthreads();
 
@@ -144,6 +146,7 @@ mvm_control(const uint32_t m, const uint32_t n, dim3 &blocks, dim3 &threads)
 }
 
 
+template <bool UseCache>
 static void
 mvm
 (
@@ -157,8 +160,14 @@ mvm
     dim3 blocks;
     dim3 threads;
 
+    if (UseCache)
+        bind_x(d_x);
+
     mvm_control(rows, cols, blocks, threads);
-    mvm_core<<<blocks,threads>>>(d_y, d_A, d_x, rows, cols);
+    mvm_core<UseCache><<<blocks,threads>>>(d_y, d_A, d_x, rows, cols);
+
+    if (UseCache)
+        unbind_x(d_x);
 }
 
 
@@ -169,6 +178,6 @@ mvm
 void
 mvm_if(float *d_y, const uint32_t *d_A, const float *d_x, const uint32_t m, const uint32_t n)
 {
-    mvm(d_y, d_A, d_x, m, n);
+    mvm<false>(d_y, d_A, d_x, m, n);
 }
 
