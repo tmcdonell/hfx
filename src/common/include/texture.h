@@ -19,17 +19,18 @@
 #define __TEXTURE_H__
 
 #include "utils.h"
+#include <stdint.h>
 #include <cuda_runtime_api.h>
 
 /*
- * These textures are (optionally) used to cache the 'x' vector in y += A*x
- * Use int2 to pull doubles through texture cache.
+ * These textures are (optionally) used to cache the 'x' vector in matrix-vector
+ * multiplication y = A*x. Use int2 to pull doubles through the texture cache.
  */
-texture<float,1> tex_x_float;
-texture<int2,1>  tex_x_double;
+texture<float, 1> tex_x_float;
+texture<int2,  1> tex_x_double;
 
 inline void
-bind_x(const float * x)
+bind_x(const float *x)
 {
     size_t offset = size_t(-1);
 
@@ -39,7 +40,7 @@ bind_x(const float * x)
 }
 
 inline void
-bind_x(const double * x)
+bind_x(const double *x)
 {
     size_t offset = size_t(-1);
 
@@ -63,9 +64,10 @@ unbind_x(const double *)
     CUDA_SAFE_CALL(cudaUnbindTexture(tex_x_double));
 }
 
+
 template <bool UseCache>
-__inline__ __device__ float
-fetch_x(const int& i, const float * x)
+__device__ __inline__ float
+fetch_x(const uint32_t &i, const float *x)
 {
     if (UseCache) return tex1Dfetch(tex_x_float, i);
     else          return x[i];
@@ -73,7 +75,8 @@ fetch_x(const int& i, const float * x)
 
 #ifndef CUDA_NO_SM_13_DOUBLE_INTRINSICS
 template <bool UseCache>
-__inline__ __device__ double fetch_x(const int& i, const double * x)
+__device__ __inline__ double
+fetch_x(const uint32_t &i, const double *x)
 {
 #if __CUDA_ARCH__ < 130
 #error "double precision require Compute Compatibility 1.3 or greater"
@@ -90,5 +93,34 @@ __inline__ __device__ double fetch_x(const int& i, const double * x)
 }
 #endif
 
-#endif  // __TEXTURE_H__
+
+#if 0
+texture<float4, 2> tex_A_float;
+
+inline void
+bind_A(const float *d_A, uint32_t width, uint32_t height)
+{
+    size_t                offset = size_t (-1);
+    cudaChannelFormatDesc descf4 = cudaCreateChannelDesc<float4>();
+
+    CUDA_SAFE_CALL(cudaBindTexture(&offset, tex_A_float, d_A, &descf4, width>>2, height, width*sizeof(float)));
+    if (offset != 0)
+        assert(!"memory is not aligned, cannot use texture cache");
+}
+
+inline void
+unbind_A(const float *d_A)
+{
+    CUDA_SAFE_CALL(cudaUnbindTexture(tex_A_float));
+}
+
+template <bool UseCache>
+__inline__ __device__ float
+fetch_A(const uint32_t &x, const uint32_t &y, const uint32_t &width, const float *d_A)
+{
+    return UseCache ? tex2D(tex_A_float, x, y) : d_A[x + y * width];
+}
+#endif
+
+#endif
 
