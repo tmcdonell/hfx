@@ -86,5 +86,7 @@ benchmark n testee finaliser = do
   (r:_) <- replicateM n testee
   _     <- finaliser
   t2    <- getTime
-  return (elapsedTime t1 t2, r)
+  return (elapsedTime t1 t2 `divT` n, r)
+  where
+    divT (Time t) x = Time (t `div` toInteger x)
 
