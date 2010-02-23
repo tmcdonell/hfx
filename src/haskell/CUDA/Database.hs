@@ -28,6 +28,65 @@ import qualified Foreign.CUDA                   as CUDA
 import qualified Data.ByteString.Lazy.Char8     as L
 
 
+{-
+import System.IO.Unsafe
+import Control.Monad.State
+import Foreign
+import Foreign.CUDA                             (DevicePtr)
+import qualified Foreign.CUDA                   as CUDA
+
+data Builder a = B !Int !Int !(Ptr a)   -- number of elements, maximum array size, payload
+
+newListArrayLen :: Storable a => [a] -> IO (DevicePtr a, Int)
+newListArrayLen vals = finish =<< foldM loop initialState vals
+  where
+    initialState = B 0 0 nullPtr
+    initialSize  = 4 * 1024 * 1024
+    growthFactor = 1.25 :: Double
+
+    finish (B n _ h_arr) = do
+        d_arr <- CUDA.mallocArray n
+        CUDA.pokeArray n h_arr d_arr >> free h_arr
+        return (d_arr, n)
+
+    loop (B n l arr) x = unsafeInterleaveIO $
+        if n < l
+          then pokeElemOff arr n x >> return (B (n+1) l arr)
+          else let l' = max initialSize (ceiling (growthFactor * fromIntegral l)) in
+               reallocArray arr l' >>= \arr' -> loop (B n l' arr') x
+-}
+{-
+newListArrayLen :: Storable a => [a] -> IO (DevicePtr a, Int)
+newListArrayLen vals = evalStateT (loop vals) initialState
+  where
+    initialState = B 0 0 nullPtr
+    initialSize  = 4 * 1024 * 1024      -- 16 megabytes for 32-bit words
+    growthFactor = 1.5 :: Double
+
+    -- Finished consuming the list; copy to the device and free host array
+    --
+    loop []      = do
+      (B n _ arr) <- get
+      d_arr       <- liftIO $ CUDA.mallocArray n
+      h_arr       <- liftIO $ evaluate arr
+      liftIO $ CUDA.pokeArray n h_arr d_arr >> free h_arr
+      return (d_arr, n)
+
+    -- If the temporary array is large enough, add the next element.
+    -- Otherwise resize the array and try again.
+    --
+    loop (x:xs)  = do
+      (B n l arr) <- get
+      if n < l then do liftIO . unsafeInterleaveIO $ pokeElemOff arr n x
+                       put (B (n+1) l arr)
+                       loop xs
+               else do let l' = max initialSize (ceiling (growthFactor * fromIntegral l))
+                       arr'  <- liftIO $ reallocArray arr l'
+                       put (B n l' arr')
+                       loop (x:xs)
+-}
+
+
 --------------------------------------------------------------------------------
 -- Data Structures
 --------------------------------------------------------------------------------
