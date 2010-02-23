@@ -99,10 +99,11 @@ sizeOfPtr :: Storable a => DevicePtr a -> Int
 sizeOfPtr =  sizeOf . (undefined :: DevicePtr a -> a)
 
 withVector :: Storable a => S.Vector a -> (DevicePtr a -> IO b) -> IO b
-withVector (S.Vector _ l p) f =
-  allocaArray l      $ \dp -> do
-    withForeignPtr p $ \p' -> pokeArray l p' dp
-    f dp
+withVector vec action = let l = V.length vec in
+  S.unsafeWith vec $ \p  ->
+  allocaArray l    $ \dp -> do
+    pokeArray l p dp
+    action dp
 
 
 --------------------------------------------------------------------------------
