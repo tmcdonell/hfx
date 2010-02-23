@@ -14,7 +14,6 @@ module CUDA.PDB where
 import Time
 import Mass
 import C2HS
---import Utils
 import Config
 import Spectrum
 import Sequest                                  (MatchCollection, Match(..))
@@ -27,10 +26,8 @@ import System.IO
 import Foreign.Ptr
 import Foreign.CUDA
 import Foreign.Storable
-import Foreign.ForeignPtr
-import qualified Data.Vector                    as V
+import qualified Data.Vector.Generic            as V
 import qualified Data.Vector.Storable           as S
-
 
 
 --------------------------------------------------------------------------------
@@ -40,12 +37,12 @@ import qualified Data.Vector.Storable           as S
 searchForMatches :: ConfigParams Float -> ProteinDatabase Float -> Spectrum Float -> IO (MatchCollection Float)
 searchForMatches cp db dta =
   withVector spec         $ \d_specExp ->
-  allocaArray numpeptides $ \d_pepIdx  -> do
+  allocaArray numPeptides $ \d_pepIdx  -> do
 
     -- Find peptides in the database with a residual mass close to the spectral
     -- precursor mass
     --
-    (tf,nr) <- bracketTime $ findIndicesInRange (residuals db) d_pepIdx numpeptides (mass-delta) (mass+delta)
+    (tf,nr) <- bracketTime $ findIndicesInRange (residuals db) d_pepIdx numPeptides (mass-delta) (mass+delta)
     whenVerbose cp ["> findIndices: " ++ showTime tf, shows nr " found"]
 
     -- Generate theoretical spectra for each of these candidates
@@ -67,16 +64,16 @@ searchForMatches cp db dta =
       (ts,_) <- bracketTime $ radixsort d_score d_pepIdx nr
       whenVerbose cp ["> sort: " ++ showTime ts, showRateSI nr ts "pairs"]
 
-      sc <- peekListArray results (d_score  `advanceDevPtr` (nr-results))
-      ix <- peekListArray results (d_pepIdx `advanceDevPtr` (nr-results))
+      sc <- peekListArray numResults (d_score  `advanceDevPtr` (nr-numResults))
+      ix <- peekListArray numResults (d_pepIdx `advanceDevPtr` (nr-numResults))
 
       finish sc ix
   where
-    numpeptides  = V.length (peptides db)
-    results      = max (numMatches cp) (numMatchesDetail cp)
+    numPeptides  = V.length (peptides db)
+    numResults   = max (numMatches cp) (numMatchesDetail cp)
 
     spec         = buildExpSpecXCorr cp dta
-    specLen      = S.length spec
+    specLen      = V.length spec
     chrg         = max 1 (charge dta - 1)
 
     finish sc ix = return . reverse $ zipWith (\s i -> Match (peptides db V.! cIntConv i) (s/10000)) sc ix
