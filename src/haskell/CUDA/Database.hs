@@ -34,9 +34,9 @@ import qualified Data.ByteString.Lazy.Char8     as L
 
 data ProteinDatabase a = ProteinDatabase
   {
-    peptides     :: Vector (Peptide a), -- The peptide fragments
-    rowOffsets   :: DevicePtr Word32,   -- index of each of the head flags
-    yIonLadders  :: DevicePtr a,        -- mass ladder, y-ion
+    peptides     :: Vector (Peptide a), -- the peptide fragments
+    rowOffsets   :: DevicePtr Word32,   -- index of the start of each sequence
+    yIonLadders  :: DevicePtr a,        -- concatenated y-ion mass ladders for each peptide
     residuals    :: DevicePtr a         -- sum of residual masses for each peptide
   }
 
@@ -52,8 +52,10 @@ withPDB cp ps = flip bracket freePDB $ do
   return db
 
 freePDB :: ProteinDatabase a -> IO ()
-freePDB (ProteinDatabase _  rp yi rm) =
-  CUDA.free rp >> CUDA.free yi >> CUDA.free rm
+freePDB db = do
+  CUDA.free (rowOffsets  db)
+  CUDA.free (yIonLadders db)
+  CUDA.free (residuals   db)
 
 --
 -- Generate a new protein database on the graphics device.
