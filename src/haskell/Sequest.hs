@@ -42,11 +42,6 @@ import Data.Ord
 import Data.Vector.Storable (Storable)
 import qualified Data.Vector.Storable as V
 
-{-
-import GHC.Conc                                 (numCapabilities)
-import Control.Parallel
-import Control.Parallel.Strategies
--}
 
 --------------------------------------------------------------------------------
 -- Data Structures
@@ -67,22 +62,6 @@ data Match a = Match
 
 
 --------------------------------------------------------------------------------
--- Parallel MapReduce
---------------------------------------------------------------------------------
-{-
-mapReduce
-  :: Strategy b -> (a -> b)     -- evaluation strategy for mapping function
-  -> Strategy c -> ([b] -> c)   -- evaluation strategy for reduction
-  -> [a]                        -- list to map/reduce over
-  -> c
-mapReduce mapStrat mapFunc reduceStrat reduceFunc input =
-  mapResult `pseq` reduceResult
-  where
-    mapResult    = parMap mapStrat mapFunc input
-    reduceResult = reduceFunc mapResult `using` reduceStrat
--}
-
---------------------------------------------------------------------------------
 -- Database search
 --------------------------------------------------------------------------------
 
@@ -94,10 +73,6 @@ searchForMatches :: (RealFrac a, Floating a, Enum a, Storable a)
                  => ConfigParams a -> [Protein a] -> Spectrum a -> MatchCollection a
 searchForMatches cp database spec
     = finish
---    . mapReduce rwhnf score rwhnf (foldl' record nomatch)
---    . concatMap fragments
---    $ candidates database
-
     . foldl' record nomatch
     $ [ score peptide | protein <- candidates database, peptide <- fragments protein ]
     where
@@ -123,7 +98,6 @@ findCandidates :: (Fractional a, Ord a) => ConfigParams a -> Spectrum a -> [Prot
 findCandidates cp spec
     = filter (not . null . fragments)
     . map (\p -> p {fragments = filter inrange (fragments p)})
---    . parBuffer numCapabilities rwhnf
     where
         inrange p = (mass - limit) <= pmass p && pmass p <= (mass + limit)
         mass      = (precursor spec * charge spec) - ((charge spec * massH) - 1)
