@@ -14,8 +14,7 @@ module Protein
     Peptide(..),
     Protein(..),
 
-    readFasta,
-    digestProtein,
+    digestFasta,
 
     lyse, pmass, label, description, slice,
     bIonLadder, yIonLadder
@@ -26,9 +25,15 @@ import Mass
 import Config
 
 import Data.Int
-import Data.Vector.Storable (Storable)
-import qualified Bio.Sequence               as S
-import qualified Data.ByteString.Lazy.Char8 as L
+import Data.Vector                                      (Vector)
+import Data.Vector.Storable                             (Storable)
+import Control.Monad                                    (foldM_)
+import qualified Bio.Sequence                as S
+import qualified Bio.Sequence.Fasta          as S
+import qualified Data.ByteString.Lazy.Char8  as L
+
+import qualified Data.Vector.Generic         as G
+import qualified Data.Vector.Generic.Mutable as M
 
 
 --------------------------------------------------------------------------------
@@ -42,7 +47,7 @@ data Protein a = Protein
   {
     seqheader :: L.ByteString,          -- Description of the protein
     seqdata   :: L.ByteString,          -- Amino acid character sequence
-    fragments :: [Peptide a]            -- Peptide fragments digested from this protein
+    fragments :: Vector (Peptide a)     -- Peptide fragments digested from this protein
   }
   deriving (Eq, Show)
 
@@ -102,10 +107,19 @@ yIonLadder cp = tail . scanr1 (+) . map (getAAMass cp) . L.unpack . lyse
 -- Each entry consists of a header (with a prefix of >) followed by a series of
 -- lines containing the sequence data.
 --
-readFasta :: FilePath -> IO [Protein a]
-readFasta fasta = do
-  database <- S.readFasta fasta
-  return   $  map (\(S.Seq h d _) -> Protein h d []) database
+digestFasta :: (Storable a, Ord a, Fractional a) => ConfigParams a -> FilePath -> IO (Vector (Protein a))
+digestFasta cp fasta = do
+  n    <- S.countSeqs fasta
+  seqs <- S.readFasta fasta
+  mv   <- M.unsafeNew n
+
+  let fill i s = do
+        let p = digestProtein cp (Protein (S.seqheader s) (S.seqdata s) undefined)
+        M.unsafeWrite mv i p
+        return (i+1)
+
+  foldM_ fill 0 seqs
+  G.unsafeFreeze mv
 
 
 --------------------------------------------------------------------------------
@@ -137,26 +151,29 @@ fragment cp protein indices = pep
 digestProtein :: (Fractional a, Ord a, Storable a) => ConfigParams a -> Protein a -> Protein a
 digestProtein cp protein = protein { fragments = seqs }
   where
-    seqs      = filter inrange splices
+    seqs      = G.filter inrange splices
     inrange p = minPeptideMass cp <= pmass p && pmass p <= maxPeptideMass cp
 
-    indices   = L.findIndices ((fst.digestionRule) cp) (seqdata protein)
+    indices   = L.findIndices ((fst . digestionRule) cp) (seqdata protein)
     frags     = simpleFragment cp protein (-1:indices)
     splices   = simpleSplice cp frags
 
+{-# INLINE simpleFragment #-}
+{-# INLINE simpleSplice   #-}
 
 --
 -- Split a protein at the given amino acid locations. Be sure to include the
 -- final fragment, with a dummy cleavage point at the end of the sequence.
 --
 simpleFragment :: (Fractional a, Storable a) => ConfigParams a -> Protein a -> [Int64] -> [Peptide a]
-simpleFragment _  _ []     = []
-simpleFragment cp p (i:is)
-    | i+1 > n              = []
-    | otherwise            = fragment cp p (i+1, n) : simpleFragment cp p is
-    where n = if null is
-                then L.length (seqdata p) - 1
-                else head is
+simpleFragment cp p = loop
+  where
+    loop []                 = []
+    loop (i:is) | i+1 > n   = []
+                | otherwise = fragment cp p (i+1, n) : loop is
+                where
+                  l = L.length (seqdata p) - 1
+                  n = if null is then l else head is
 
 
 --
@@ -168,19 +185,19 @@ simpleFragment cp p (i:is)
 -- The input list must consist of sorted and adjacent breaks of the original
 -- protein sequence, but the output is unordered.
 --
-simpleSplice :: Num a => ConfigParams a -> [Peptide a] -> [Peptide a]
-simpleSplice _  []         = []
-simpleSplice cp pep@(p:ps)
-    | null ps              = [p]
-    | otherwise            = scanl1 splice (take n pep) ++ simpleSplice cp ps
-    where
-        n          = missedCleavages cp + 1
-        splice a b = Peptide
-          {
-            parent    = parent a,
-            residual  = residual a + residual b,
-            terminals = (fst (terminals a), snd (terminals b))
-          }
+simpleSplice :: Num a => ConfigParams a -> [Peptide a] -> Vector (Peptide a)
+simpleSplice cp = G.fromList . loop
+  where
+    loop []     = []
+    loop (p:ps) = scanl splice p (take n ps) ++ loop ps
+
+    n           = missedCleavages cp
+    splice a b  = Peptide
+      {
+        parent    = parent a,
+        residual  = residual a + residual b,
+        terminals = (fst (terminals a), snd (terminals b))
+      }
 
 
 --------------------------------------------------------------------------------
