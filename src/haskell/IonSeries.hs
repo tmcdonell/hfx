@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : IonSeries
@@ -21,11 +20,11 @@ module IonSeries
 import Mass
 import Config
 import Protein
-import Spectrum                                 (specBinWidth)
+import Spectrum                         (specBinWidth)
 
-import Data.List
-import Data.Function
-import Data.Vector.Storable (Storable)
+import Data.Ix
+import Data.Vector.Storable             (Vector, Storable)
+import qualified Data.Vector.Generic    as G
 
 
 --------------------------------------------------------------------------------
@@ -33,10 +32,10 @@ import Data.Vector.Storable (Storable)
 --------------------------------------------------------------------------------
 
 --
--- The mz/intensity spectrum array for the theoretical spectrum. Keep this as a
--- sparse array, as there are so few elements compared to the experimental data.
+-- The mz/intensity spectrum array for the theoretical spectrum. Although the
+-- vector is fairly sparse, store in dense format for simplicity.
 --
-type XCorrSpecThry i e = [(i, e)]
+type XCorrSpecThry a = Vector a
 
 
 --------------------------------------------------------------------------------
@@ -48,23 +47,23 @@ type XCorrSpecThry i e = [(i, e)]
 -- character code sequence.
 --
 -- This generates spectral peaks for all of the A-, B- and Y-ions for the given
--- peptide, retaining only the most intense peak in each bin. Incidentally, the
--- output is also sorted by bin index.
+-- peptide, retaining only the most intense peak in each bin.
 --
-buildThrySpecXCorr :: (RealFrac a, Enum a, Storable a, Integral i)
-                   => ConfigParams a -> a -> (i,i) -> Peptide a -> XCorrSpecThry i a
-buildThrySpecXCorr cp charge bnds peptide =
-  finish [ (bin x,y) | ions  <- map addIons [1.. max 1 (charge-1)]
-                     , (x,y) <- ions ]
+buildThrySpecXCorr :: (RealFrac a, Enum a, Storable a)
+                   => ConfigParams a -> a -> Int -> Peptide a -> XCorrSpecThry a
+buildThrySpecXCorr cp charge len peptide =
+  G.accum max (G.replicate len 0) ions
   where
+    ions      = filter (inRange (0,len-1) . fst)
+              . map (\(x,y) -> (bin x, y))
+              . concatMap addIons $ [ 1 .. max 1 (charge-1) ]
+
     addIons c = concatMap (addIonsAB c) b_ions ++ concatMap (addIonsY c) y_ions
     b_ions    = bIonLadder cp peptide
     y_ions    = yIonLadder cp peptide
 
     bin mz    = round (mz / specBinWidth cp)
-    finish    = filter (inRange bnds . fst) . map (foldl1' max) . groupBy ((==) `on` fst) . sort
 
-    inRange (!m,!n) !i = m <= i && i <= n
 
 --
 -- Convert mass to mass/charge ratio

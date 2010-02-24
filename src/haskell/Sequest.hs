@@ -80,7 +80,7 @@ searchForMatches cp database spec
     $ G.concatMap fragments (candidates database)
     where
         specExp    = buildExpSpecXCorr  cp spec
-        specThry   = buildThrySpecXCorr cp (charge spec) (0, G.length specExp - 1)
+        specThry   = buildThrySpecXCorr cp (charge spec) (G.length specExp)
         candidates = findCandidates cp spec
         finish     = reverse . catMaybes
 
@@ -116,6 +116,6 @@ findCandidates cp spec
 -- correlation is the dot product between the theoretical representation and the
 -- preprocessed experimental spectra.
 --
-sequestXC :: (Fractional a, Storable a) => XCorrSpecExp a -> XCorrSpecThry Int a -> a
-sequestXC v sv = sum [ x * v G.! i | (i,x) <- sv ] / 10000
+sequestXC :: (Fractional a, Storable a) => XCorrSpecExp a -> XCorrSpecThry a -> a
+sequestXC x y = G.sum ( G.zipWith (*) x y ) / 10000
 
