@@ -1,7 +1,6 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
 --------------------------------------------------------------------------------
 -- |
--- Module    : CUDA.Database
+-- Module    : Database
 -- Copyright : (c) 2009 Trevor L. McDonell
 -- License   : BSD
 --
@@ -9,7 +8,7 @@
 --
 --------------------------------------------------------------------------------
 
-module CUDA.Database (ProteinDatabase(..), withPDB) where
+module Database (ProteinDatabase(..), withPDB) where
 
 import C2HS
 import Time

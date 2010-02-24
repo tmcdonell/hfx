@@ -17,7 +17,7 @@ import C2HS
 import Config
 import Spectrum
 import Sequest                                  (MatchCollection, Match(..))
-import CUDA.Database                            (ProteinDatabase(..))
+import Database                                 (ProteinDatabase(..))
 
 import Data.Word
 import Data.List                                (intersperse)
