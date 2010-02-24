@@ -22,11 +22,10 @@ module Spectrum
   where
 
 import Config
-import Utils
 
-import Data.ByteString.Lazy (ByteString)
-import Data.Vector.Storable (Vector, Storable)
-import qualified Data.Vector.Storable as V
+import Data.ByteString.Lazy             (ByteString)
+import Data.Vector.Storable             (Vector, Storable)
+import qualified Data.Vector.Storable   as V
 
 
 --------------------------------------------------------------------------------
@@ -149,7 +148,7 @@ normaliseByRegion a = V.zipWith norm ix a
     sel      = cutoff `div` 10
     cutoff   = V.length a - 75
 
-    ix       = V.enumFromTo 0 (V.length a - 1)
+    ix       = V.enumFromN 0 (V.length a)
     norm i e = let m = rgn_max V.! (rgn i)  in
                if  m > 1E-6 && i < sel*10 then 50 * (e / m) else 0
 
@@ -162,7 +161,7 @@ normaliseByRegion a = V.zipWith norm ix a
 calculateXCorr :: (Fractional a, Storable a) => XCorrSpecExp a -> XCorrSpecExp a
 calculateXCorr a = V.zipWith xcorr ix a
   where
-    ix        = V.enumFromTo 0 (ceilPow2 (V.length a) - 1)
+    ix        = V.enumFromN 0 (V.length a)
     xcorr i e = e - (V.foldl' (+) 0 (subv i)) / 150
     subv  i   = V.take 151 . V.drop (i-75) $ a
 
