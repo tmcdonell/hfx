@@ -25,10 +25,10 @@ import System.IO
 import Foreign
 import Foreign.C.Types
 import Foreign.CUDA                     (DevicePtr, withDevicePtr)
-import Data.Vector.Storable             (Vector(..))
 
-import qualified Foreign.CUDA           as C
-import qualified Data.Vector.Storable   as V
+import qualified Foreign.CUDA           as CUDA
+import qualified Data.Vector.Generic    as V
+import qualified Data.Vector.Storable   as S
 
 
 --------------------------------------------------------------------------------
@@ -62,12 +62,12 @@ withDB :: [XCorrSpecThry CUInt CFloat]
          -> IO b
 withDB ss f = do
   (numRows, numNZ, (Vec _ rowPtr), (Vec _ colIdx), (Vec _ vals)) <- copyDB ss
-  C.allocaArray (numRows+1) $ \d_rowPtr -> do
-  C.allocaArray numNZ       $ \d_colIdx -> do
-  C.allocaArray numNZ       $ \d_vals   -> do
-    C.pokeArray (numRows+1) rowPtr d_rowPtr >> free rowPtr
-    C.pokeArray numNZ       colIdx d_colIdx >> free colIdx
-    C.pokeArray numNZ       vals   d_vals   >> free vals
+  CUDA.allocaArray (numRows+1) $ \d_rowPtr -> do
+  CUDA.allocaArray numNZ       $ \d_colIdx -> do
+  CUDA.allocaArray numNZ       $ \d_vals   -> do
+    CUDA.pokeArray (numRows+1) rowPtr d_rowPtr >> free rowPtr
+    CUDA.pokeArray numNZ       colIdx d_colIdx >> free colIdx
+    CUDA.pokeArray numNZ       vals   d_vals   >> free vals
 
     f numRows numNZ d_rowPtr d_colIdx d_vals
 
@@ -109,8 +109,8 @@ searchForMatches cp db spec = do
 
   withDB specThry       $ \numRows numNZ d_rowPtr d_colIdx d_vals -> do
   withVector specExp    $ \d_x -> do
-  C.allocaArray numRows $ \d_i -> do
-  C.allocaArray numRows $ \d_y -> do
+  CUDA.allocaArray numRows $ \d_i -> do
+  CUDA.allocaArray numRows $ \d_y -> do
 
     -- Estimate the time and amount of data used by each kernel, abusing the
     -- fact that all types on the device must be 32-bit. This is only used in
@@ -137,8 +137,8 @@ searchForMatches cp db spec = do
 
     -- retrieve the highest ranked results (ascending sort)
     --
-    sc <- C.peekListArray n (d_y `C.advanceDevPtr` (numRows-n))
-    ix <- C.peekListArray n (d_i `C.advanceDevPtr` (numRows-n))
+    sc <- CUDA.peekListArray n (d_y `CUDA.advanceDevPtr` (numRows-n))
+    ix <- CUDA.peekListArray n (d_i `CUDA.advanceDevPtr` (numRows-n))
     finish sc ix
   where
     specExp      = buildExpSpecXCorr cp spec
@@ -160,11 +160,12 @@ vprint cp s = when (verbose cp) (hPutStrLn stderr . concat . intersperse ", " $ 
 cIntConv :: (Integral a, Integral b) => a -> b
 cIntConv =  fromIntegral
 
-withVector :: Storable a => Vector a -> (DevicePtr a -> IO b) -> IO b
-withVector (Vector _ l p) f =
-  C.allocaArray l $ \dp -> do
-    withForeignPtr p $ \p' -> C.pokeArray l p' dp
-    f dp
+withVector :: Storable a => S.Vector a -> (DevicePtr a -> IO b) -> IO b
+withVector vec action = let l = V.length vec in
+  S.unsafeWith vec   $ \p  ->
+  CUDA.allocaArray l $ \dp -> do
+    CUDA.pokeArray l p dp
+    action dp
 
 
 --------------------------------------------------------------------------------

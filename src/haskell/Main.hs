@@ -30,7 +30,7 @@ import qualified CUDA.PDB       as PDB
 import Control.Monad                                    (when)
 import System.Environment                               (getArgs)
 import System.IO
-import qualified Foreign.CUDA as C
+import qualified Foreign.CUDA   as CUDA
 
 
 --------------------------------------------------------------------------------
@@ -51,9 +51,9 @@ main = do
   proteins   <- maybe (error "Protein database not specified") readFasta (databasePath cp)
 
   when (verbose cp && not (useCPU cp)) $ do
-    dev   <- C.get
-    props <- C.props dev
-    hPutStrLn stderr $ "> device " ++ shows dev ": " ++ C.deviceName props
+    dev   <- CUDA.get
+    props <- CUDA.props dev
+    hPutStrLn stderr $ "> device " ++ shows dev ": " ++ CUDA.deviceName props
 
   withPDB cp proteins $ \pdb -> mapM_ (search cp proteins pdb) files
 

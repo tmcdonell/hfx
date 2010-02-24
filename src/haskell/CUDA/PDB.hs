@@ -23,9 +23,9 @@ import Data.Word
 import Data.List                                (intersperse)
 import Control.Monad                            (when)
 import System.IO
-import Foreign.Ptr
-import Foreign.CUDA
-import Foreign.Storable
+import Foreign
+import Foreign.CUDA                             (DevicePtr, withDevicePtr)
+import qualified Foreign.CUDA                   as CUDA
 import qualified Data.Vector.Generic            as V
 import qualified Data.Vector.Storable           as S
 
@@ -36,8 +36,8 @@ import qualified Data.Vector.Storable           as S
 
 searchForMatches :: ConfigParams Float -> ProteinDatabase Float -> Spectrum Float -> IO (MatchCollection Float)
 searchForMatches cp db dta =
-  withVector spec         $ \d_specExp ->
-  allocaArray numPeptides $ \d_pepIdx  -> do
+  withVector spec              $ \d_specExp ->
+  CUDA.allocaArray numPeptides $ \d_pepIdx  -> do
 
     -- Find peptides in the database with a residual mass close to the spectral
     -- precursor mass
@@ -47,9 +47,9 @@ searchForMatches cp db dta =
 
     -- Generate theoretical spectra for each of these candidates
     --
-    allocaArray nr             $ \d_score    -> do
-    allocaArray (nr * specLen) $ \d_specThry -> do
-      memset d_specThry (fromIntegral $ specLen * nr * sizeOfPtr d_specThry) 0
+    CUDA.allocaArray nr             $ \d_score    -> do
+    CUDA.allocaArray (nr * specLen) $ \d_specThry -> do
+      CUDA.memset d_specThry (fromIntegral $ specLen * nr * sizeOfPtr d_specThry) 0
       (ta,_) <- bracketTime $ addIons d_specThry (yIonLadders db) (rowOffsets db) d_pepIdx nr (round chrg) specLen
       whenVerbose cp ["> addIons: " ++ showTime ta]
 
@@ -64,8 +64,8 @@ searchForMatches cp db dta =
       (ts,_) <- bracketTime $ radixsort d_score d_pepIdx nr
       whenVerbose cp ["> sort: " ++ showTime ts, showRateSI nr ts "pairs"]
 
-      sc <- peekListArray numResults (d_score  `advanceDevPtr` (nr-numResults))
-      ix <- peekListArray numResults (d_pepIdx `advanceDevPtr` (nr-numResults))
+      sc <- CUDA.peekListArray numResults (d_score  `CUDA.advanceDevPtr` (nr-numResults))
+      ix <- CUDA.peekListArray numResults (d_pepIdx `CUDA.advanceDevPtr` (nr-numResults))
 
       finish sc ix
   where
@@ -97,9 +97,9 @@ sizeOfPtr =  sizeOf . (undefined :: DevicePtr a -> a)
 
 withVector :: Storable a => S.Vector a -> (DevicePtr a -> IO b) -> IO b
 withVector vec action = let l = V.length vec in
-  S.unsafeWith vec $ \p  ->
-  allocaArray l    $ \dp -> do
-    pokeArray l p dp
+  S.unsafeWith vec   $ \p  ->
+  CUDA.allocaArray l $ \dp -> do
+    CUDA.pokeArray l p dp
     action dp
 
 
