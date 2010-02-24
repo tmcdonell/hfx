@@ -39,8 +39,9 @@ import IonSeries
 import Data.List
 import Data.Maybe
 import Data.Ord
-import Data.Vector.Storable (Storable)
-import qualified Data.Vector.Storable as V
+import Data.Vector                      (Vector)
+import Data.Vector.Storable             (Storable)
+import qualified Data.Vector.Generic    as G
 
 
 --------------------------------------------------------------------------------
@@ -70,15 +71,17 @@ data Match a = Match
 -- Only peptides which fall within this range will be considered.
 --
 searchForMatches :: (RealFrac a, Floating a, Enum a, Storable a)
-                 => ConfigParams a -> [Protein a] -> Spectrum a -> MatchCollection a
+                 => ConfigParams a -> Vector (Protein a) -> Spectrum a -> MatchCollection a
 searchForMatches cp database spec
     = finish
     . foldl' record nomatch
-    $ [ score peptide | protein <- candidates database, peptide <- fragments protein ]
+    . G.toList
+    . G.map score
+    $ G.concatMap fragments (candidates database)
     where
         specExp    = buildExpSpecXCorr  cp spec
-        specThry   = buildThrySpecXCorr cp (charge spec) (0, V.length specExp - 1)
-        candidates = findCandidates cp spec . map (digestProtein cp)
+        specThry   = buildThrySpecXCorr cp (charge spec) (0, G.length specExp - 1)
+        candidates = findCandidates cp spec
         finish     = reverse . catMaybes
 
         record l x = tail $ insertBy (comparing (fmap scoreXC)) (Just x) l
@@ -94,10 +97,10 @@ searchForMatches cp database spec
 -- Search the protein database for candidate peptides within the specified mass
 -- tolerance that should be examined by spectral cross-correlation.
 --
-findCandidates :: (Fractional a, Ord a) => ConfigParams a -> Spectrum a -> [Protein a] -> [Protein a]
+findCandidates :: (Fractional a, Ord a) => ConfigParams a -> Spectrum a -> Vector (Protein a) -> Vector (Protein a)
 findCandidates cp spec
-    = filter (not . null . fragments)
-    . map (\p -> p {fragments = filter inrange (fragments p)})
+    = G.filter (not . G.null . fragments)
+    . G.map (\p -> p {fragments = G.filter inrange (fragments p)})
     where
         inrange p = (mass - limit) <= pmass p && pmass p <= (mass + limit)
         mass      = (precursor spec * charge spec) - ((charge spec * massH) - 1)
@@ -114,5 +117,5 @@ findCandidates cp spec
 -- preprocessed experimental spectra.
 --
 sequestXC :: (Fractional a, Storable a) => XCorrSpecExp a -> XCorrSpecThry Int a -> a
-sequestXC v sv = sum [ x * v V.! i | (i,x) <- sv ] / 10000
+sequestXC v sv = sum [ x * v G.! i | (i,x) <- sv ] / 10000
 
