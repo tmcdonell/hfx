@@ -137,7 +137,7 @@ ifeq ($(dbg),1)
     LIBSUFFIX   := D
 else
     COMMONFLAGS += -O2
-    GHCFLAGS	+= -O2 -funbox-strict-fields -fexcess-precision
+    GHCFLAGS	+= -Odph -funbox-strict-fields -fexcess-precision
     BINSUBDIR   := release
     LIBSUFFIX   :=
     NVCCFLAGS   += --compiler-options -fno-strict-aliasing
