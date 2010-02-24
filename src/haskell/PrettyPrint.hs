@@ -94,7 +94,7 @@ toDoc n s0 (Match pep sc) =
     , float' (pmass pep)
     , float' (realToFrac ((s0 - sc)/s0))
     , float' (realToFrac sc)
-    , text   (name (parent pep))
+    , text   (label (parent pep))
     , text   (slice pep)
     ]
     where float' = text . flip (showFFloat (Just 4)) ""

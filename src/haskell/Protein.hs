@@ -17,7 +17,7 @@ module Protein
     readFasta,
     digestProtein,
 
-    lyse, pmass, name, description, slice,
+    lyse, pmass, label, description, slice,
     bIonLadder, yIonLadder
   )
   where
@@ -40,7 +40,7 @@ import qualified Data.ByteString.Lazy.Char8 as L
 --
 data Protein a = Protein
   {
-    header    :: L.ByteString,          -- Description of the protein
+    seqheader :: L.ByteString,          -- Description of the protein
     seqdata   :: L.ByteString,          -- Amino acid character sequence
     fragments :: [Peptide a]            -- Peptide fragments digested from this protein
   }
@@ -49,9 +49,9 @@ data Protein a = Protein
 --
 -- Extract the name and full description of a protein
 --
-name, description :: Protein a -> String
-name        = L.unpack . head . L.words . header
-description = L.unpack . header
+label, description :: Protein a -> String
+label       = L.unpack . head . L.words . seqheader
+description = L.unpack . seqheader
 
 --
 -- A subsequence of a protein. Copy the bytestring sequence so that the garbage
