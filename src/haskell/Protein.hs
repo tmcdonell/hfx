@@ -32,6 +32,7 @@ import qualified Bio.Sequence                as S
 import qualified Bio.Sequence.Fasta          as S
 import qualified Data.ByteString.Lazy.Char8  as L
 
+import qualified Data.Vector.Storable        as U
 import qualified Data.Vector.Generic         as G
 import qualified Data.Vector.Generic.Mutable as M
 
@@ -90,11 +91,20 @@ lyse pep = (L.take (n-c+1) . L.drop c . seqdata . parent) pep
 -- the C- to N-terminus. Don't include the last element of the sequence, which
 -- corresponds to the mass of the unbroken peptide.
 --
-bIonLadder :: (Fractional a, Storable a) => ConfigParams a -> Peptide a -> [a]
-bIonLadder cp = scanl1 (+) . map (getAAMass cp) . L.unpack . L.init . lyse
+bIonLadder :: (Fractional a, Storable a) => ConfigParams a -> Peptide a -> U.Vector a
+bIonLadder cp pep = G.scanl1 (+) $ G.generate (fromIntegral (n-c)) gen
+  where (c,n) = terminals pep
+        seqd  = seqdata . parent $ pep
+        gen i = getAAMass cp $ L.index seqd (c + fromIntegral i)
 
-yIonLadder :: (Fractional a, Storable a) => ConfigParams a -> Peptide a -> [a]
-yIonLadder cp = tail . scanr1 (+) . map (getAAMass cp) . L.unpack . lyse
+yIonLadder :: (Fractional a, Storable a) => ConfigParams a -> Peptide a -> U.Vector a
+yIonLadder cp pep = G.scanr1 (+) $ G.generate (fromIntegral (n-c)) gen
+  where (c,n) = terminals pep
+        seqd  = seqdata . parent $ pep
+        gen i = getAAMass cp $ L.index seqd (c + 1 + fromIntegral i)
+
+{-# INLINE bIonLadder #-}
+{-# INLINE yIonLadder #-}
 
 
 --------------------------------------------------------------------------------

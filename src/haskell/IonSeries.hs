@@ -59,8 +59,8 @@ buildThrySpecXCorr cp charge len peptide =
               . concatMap addIons $ [ 1 .. max 1 (charge-1) ]
 
     addIons c = concatMap (addIonsAB c) b_ions ++ concatMap (addIonsY c) y_ions
-    b_ions    = bIonLadder cp peptide
-    y_ions    = yIonLadder cp peptide
+    b_ions    = G.toList $ bIonLadder cp peptide
+    y_ions    = G.toList $ yIonLadder cp peptide
 
     bin mz    = round (mz / specBinWidth cp)
 
