@@ -29,6 +29,7 @@ import qualified CUDA.PDB       as PDB
 --
 import Control.Monad                                    (when)
 import System.Environment                               (getArgs)
+import Data.Vector                                      (Vector)
 import System.IO
 import qualified Foreign.CUDA   as CUDA
 
@@ -48,7 +49,7 @@ defaultConfigFile =  "sequest.params"
 main :: IO ()
 main = do
   (cp,files) <- sequestConfig defaultConfigFile =<< getArgs
-  proteins   <- maybe (error "Protein database not specified") readFasta (databasePath cp)
+  proteins   <- maybe (error "Protein database not specified") (digestFasta cp) (databasePath cp)
 
   when (verbose cp && not (useCPU cp)) $ do
     dev   <- CUDA.get
@@ -61,7 +62,7 @@ main = do
 --
 -- Search the protein database for a match to the experimental spectra
 --
-search :: ConfigParams Float -> [Protein Float] -> ProteinDatabase Float -> FilePath -> IO ()
+search :: ConfigParams Float -> Vector (Protein Float) -> ProteinDatabase Float -> FilePath -> IO ()
 search cp proteins pdb fp = do
   dta     <- forceEitherStr `fmap` readDTA fp
   matches <- PDB.searchForMatches cp pdb dta
