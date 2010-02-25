@@ -95,6 +95,7 @@ __global__ static void
 addIons_core
 (
     uint32_t            *d_spec,
+    const float         *d_residual,
     const float         *d_yIonLadder,
     const uint32_t      *d_rowPtr,
     const uint32_t      *d_inRangeIdx,
@@ -115,24 +116,26 @@ addIons_core
 
     for (uint32_t row = vector_id; row < num_inRange; row += numVectors)
     {
+        const uint32_t idx      = d_inRangeIdx[row];
+        const float    residual = d_residual[idx];
+        uint32_t       *spec    = &d_spec[row * len_spec];
+
         /*
          * Use two threads to fetch the indices of the start and end of this
          * segment. This is a single coalesced (unaligned) global read.
          */
         if (thread_lane < 2)
-            s_ptrs[vector_lane][thread_lane] = d_rowPtr[d_inRangeIdx[row] + thread_lane];
+            s_ptrs[vector_lane][thread_lane] = d_rowPtr[idx + thread_lane];
 
         __EMUSYNC;
         const uint32_t row_start = s_ptrs[vector_lane][0];
         const uint32_t row_end   = s_ptrs[vector_lane][1];
-        const float    residual  = d_yIonLadder[row_start];
-        uint32_t       *spec     = &d_spec[row * len_spec];
 
         /*
          * Have all threads read in values for this segment, writing the
          * spectral peaks out to global memory (very, very slowly...)
          */
-        for (uint32_t j = row_start + thread_lane + 1; j < row_end; j += WARP_SIZE)
+        for (uint32_t j = row_start + thread_lane; j < row_end; j += WARP_SIZE)
         {
             const float y_mass = d_yIonLadder[j];
             const float b_mass = residual - y_mass;
@@ -163,6 +166,7 @@ static void
 addIons_dispatch
 (
     uint32_t            *d_spec,
+    const float         *d_residual,
     const float         *d_ladder,
     const uint32_t      *d_rowPtr,
     const uint32_t      *d_inRangeIdx,
@@ -176,11 +180,11 @@ addIons_dispatch
     addIons_control(num_inRange, blocks, threads);
     switch (threads)
     {
-    case 512: addIons_core<512,MaxCharge><<<blocks,threads>>>(d_spec, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
-    case 256: addIons_core<256,MaxCharge><<<blocks,threads>>>(d_spec, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
-    case 128: addIons_core<128,MaxCharge><<<blocks,threads>>>(d_spec, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
-    case  64: addIons_core< 64,MaxCharge><<<blocks,threads>>>(d_spec, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
-    case  32: addIons_core< 32,MaxCharge><<<blocks,threads>>>(d_spec, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
+    case 512: addIons_core<512,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
+    case 256: addIons_core<256,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
+    case 128: addIons_core<128,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
+    case  64: addIons_core< 64,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
+    case  32: addIons_core< 32,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
     default:
         assert(!"Non-exhaustive patterns in match");
     }
@@ -191,6 +195,7 @@ void
 addIons
 (
     uint32_t            *d_spec,
+    const float         *d_residual,
     const float         *d_ladder,
     const uint32_t      *d_rowPtr,
     const uint32_t      *d_inRangeIdx,
@@ -201,10 +206,10 @@ addIons
 {
     switch (max_charge)
     {
-    case 1: addIons_dispatch<1>(d_spec, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
-    case 2: addIons_dispatch<2>(d_spec, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
-    case 3: addIons_dispatch<3>(d_spec, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
-    case 4: addIons_dispatch<4>(d_spec, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
+    case 1: addIons_dispatch<1>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
+    case 2: addIons_dispatch<2>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
+    case 3: addIons_dispatch<3>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
+    case 4: addIons_dispatch<4>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
     default:
         assert(!"Non-exhaustive patterns in match");
     }

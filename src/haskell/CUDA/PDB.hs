@@ -50,7 +50,7 @@ searchForMatches cp db dta =
     CUDA.allocaArray nr             $ \d_score    -> do
     CUDA.allocaArray (nr * specLen) $ \d_specThry -> do
       CUDA.memset d_specThry (fromIntegral $ specLen * nr * sizeOfPtr d_specThry) 0
-      (ta,_) <- bracketTime $ addIons d_specThry (yIonLadders db) (rowOffsets db) d_pepIdx nr (round chrg) specLen
+      (ta,_) <- bracketTime $ addIons d_specThry (residuals db) (yIonLadders db) (rowOffsets db) d_pepIdx nr (round chrg) specLen
       whenVerbose cp ["> addIons: " ++ showTime ta]
 
       -- Score each peptide
@@ -118,16 +118,17 @@ foreign import ccall unsafe "algorithms.h findIndicesInRange_f"
   findIndicesInRange'_ :: Ptr Float -> Ptr Word32 -> Word32 -> Float -> Float -> IO Word32
 
 
-addIons :: DevicePtr Word32 -> DevicePtr Float -> DevicePtr Word32 -> DevicePtr Word32 -> Int -> Int -> Int -> IO ()
-addIons a1 a2 a3 a4 a5 a6 a7 =
+addIons :: DevicePtr Word32 -> DevicePtr Float -> DevicePtr Float -> DevicePtr Word32 -> DevicePtr Word32 -> Int -> Int -> Int -> IO ()
+addIons a1 a2 a3 a4 a5 a6 a7 a8 =
   withDevicePtr a1 $ \a1' ->
   withDevicePtr a2 $ \a2' ->
   withDevicePtr a3 $ \a3' ->
   withDevicePtr a4 $ \a4' ->
-  addIons'_ a1' a2' a3' a4' (cIntConv a5) (cIntConv a6) (cIntConv a7)
+  withDevicePtr a5 $ \a5' ->
+  addIons'_ a1' a2' a3' a4' a5' (cIntConv a6) (cIntConv a7) (cIntConv a8)
 
 foreign import ccall unsafe "algorithms.h addIons"
-  addIons'_ :: Ptr Word32 -> Ptr Float -> Ptr Word32 -> Ptr Word32 -> Word32 -> Word32 -> Word32 -> IO ()
+  addIons'_ :: Ptr Word32 -> Ptr Float -> Ptr Float -> Ptr Word32 -> Ptr Word32 -> Word32 -> Word32 -> Word32 -> IO ()
 
 
 radixsort :: Storable a => DevicePtr Float -> DevicePtr a -> Int -> IO ()
