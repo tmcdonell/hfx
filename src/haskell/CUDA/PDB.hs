@@ -29,6 +29,8 @@ import qualified Foreign.CUDA                   as CUDA
 import qualified Data.Vector.Generic            as V
 import qualified Data.Vector.Storable           as S
 
+import Foreign.CUDA.Algorithms
+
 
 --------------------------------------------------------------------------------
 -- Main
@@ -101,53 +103,4 @@ withVector vec action = let l = V.length vec in
   CUDA.allocaArray l $ \dp -> do
     CUDA.pokeArray l p dp
     action dp
-
-
---------------------------------------------------------------------------------
--- FFI Bindings (put these somewhere else...)
---------------------------------------------------------------------------------
-
-findIndicesInRange :: DevicePtr Float -> DevicePtr Word32 -> Int -> Float -> Float -> IO Int
-findIndicesInRange a1 a2 a3 a4 a5 =
-  withDevicePtr a1 $ \a1' ->
-  withDevicePtr a2 $ \a2' ->
-  findIndicesInRange'_ a1' a2' (cIntConv a3) a4 a5 >>= \res ->
-  return (cIntConv res)
-
-foreign import ccall unsafe "algorithms.h findIndicesInRange_f"
-  findIndicesInRange'_ :: Ptr Float -> Ptr Word32 -> Word32 -> Float -> Float -> IO Word32
-
-
-addIons :: DevicePtr Word32 -> DevicePtr Float -> DevicePtr Float -> DevicePtr Word32 -> DevicePtr Word32 -> Int -> Int -> Int -> IO ()
-addIons a1 a2 a3 a4 a5 a6 a7 a8 =
-  withDevicePtr a1 $ \a1' ->
-  withDevicePtr a2 $ \a2' ->
-  withDevicePtr a3 $ \a3' ->
-  withDevicePtr a4 $ \a4' ->
-  withDevicePtr a5 $ \a5' ->
-  addIons'_ a1' a2' a3' a4' a5' (cIntConv a6) (cIntConv a7) (cIntConv a8)
-
-foreign import ccall unsafe "algorithms.h addIons"
-  addIons'_ :: Ptr Word32 -> Ptr Float -> Ptr Float -> Ptr Word32 -> Ptr Word32 -> Word32 -> Word32 -> Word32 -> IO ()
-
-
-radixsort :: Storable a => DevicePtr Float -> DevicePtr a -> Int -> IO ()
-radixsort a1 a2 a3 =
-  withDevicePtr a1 $ \a1' ->
-  withDevicePtr a2 $ \a2' ->
-  radixsort'_ a1' (castPtr a2') (cIntConv a3)
-
-foreign import ccall unsafe "algorithms.h radixsort_f"
-  radixsort'_ :: Ptr Float -> Ptr () -> Word32 -> IO ()
-
-
-mvm :: DevicePtr Float -> DevicePtr Word32 -> DevicePtr Float -> Int -> Int -> IO ()
-mvm a1 a2 a3 a4 a5 =
-  withDevicePtr a1 $ \a1' ->
-  withDevicePtr a2 $ \a2' ->
-  withDevicePtr a3 $ \a3' ->
-  mvm'_ a1' a2' a3' (fromIntegral a4) (fromIntegral a5)
-
-foreign import ccall unsafe "algorithms.h mvm_if"
-  mvm'_ :: Ptr Float -> Ptr Word32 -> Ptr Float -> Word32 -> Word32 -> IO ()
 
