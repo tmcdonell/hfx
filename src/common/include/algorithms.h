@@ -27,11 +27,6 @@ void prescanr_plusui(const unsigned int *d_in, unsigned int *d_out, const unsign
 void postsegscanr_plusf(const float *d_in, const unsigned int *d_flags, float *d_out, const unsigned int N);
 
 /*
- * Sparse-matrix dense-vector multiplication
- */
-void smvm_f(float *d_y, float *d_x, float *d_data, unsigned int *d_rowPtr, unsigned int *d_colIdx, unsigned int num_rows);
-
-/*
  * Radix sort (in-place)
  */
 void radixsort_f(float *d_keys, void *d_vals, unsigned int N);
