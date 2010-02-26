@@ -7,7 +7,7 @@
 # ------------------------------------------------------------------------------
 STATIC_LIB      := libscan.a
 
-CUFILES         := scan.cu segmented_scan.cu
+CUFILES         := scan.cu
 
 EXTRALIBS       := stdc++
 

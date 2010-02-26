@@ -24,8 +24,6 @@ extern "C" {
 void prescanl_plusui(const unsigned int *d_in, unsigned int *d_out, const unsigned int N);
 void prescanr_plusui(const unsigned int *d_in, unsigned int *d_out, const unsigned int N);
 
-void postsegscanr_plusf(const float *d_in, const unsigned int *d_flags, float *d_out, const unsigned int N);
-
 /*
  * Radix sort (in-place)
  */
