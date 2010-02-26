@@ -45,11 +45,6 @@ unsigned int compact(const void *d_in, void *d_out, const unsigned int *d_flags,
 unsigned int compactIndices(unsigned int *d_out, const unsigned int *d_flags, const unsigned int length);
 
 /*
- * Replicate (32-bit symbol)
- */
-void replicate(void *d_out, const unsigned int symbol, const unsigned int N);
-
-/*
  * Filter
  */
 unsigned int filterInRange_f(const float *d_in, float *d_out, const unsigned int length, const float min, const float max);
