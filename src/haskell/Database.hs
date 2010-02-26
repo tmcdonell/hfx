@@ -10,16 +10,12 @@
 
 module Database (ProteinDatabase(..), withPDB) where
 
-import Time
 import Config
 import Protein
 
 import Foreign.Storable
-import System.IO
 import Data.Word
-import Data.List                                (intersperse)
 import Data.Vector                              (Vector)
-import Control.Monad                            (when)
 import Control.Exception.Extensible             (bracket)
 import Foreign.CUDA                             (DevicePtr)
 import qualified Foreign.CUDA                   as CUDA
@@ -47,19 +43,13 @@ data ProteinDatabase a = ProteinDatabase
 --------------------------------------------------------------------------------
 
 withPDB :: (Fractional a, Ord a, Storable a) => ConfigParams a -> Vector (Protein a) -> (ProteinDatabase a -> IO b) -> IO b
-withPDB cp ps = flip bracket freePDB $ do
-  (t,db) <- bracketTime (newPDB cp ps)
-  whenVerbose cp [ "> setup: " ++ showTime t, shows (G.length (peptides db)) " peptides" ]
-  return db
+withPDB cp ps = bracket (newPDB cp ps) freePDB
 
 freePDB :: ProteinDatabase a -> IO ()
 freePDB db = do
   CUDA.free (rowOffsets  db)
   CUDA.free (yIonLadders db)
   CUDA.free (residuals   db)
-
-whenVerbose      :: ConfigParams a -> [String] -> IO ()
-whenVerbose cp s =  when (verbose cp) (hPutStrLn stderr . concat . intersperse ", " $ s)
 
 newFromVector :: Storable a => U.Vector a -> IO (DevicePtr a)
 newFromVector v =

@@ -11,25 +11,19 @@
 
 module CUDA.PDB where
 
-import Time
 import Mass
 import C2HS
 import Config
 import Spectrum
 import Sequest                                  (MatchCollection, Match(..))
 import Database                                 (ProteinDatabase(..))
+import qualified Foreign.CUDA.Algorithms        as CUDA
 
-import Data.Word
-import Data.List                                (intersperse)
-import Control.Monad                            (when)
-import System.IO
 import Foreign
-import Foreign.CUDA                             (DevicePtr, withDevicePtr)
+import Foreign.CUDA                             (DevicePtr)
 import qualified Foreign.CUDA                   as CUDA
-import qualified Data.Vector.Generic            as V
-import qualified Data.Vector.Storable           as S
-
-import Foreign.CUDA.Algorithms
+import qualified Data.Vector.Generic            as G
+import qualified Data.Vector.Storable           as U
 
 
 --------------------------------------------------------------------------------
@@ -44,41 +38,32 @@ searchForMatches cp db dta =
     -- Find peptides in the database with a residual mass close to the spectral
     -- precursor mass
     --
-    (tf,nr) <- bracketTime $ findIndicesInRange (residuals db) d_pepIdx numPeptides (mass-delta) (mass+delta)
-    whenVerbose cp ["> findIndices: " ++ showTime tf, shows nr " found"]
+    nr <- CUDA.findIndicesInRange (residuals db) d_pepIdx numPeptides (mass-delta) (mass+delta)
 
     -- Generate theoretical spectra for each of these candidates
     --
     CUDA.allocaArray nr             $ \d_score    -> do
     CUDA.allocaArray (nr * specLen) $ \d_specThry -> do
-      CUDA.memset d_specThry (fromIntegral $ specLen * nr * sizeOfPtr d_specThry) 0
-      (ta,_) <- bracketTime $ addIons d_specThry (residuals db) (yIonLadders db) (rowOffsets db) d_pepIdx nr (round chrg) specLen
-      whenVerbose cp ["> addIons: " ++ showTime ta]
+      CUDA.memset  d_specThry (fromIntegral  (specLen * nr * sizeOfPtr d_specThry)) 0
+      CUDA.addIons d_specThry (residuals db) (yIonLadders db) (rowOffsets db) d_pepIdx nr (round chrg) specLen
 
       -- Score each peptide
+      -- Sort results and retrieve the best matches (reverse order)
       --
-      (tm,_) <- bracketTime $ mvm d_score d_specThry d_specExp nr specLen
-      let elm = 2 * (sizeOfPtr d_specThry) * (nr * specLen + specLen)
-      whenVerbose cp ["> mvm: " ++ showTime tm, showRateSI elm tm "FLOPS"]
-
-      -- Sort results and retrieve the best matches
-      --
-      (ts,_) <- bracketTime $ radixsort d_score d_pepIdx nr
-      whenVerbose cp ["> sort: " ++ showTime ts, showRateSI nr ts "pairs"]
+      CUDA.mvm d_score d_specThry d_specExp nr specLen
+      CUDA.radixsort d_score d_pepIdx nr
 
       sc <- CUDA.peekListArray numResults (d_score  `CUDA.advanceDevPtr` (nr-numResults))
       ix <- CUDA.peekListArray numResults (d_pepIdx `CUDA.advanceDevPtr` (nr-numResults))
 
-      finish sc ix
+      return . reverse $ zipWith (\s i -> Match (peptides db G.! cIntConv i) (s/10000)) sc ix
   where
-    numPeptides  = V.length (peptides db)
+    numPeptides  = G.length (peptides db)
     numResults   = max (numMatches cp) (numMatchesDetail cp)
 
     spec         = buildExpSpecXCorr cp dta
-    specLen      = V.length spec
+    specLen      = G.length spec
     chrg         = max 1 (charge dta - 1)
-
-    finish sc ix = return . reverse $ zipWith (\s i -> Match (peptides db V.! cIntConv i) (s/10000)) sc ix
 
     -- Residual mass plus the mass of the water molecule released when forming
     -- the peptide bond
@@ -91,15 +76,12 @@ searchForMatches cp db dta =
 -- Utils
 --------------------------------------------------------------------------------
 
-whenVerbose      :: ConfigParams a -> [String] -> IO ()
-whenVerbose cp s =  when (verbose cp) (hPutStrLn stderr . concat . intersperse ", " $ s)
-
 sizeOfPtr :: Storable a => DevicePtr a -> Int
 sizeOfPtr =  sizeOf . (undefined :: DevicePtr a -> a)
 
-withVector :: Storable a => S.Vector a -> (DevicePtr a -> IO b) -> IO b
-withVector vec action = let l = V.length vec in
-  S.unsafeWith vec   $ \p  ->
+withVector :: Storable a => U.Vector a -> (DevicePtr a -> IO b) -> IO b
+withVector vec action = let l = G.length vec in
+  U.unsafeWith vec   $ \p  ->
   CUDA.allocaArray l $ \dp -> do
     CUDA.pokeArray l p dp
     action dp
