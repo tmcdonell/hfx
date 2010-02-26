@@ -19,7 +19,6 @@ import Config
 import Protein
 import PrettyPrint
 
-import Sequest
 import Database
 import qualified CUDA.PDB       as PDB
 --import qualified CUDA.SMVM      as SMVM
@@ -29,7 +28,6 @@ import qualified CUDA.PDB       as PDB
 --
 import Control.Monad                                    (when)
 import System.Environment                               (getArgs)
-import Data.Vector                                      (Vector)
 import System.IO
 import qualified Foreign.CUDA   as CUDA
 
@@ -56,25 +54,22 @@ main = do
     props <- CUDA.props dev
     hPutStrLn stderr $ "> device " ++ shows dev ": " ++ CUDA.deviceName props
 
-  withPDB cp proteins $ \pdb -> mapM_ (search cp proteins pdb) files
+  withPDB cp proteins $ \pdb -> mapM_ (search cp pdb) files
 
 
 --
 -- Search the protein database for a match to the experimental spectra
 --
-search :: ConfigParams Float -> Vector (Protein Float) -> ProteinDatabase Float -> FilePath -> IO ()
-search cp proteins pdb fp = do
+search :: ConfigParams Float -> ProteinDatabase Float -> FilePath -> IO ()
+search cp pdb fp = do
   dta     <- forceEitherStr `fmap` readDTA fp
   matches <- PDB.searchForMatches cp pdb dta
 
-  when (verbose cp) $
-    let ref = searchForMatches cp proteins dta in
-    hPutStrLn stderr $ "> verify: " ++ shows (zipWith verify ref matches) "\n"
+--  when (verbose cp) $
+--    let ref = searchForMatches cp proteins dta in
+--    hPutStrLn stderr $ "> verify: " ++ shows (zipWith (==) ref matches) "\n"
 
   printConfig cp fp dta
   printResults       $! (take (numMatches cp)       matches)
   printResultsDetail $! (take (numMatchesDetail cp) matches)
-
-  where
-    verify (Match p s) (Match p' s') = p == p' && (s-s')/(s+s'+0.0005) < 0.0005
 
