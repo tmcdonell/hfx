@@ -37,11 +37,6 @@ void smvm_f(float *d_y, float *d_x, float *d_data, unsigned int *d_rowPtr, unsig
 void radixsort_f(float *d_keys, void *d_vals, unsigned int N);
 
 /*
- * Enum
- */
-void enumFromTo_i(int *d_out, int from, int to);
-
-/*
  * Permute (32-bit payload)
  */
 void permute(const void *d_in, void *d_out, const unsigned int *d_indices, const unsigned int length);
