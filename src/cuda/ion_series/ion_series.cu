@@ -81,9 +81,9 @@ addIons_k(uint32_t *d_spec, const uint32_t N, const float b_mass, const float y_
 
 
 /*
- * Generate theoretical spectra for a collection of peptide fragments. The
- * yIonLadder array contains data for all fragments in the database, although we
- * are only interested in those beginning at the inRangeIdx positions.
+ * Generate theoretical spectra for a collection of peptide fragments. The b-ion
+ * ladder array contains data for all fragments in the database, although we are
+ * only interested in those beginning at the inRangeIdx positions.
  *
  * A warp of threads iterates over the fragment masses for a peptide, issuing a
  * (long) sequence of (slow) global atomic update requests. The input spectra
@@ -96,7 +96,7 @@ addIons_core
 (
     uint32_t            *d_spec,
     const float         *d_residual,
-    const float         *d_yIonLadder,
+    const float         *d_ladder,
     const uint32_t      *d_rowPtr,
     const uint32_t      *d_inRangeIdx,
     const uint32_t      num_inRange,
@@ -137,8 +137,8 @@ addIons_core
          */
         for (uint32_t j = row_start + thread_lane; j < row_end; j += WARP_SIZE)
         {
-            const float y_mass = d_yIonLadder[j];
-            const float b_mass = residual - y_mass;
+            const float b_mass = d_ladder[j];
+            const float y_mass = residual - b_mass;
 
             if (1 <= MaxCharge) addIons_k<1>(spec, len_spec, b_mass, y_mass);
             if (2 <= MaxCharge) addIons_k<2>(spec, len_spec, b_mass, y_mass);

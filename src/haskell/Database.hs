@@ -85,7 +85,7 @@ newPDB cp proteins = do
   mv     <- M.unsafeNew (fromIntegral $ G.last offsets)
   let fill i  =
         let o = fromIntegral (offsets G.! i)
-            s = yIonLadder cp (peps G.! i)
+            s = bIonLadder cp (peps G.! i)
         in mapM_ (\n -> M.unsafeWrite mv (o+n) (s G.! n)) [0 .. G.length s - 1]
 
   mapM_ fill [ 0 .. G.length peps - 1 ]
