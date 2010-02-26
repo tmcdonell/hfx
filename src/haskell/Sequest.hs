@@ -59,7 +59,10 @@ data Match a = Match
         scoreXC   :: a                  -- Sequest cross-correlation score
 --        scoreSP   :: (Int, Int)         -- Matched ions / total ions
     }
-    deriving (Eq, Show)
+    deriving (Show)
+
+instance (Fractional a, Ord a) => Eq (Match a) where
+  Match p s == Match p' s' = p == p' && (s-s')/(s+s'+0.0005) < 0.0005
 
 
 --------------------------------------------------------------------------------
