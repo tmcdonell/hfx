@@ -95,18 +95,30 @@ lyse pep = (L.take (n-c+1) . L.drop c . seqdata . parent) pep
 --
 {-# INLINE bIonLadder #-}
 bIonLadder :: (Fractional a, Storable a) => ConfigParams a -> Peptide a -> U.Vector a
-bIonLadder cp pep = G.scanl1 (+) $ G.generate (fromIntegral (n-c)) gen
-  where (c,n) = terminals pep
-        seqd  = seqdata . parent $ pep
-        gen i = getAAMass cp $ L.index seqd (c + fromIntegral i)
+bIonLadder cp pep = G.scanl1' (+) $ G.generate (fromIntegral (L.length seqd)) gen
+  where
+    seqd = L.init (lyse pep)
+    gen  = getAAMass cp . L.index seqd . fromIntegral
+
+--bIonLadder :: (Fractional a, Storable a) => ConfigParams a -> Peptide a -> U.Vector a
+--bIonLadder cp pep = G.scanl1 (+) $ G.generate (fromIntegral (n-c)) gen
+--  where (c,n) = terminals pep
+--        seqd  = seqdata . parent $ pep
+--        gen i = getAAMass cp $ L.index seqd (c + fromIntegral i)
 
 
 {-# INLINE yIonLadder #-}
 yIonLadder :: (Fractional a, Storable a) => ConfigParams a -> Peptide a -> U.Vector a
-yIonLadder cp pep = G.scanr1 (+) $ G.generate (fromIntegral (n-c)) gen
-  where (c,n) = terminals pep
-        seqd  = seqdata . parent $ pep
-        gen i = getAAMass cp $ L.index seqd (c + 1 + fromIntegral i)
+yIonLadder cp pep = G.scanr1' (+) $ G.generate (fromIntegral (L.length seqd)) gen
+  where
+    seqd = L.tail (lyse pep)
+    gen  = getAAMass cp . L.index seqd . fromIntegral
+
+--yIonLadder :: (Fractional a, Storable a) => ConfigParams a -> Peptide a -> U.Vector a
+--yIonLadder cp pep = G.scanr1 (+) $ G.generate (fromIntegral (n-c)) gen
+--  where (c,n) = terminals pep
+--        seqd  = seqdata . parent $ pep
+--        gen i = getAAMass cp $ L.index seqd (c + 1 + fromIntegral i)
 
 
 --------------------------------------------------------------------------------
