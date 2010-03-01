@@ -139,7 +139,7 @@ digestFasta cp fasta = do
 
   let fill i s = do
         let p = digestProtein cp (Protein (S.seqheader s) (S.seqdata s) G.empty)
-        M.unsafeWrite mv i p
+        p `seq` M.unsafeWrite mv i p
         return (i+1)
 
   foldM_ fill 0 seqs
@@ -173,7 +173,7 @@ fragment cp protein indices = pep
 -- This almost supports special digestion rules...
 --
 digestProtein :: (Fractional a, Ord a, Storable a) => ConfigParams a -> Protein a -> Protein a
-digestProtein cp protein = protein { fragments = seqs }
+digestProtein cp protein = seqs `seq` protein { fragments = seqs }
   where
     seqs      = G.filter inrange splices
     inrange p = minPeptideMass cp <= pmass p && pmass p <= maxPeptideMass cp
