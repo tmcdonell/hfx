@@ -31,6 +31,7 @@ module Sequest
   where
 
 import Mass
+import Match
 import Config
 import Protein
 import Spectrum
@@ -42,27 +43,6 @@ import Data.Ord
 import Data.Vector                      (Vector)
 import Data.Vector.Storable             (Storable)
 import qualified Data.Vector.Generic    as G
-
-
---------------------------------------------------------------------------------
--- Data Structures
---------------------------------------------------------------------------------
-
-type MatchCollection a = [Match a]
-
---
--- A structure to store the result of a peptide/spectrum similarity test
---
-data Match a = Match
-    {
-        candidate :: Peptide a,         -- The fragment that was examined
-        scoreXC   :: a                  -- Sequest cross-correlation score
---        scoreSP   :: (Int, Int)         -- Matched ions / total ions
-    }
-    deriving (Show)
-
-instance (Fractional a, Ord a) => Eq (Match a) where
-  Match p s == Match p' s' = p == p' && (s-s')/(s+s'+0.0005) < 0.0005
 
 
 --------------------------------------------------------------------------------

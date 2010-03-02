@@ -19,10 +19,10 @@ module PrettyPrint
   where
 
 import Mass
+import Match
 import Config
 import Protein
 import Spectrum
-import Sequest                                  (MatchCollection, Match(..))
 
 import Numeric
 import Data.List
@@ -37,7 +37,7 @@ instance Pretty Bool            where ppr = text . show
 instance Pretty Char            where ppr = char
 instance Pretty B.ByteString    where ppr = ppr . B.unpack
 instance Pretty a => Pretty [a] where ppr = hcat . map ppr
-instance Pretty (Peptide a)     where ppr = text . slice
+--instance Pretty (Peptide a)     where ppr = text . slice
 
 --------------------------------------------------------------------------------
 -- Doc -> IO
@@ -89,20 +89,20 @@ title = map (map text) [[" # ", " (M+H)+  ", "deltCn", "XCorr", "Reference", "Pe
                         ["---", "---------", "------", "-----", "---------", "-------"]]
 
 toDoc :: RealFloat a => Int -> a -> Match a -> [Doc]
-toDoc n s0 (Match pep sc) =
+toDoc n s0 (Match pro pep sc) =
     [ space <> int n <> char '.'
     , float' (pmass pep)
     , float' (realToFrac ((s0 - sc)/s0))
     , float' (realToFrac sc)
-    , text   (label (parent pep))
-    , text   (slice pep)
+    , text   (label pro)
+    , text   (slice pro pep)
     ]
     where float' = text . flip (showFFloat (Just 4)) ""
 
 toDocDetail :: Int -> Match a -> [Doc]
-toDocDetail n (Match pep _)  =
+toDocDetail n (Match pro _ _)  =
     [ space <> int n <> char '.'
-    , text (description (parent pep))
+    , text (description pro)
     ]
 
 printResults   :: RealFloat a => MatchCollection a -> IO ()
