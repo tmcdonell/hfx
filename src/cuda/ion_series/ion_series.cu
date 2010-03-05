@@ -13,6 +13,36 @@
 #include <stdint.h>
 
 
+/*
+ * Scan a warp-sized chunk of data. Because warps execute instructions in SIMD
+ * fashion, there is no need to synchronise in order to share data. The most
+ * efficient algorithm is the step-efficient method of Hillis & Steele that
+ * takes log(N) steps, rather than the work-efficient tree-based algorithm
+ * described by Blelloch that takes 2 * log(N) steps.
+ */
+template <class T, bool inclusive>
+static __device__ T
+scan_warp(T val, volatile T* s_data)
+{
+    const uint32_t idx  = threadIdx.x;
+    const uint32_t lane = threadIdx.x & (WARP_SIZE-1);
+
+    /*
+     * If we double the size of the s_data array and pad the bottom half with
+     * zero, then we can avoid branching (although there is plenty already).
+     */
+    s_data[idx] = val;                                          __EMUSYNC;
+    if (lane >=  1) s_data[idx] = val = val + s_data[idx -  1]; __EMUSYNC;
+    if (lane >=  2) s_data[idx] = val = val + s_data[idx -  2]; __EMUSYNC;
+    if (lane >=  4) s_data[idx] = val = val + s_data[idx -  4]; __EMUSYNC;
+    if (lane >=  8) s_data[idx] = val = val + s_data[idx -  8]; __EMUSYNC;
+    if (lane >= 16) s_data[idx] = val = val + s_data[idx - 16]; __EMUSYNC;
+
+    if (inclusive) return s_data[idx];
+    else           return (lane > 0) ? s_data[idx - 1] : 0;
+}
+
+
 __inline__ __device__ static float
 ionMZ(const float m, const float c)
 {
