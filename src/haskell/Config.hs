@@ -1,4 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Config
@@ -28,12 +27,12 @@ import System
 import System.Console.GetOpt
 import System.Directory
 import System.IO
-import Text.Show.Functions()
+import Text.Show.Functions ()
 import Text.ParserCombinators.Parsec
 
 import Data.Ix
-import Data.Vector.Storable (Vector, Storable)
-import qualified Data.Vector.Storable as V
+import Data.Vector.Unboxed (Vector)
+import qualified Data.Vector.Unboxed as U
 
 
 --------------------------------------------------------------------------------
@@ -44,25 +43,25 @@ import qualified Data.Vector.Storable as V
 -- A ginormous data structure to hold all of the configurable parameters
 -- threaded throughout the program
 --
-data ConfigParams a = ConfigParams
+data ConfigParams = ConfigParams
     {
         databasePath        :: Maybe FilePath,  -- Path to the protein database file
 
         --
         -- Enzyme search parameters
         --
-        massTolerance       :: a,                        -- Search peptides within ± this value of the spectrum mass
+        massTolerance       :: Float,                    -- Search peptides within ± this value of the spectrum mass
         removePrecursorPeak :: Bool,                     -- Remove a ±5 da window surrounding the precursor mass
         missedCleavages     :: Int,                      -- Number of missed cleavage sites to consider
         digestionRule       :: ((Char -> Bool), String), -- Protein fragmentation rule and description text
-        minPeptideMass      :: a,                        -- Minimum mass of peptides to be considered
-        maxPeptideMass      :: a,                        -- Maximum peptide mass
+        minPeptideMass      :: Float,                    -- Minimum mass of peptides to be considered
+        maxPeptideMass      :: Float,                    -- Maximum peptide mass
 
         --
         -- Allow static modifications to an amino acid mass, which affects every
         -- occurrence of that residue/terminus
         --
-        aaMassTable         :: Vector a,
+        aaMassTable         :: Vector Float,
         aaMassTypeMono      :: Bool,
 
         --
@@ -92,8 +91,11 @@ data ConfigParams a = ConfigParams
 --
 -- XXX: Shouldn't really live here...
 --
-getAAMass       :: (Fractional a, Storable a) => ConfigParams a -> Char -> a
-getAAMass cp aa =  aaMassTable cp V.! index ('A','Z') aa
+--getAAMass       :: (Fractional a, Storable a) => ConfigParams a -> Char -> a
+getAAMass       :: ConfigParams -> Char -> Float
+getAAMass cp aa =  aaMassTable cp U.! index ('A','Z') aa
+
+{-# INLINE getAAMass #-}
 
 
 --------------------------------------------------------------------------------
@@ -106,7 +108,8 @@ getAAMass cp aa =  aaMassTable cp V.! index ('A','Z') aa
 -- the list of non-option arguments, which is typically the list of input
 -- spectrum files to analyse.
 --
-sequestConfig :: (Fractional a, Storable a, Read a) => FilePath -> [String] -> IO (ConfigParams a, [String])
+--sequestConfig :: (Fractional a, Storable a, Read a) => FilePath -> [String] -> IO (ConfigParams a, [String])
+sequestConfig :: FilePath -> [String] -> IO (ConfigParams, [String])
 sequestConfig fp argv = do
     p  <- doesFileExist fp
     cp <- case p of
@@ -126,7 +129,8 @@ sequestConfig fp argv = do
 -- Read a configuration file, returning a modified configuration set as well as
 -- list of unprocessed options.
 --
-readConfigFile :: (Fractional a, Storable a, Read a) => FilePath -> ConfigParams a -> IO (ConfigParams a)
+--readConfigFile :: (Fractional a, Storable a, Read a) => FilePath -> ConfigParams a -> IO (ConfigParams a)
+readConfigFile :: FilePath -> ConfigParams -> IO ConfigParams
 readConfigFile fp cp = do
     params   <- parseFromFile configFile fp
 
@@ -158,7 +162,8 @@ readConfigFile fp cp = do
 -- immediately to the given configuration set, removing the command from the
 -- argument key/value list
 --
-processMods :: (Fractional a, Storable a, Read a) => ConfigParams a -> [(String, String)] -> (ConfigParams a, [(String, String)])
+--processMods :: (Fractional a, Storable a, Read a) => ConfigParams a -> [(String, String)] -> (ConfigParams a, [(String, String)])
+processMods :: ConfigParams -> [(String, String)] -> (ConfigParams, [(String, String)])
 processMods config = foldr fn (config,[])
     where
         fn (k,v) (cp,acc) = case stripPrefix "add_" k of
@@ -166,7 +171,7 @@ processMods config = foldr fn (config,[])
                               Just (c:[]) -> (apply cp c v, acc)
                               _           -> error ("Unrecognised modification: " ++ k)
 
-        apply cp c v = cp { aaMassTable = aaMassTable cp V.// [(index ('A','Z') c, read v)] }
+        apply cp c v = cp { aaMassTable = aaMassTable cp U.// [(index ('A','Z') c, read v)] }
 
 
 --------------------------------------------------------------------------------
@@ -176,7 +181,8 @@ processMods config = foldr fn (config,[])
 --
 -- The basic (almost empty) configuration set
 --
-baseParams :: (Fractional a, Storable a) => ConfigParams a
+--baseParams :: (Fractional a, Storable a) => ConfigParams a
+baseParams :: ConfigParams
 baseParams =  ConfigParams
     {
         databasePath        = Nothing,
@@ -188,7 +194,7 @@ baseParams =  ConfigParams
         minPeptideMass      = 400,
         maxPeptideMass      = 7200,
 
-        aaMassTable         = V.replicate (rangeSize ('A','Z')) 0 V.// [(index ('A','Z') 'C',57.0)],
+        aaMassTable         = U.replicate (rangeSize ('A','Z')) 0 U.// [(index ('A','Z') 'C',57.0)],
         aaMassTypeMono      = True,
 
         useCPU              = False,
@@ -202,8 +208,9 @@ baseParams =  ConfigParams
 -- Add the base residue masses for all amino acid groups to the mass table,
 -- which currently only holds user-defined modifications (if any).
 --
-initializeAAMasses :: (Fractional a, Storable a) => ConfigParams a -> ConfigParams a
-initializeAAMasses cp = cp { aaMassTable = V.accum (+) (aaMassTable cp) (zipWith f alphabet isolatedAAMass) }
+--initializeAAMasses :: (Fractional a, Storable a) => ConfigParams a -> ConfigParams a
+initializeAAMasses :: ConfigParams -> ConfigParams
+initializeAAMasses cp = cp { aaMassTable = U.accum (+) (aaMassTable cp) (zipWith f alphabet isolatedAAMass) }
     where
         f c m          = (index ('A','Z') c, m)
         isolatedAAMass = map aaMasses alphabet
@@ -226,7 +233,8 @@ initializeAAMasses cp = cp { aaMassTable = V.accum (+) (aaMassTable cp) (zipWith
 -- NOTE: the parameters option must remain at the head of the list, as this will
 -- be dropped when reading parameters from file to prevent silly behaviour...
 --
-options :: (Fractional a, Storable a, Read a) => [ OptDescr (ConfigParams a -> IO (ConfigParams a)) ]
+--options :: (Fractional a, Storable a, Read a) => [ OptDescr (ConfigParams a -> IO (ConfigParams a)) ]
+options :: [ OptDescr (ConfigParams -> IO ConfigParams) ]
 options =
     [ Option "p" ["parameters"]
         (ReqArg (\fp cp -> readConfigFile fp cp) "FILE")
@@ -294,8 +302,7 @@ options =
 
     , Option "h" ["help"]
         (NoArg (\_ -> do prg <- getProgName
-                         hPutStrLn stderr (usageInfo ("Usage: " ++ prg ++ " [OPTIONS...] dta_files...")
-                            (options :: [(OptDescr (ConfigParams Float -> IO (ConfigParams Float)))]))
+                         hPutStrLn stderr (usageInfo ("Usage: " ++ prg ++ " [OPTIONS...] dta_files...") options)
                          hPutStrLn stderr digestionRuleHelp
                          exitWith ExitSuccess))
         "This help text"
@@ -310,7 +317,7 @@ digestionRuleHelp :: String
 digestionRuleHelp = unlines $ ["Digestion Rules:"] ++ (map (snd . getDigestionRule) [0..13])
 
 getDigestionRule :: Int -> ((Char -> Bool), String)
-getDigestionRule 0  = ((\_ -> False)        , "  0:  No enzyme              0      -           -")
+getDigestionRule 0  = ((const False)        , "  0:  No enzyme              0      -           -")
 getDigestionRule 1  = ((`elem` "KR")        , "  1.  Trypsin                1      KR          P")
 getDigestionRule 2  = ((`elem` "FWY")       , "  2.  Chymotrypsin           1      FWY         P")
 getDigestionRule 3  = ((== 'R')             , "  3.  Clostripain            1      R           -")
