@@ -10,6 +10,7 @@ STATIC_LIB      := libion_series.a
 CUFILES_sm_11   := ion_series.cu
 
 EXTRALIBS       := stdc++
+maxregisters    := 16
 
 # ------------------------------------------------------------------------------
 # Haskell/CUDA build system

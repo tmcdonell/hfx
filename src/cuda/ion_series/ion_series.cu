@@ -122,25 +122,28 @@ addIons_k(uint32_t *d_spec, const uint32_t N, const float b_mass, const float y_
 
 
 /*
- * Generate theoretical spectra for a collection of peptide fragments. The b-ion
- * ladder array contains data for all fragments in the database, although we are
- * only interested in those beginning at the inRangeIdx positions.
+ * Generate theoretical spectra for a collection of peptide fragments. The
+ * 'ions' array contains the individual amino-acid masses for the database
+ * entries. We are interested in the sequences generated between the terminal
+ * indices (tc,tn) of the locations specified in the 'idx' array.
  *
- * A warp of threads iterates over the fragment masses for a peptide, issuing a
- * (long) sequence of (slow) global atomic update requests. The input spectra
- * matrix should be initially zero, and on output will contain the theoretical
- * spectral peaks in a square (but mostly sparse) matrix.
+ * A warp of threads iterates between the (tc,tn) indices, generating the b- and
+ * y-ion mass ladders. A (long) sequence of (slow) global atomic update requests
+ * is subsequently issued. The input d_spec should be initially zero, and on
+ * output will contain the theoretical spectra peaks in a square (although
+ * mostly sparse) matrix.
  */
 template <uint32_t BlockSize, uint32_t MaxCharge>
 __global__ static void
 addIons_core
 (
     uint32_t            *d_spec,
-    const float         *d_residual,
-    const float         *d_ladder,
-    const uint32_t      *d_rowPtr,
-    const uint32_t      *d_inRangeIdx,
-    const uint32_t      num_inRange,
+    const float         *d_residual,    // peptide residual mass
+    const float         *d_ions,        // individual ion masses
+    const uint32_t      *d_tc,          // c-terminal indices
+    const uint32_t      *d_tn,          // n-terminal indices
+    const uint32_t      *d_idx,         // The indices of the data for peptides under consideration
+    const uint32_t      num_idx,
     const uint32_t      len_spec
 )
 {
@@ -151,26 +154,21 @@ addIons_core
     const uint32_t thread_id       = BlockSize * blockIdx.x + threadIdx.x;
     const uint32_t vector_id       = thread_id / WARP_SIZE;
     const uint32_t thread_lane     = threadIdx.x & (WARP_SIZE-1);
-    const uint32_t vector_lane     = threadIdx.x / WARP_SIZE;
 
-    __shared__ volatile uint32_t s_ptrs[vectorsPerBlock][2];
+    __shared__ volatile float s_data[BlockSize];
 
-    for (uint32_t row = vector_id; row < num_inRange; row += numVectors)
+    for (uint32_t row = vector_id; row < num_idx; row += numVectors)
     {
-        const uint32_t idx      = d_inRangeIdx[row];
-        const float    residual = d_residual[idx];
-        uint32_t       *spec    = &d_spec[row * len_spec];
+        const uint32_t idx       = d_idx[row];
+        const uint32_t row_start = d_tc[idx];
+        const uint32_t row_end   = d_tn[idx];
+        const float    residual  = d_residual[idx];
 
-        /*
-         * Use two threads to fetch the indices of the start and end of this
-         * segment. This is a single coalesced (unaligned) global read.
-         */
-        if (thread_lane < 2)
-            s_ptrs[vector_lane][thread_lane] = d_rowPtr[idx + thread_lane];
+        uint32_t       *spec     = &d_spec[row * len_spec];
+        float          b_mass;
+        float          y_mass;
 
-        __EMUSYNC;
-        const uint32_t row_start = s_ptrs[vector_lane][0];
-        const uint32_t row_end   = s_ptrs[vector_lane][1];
+        s_data[threadIdx.x]      = 0;
 
         /*
          * Have all threads read in values for this segment, writing the
@@ -178,8 +176,19 @@ addIons_core
          */
         for (uint32_t j = row_start + thread_lane; j < row_end; j += WARP_SIZE)
         {
-            const float b_mass = d_ladder[j];
-            const float y_mass = residual - b_mass;
+            /*
+             * Load the ion mass, and propagate the partial scan results
+             */
+            b_mass = d_ions[j];
+
+            if (thread_lane == 0)
+                b_mass += s_data[threadIdx.x + (WARP_SIZE-1)];
+
+            /*
+             * Generate fragment mass ladder
+             */
+            b_mass = scan_warp<float,true>(b_mass, s_data);
+            y_mass = residual - b_mass;
 
             if (1 <= MaxCharge) addIons_k<1>(spec, len_spec, b_mass, y_mass);
             if (2 <= MaxCharge) addIons_k<2>(spec, len_spec, b_mass, y_mass);
@@ -188,6 +197,7 @@ addIons_core
         }
     }
 }
+
 
 /*
  * Select a number of threads and blocks. Each block will have at least one full
@@ -208,24 +218,25 @@ addIons_dispatch
 (
     uint32_t            *d_spec,
     const float         *d_residual,
-    const float         *d_ladder,
-    const uint32_t      *d_rowPtr,
-    const uint32_t      *d_inRangeIdx,
-    const uint32_t      num_inRange,
+    const float         *d_ions,
+    const uint32_t      *d_tc,
+    const uint32_t      *d_tn,
+    const uint32_t      *d_idx,
+    const uint32_t      num_idx,
     const uint32_t      len_spec
 )
 {
     uint32_t blocks;
     uint32_t threads;
 
-    addIons_control(num_inRange, blocks, threads);
+    addIons_control(num_idx, blocks, threads);
     switch (threads)
     {
-    case 512: addIons_core<512,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
-    case 256: addIons_core<256,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
-    case 128: addIons_core<128,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
-    case  64: addIons_core< 64,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
-    case  32: addIons_core< 32,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
+//  case 512: addIons_core<512,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+//  case 256: addIons_core<256,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+    case 128: addIons_core<128,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+    case  64: addIons_core< 64,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+    case  32: addIons_core< 32,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
     default:
         assert(!"Non-exhaustive patterns in match");
     }
@@ -237,23 +248,23 @@ addIons
 (
     uint32_t            *d_spec,
     const float         *d_residual,
-    const float         *d_ladder,
-    const uint32_t      *d_rowPtr,
-    const uint32_t      *d_inRangeIdx,
-    const uint32_t      num_inRange,
+    const float         *d_ions,
+    const uint32_t      *d_tc,
+    const uint32_t      *d_tn,
+    const uint32_t      *d_idx,
+    const uint32_t      num_idx,
     const uint32_t      max_charge,
     const uint32_t      len_spec
 )
 {
     switch (max_charge)
     {
-    case 1: addIons_dispatch<1>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
-    case 2: addIons_dispatch<2>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
-    case 3: addIons_dispatch<3>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
-    case 4: addIons_dispatch<4>(d_spec, d_residual, d_ladder, d_rowPtr, d_inRangeIdx, num_inRange, len_spec); break;
+    case 1: addIons_dispatch<1>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+    case 2: addIons_dispatch<2>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+    case 3: addIons_dispatch<3>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+    case 4: addIons_dispatch<4>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
     default:
         assert(!"Non-exhaustive patterns in match");
     }
 }
-
 

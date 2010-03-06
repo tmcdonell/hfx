@@ -70,10 +70,11 @@ addIons
 (
     uint32_t            *d_spec,
     const float         *d_residual,
-    const float         *d_ladder,
-    const uint32_t      *d_rowPtr,
-    const uint32_t      *d_inRangeIdx,
-    const uint32_t      num_inRange,
+    const float         *d_ions,
+    const uint32_t      *d_tc,
+    const uint32_t      *d_tn,
+    const uint32_t      *d_idx,
+    const uint32_t      num_idx,
     const uint32_t      max_charge,
     const uint32_t      len_spec
 );
