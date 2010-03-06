@@ -30,13 +30,24 @@ scan_warp(T val, volatile T* s_data)
     /*
      * If we double the size of the s_data array and pad the bottom half with
      * zero, then we can avoid branching (although there is plenty already).
+     *
+     * In device emulation mode, the warp size is 1 and so sync-less operation
+     * does not work.
      */
-    s_data[idx] = val;                                          __EMUSYNC;
-    if (lane >=  1) s_data[idx] = val = val + s_data[idx -  1]; __EMUSYNC;
-    if (lane >=  2) s_data[idx] = val = val + s_data[idx -  2]; __EMUSYNC;
-    if (lane >=  4) s_data[idx] = val = val + s_data[idx -  4]; __EMUSYNC;
-    if (lane >=  8) s_data[idx] = val = val + s_data[idx -  8]; __EMUSYNC;
-    if (lane >= 16) s_data[idx] = val = val + s_data[idx - 16]; __EMUSYNC;
+    s_data[idx] = val;                                                        __EMUSYNC;
+#ifdef __DEVICE_EMULATION__
+    val = (lane >=  1) ? s_data[idx -  1] : 0; __EMUSYNC; s_data[idx] += val; __EMUSYNC;
+    val = (lane >=  2) ? s_data[idx -  2] : 0; __EMUSYNC; s_data[idx] += val; __EMUSYNC;
+    val = (lane >=  4) ? s_data[idx -  4] : 0; __EMUSYNC; s_data[idx] += val; __EMUSYNC;
+    val = (lane >=  8) ? s_data[idx -  8] : 0; __EMUSYNC; s_data[idx] += val; __EMUSYNC;
+    val = (lane >= 16) ? s_data[idx - 16] : 0; __EMUSYNC; s_data[idx] += val; __EMUSYNC;
+#else
+    if (lane >=  1) s_data[idx] = val = val + s_data[idx -  1];
+    if (lane >=  2) s_data[idx] = val = val + s_data[idx -  2];
+    if (lane >=  4) s_data[idx] = val = val + s_data[idx -  4];
+    if (lane >=  8) s_data[idx] = val = val + s_data[idx -  8];
+    if (lane >= 16) s_data[idx] = val = val + s_data[idx - 16];
+#endif
 
     if (inclusive) return s_data[idx];
     else           return (lane > 0) ? s_data[idx - 1] : 0;
