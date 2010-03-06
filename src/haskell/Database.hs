@@ -8,7 +8,7 @@
 --
 --------------------------------------------------------------------------------
 
-module Database (ProteinDatabase(..), withPDB) where
+module Database (DevicePDB(..), withPDB) where
 
 import Config
 import Protein
@@ -29,7 +29,7 @@ import qualified Data.Vector.Generic.Mutable    as M
 -- Data Structures
 --------------------------------------------------------------------------------
 
-data ProteinDatabase a = ProteinDatabase
+data DevicePDB a = DevicePDB
   {
     peptides     :: Vector (Peptide a), -- the peptide fragments
     rowOffsets   :: DevicePtr Word32,   -- index of the start of each sequence
@@ -42,10 +42,11 @@ data ProteinDatabase a = ProteinDatabase
 -- Marshalling
 --------------------------------------------------------------------------------
 
-withPDB :: (Fractional a, Ord a, Storable a) => ConfigParams a -> Vector (Protein a) -> (ProteinDatabase a -> IO b) -> IO b
+withPDB :: (Fractional a, Ord a, Storable a)
+        => ConfigParams a -> Vector (Protein a) -> (DevicePDB a -> IO b) -> IO b
 withPDB cp ps = bracket (newPDB cp ps) freePDB
 
-freePDB :: ProteinDatabase a -> IO ()
+freePDB :: DevicePDB a -> IO ()
 freePDB db = do
   CUDA.free (rowOffsets  db)
   CUDA.free (yIonLadders db)
@@ -67,12 +68,12 @@ newFromVector v =
 -- each peptide in the database. Also includes the list of peptides in an O(1)
 -- indexable form, for fast reverse lookup.
 --
-newPDB :: (Fractional a, Storable a) => ConfigParams a -> Vector (Protein a) -> IO (ProteinDatabase a)
+newPDB :: (Fractional a, Storable a) => ConfigParams a -> Vector (Protein a) -> IO (DevicePDB a)
 newPDB cp proteins = do
   resi   <- newFromVector $ G.generate (G.length peps) (\i -> residual (peps G.! i))
   rowP   <- newFromVector offsets
 
-  mv     <- M.unsafeNew (fromIntegral $ G.last offsets)
+  mv     <- M.unsafeNew (fromIntegral (G.last offsets))
   let fill i  =
         let o = fromIntegral (offsets G.! i)
             s = bIonLadder cp (peps G.! i)
@@ -81,9 +82,14 @@ newPDB cp proteins = do
   mapM_ fill [ 0 .. G.length peps - 1 ]
   ladder <- newFromVector =<< G.unsafeFreeze mv
 
-  return $ ProteinDatabase peps rowP ladder resi
+  return $ DevicePDB peps rowP ladder resi
   where
     peps    = G.concatMap fragments proteins
     offsets = G.scanl' (+) 0 $ G.generate (G.length peps) seql
+--    offsets = G.generate (G.length peps + 1) $ \i ->
+--      case i of
+--        0 -> 0
+--        n -> (offsets G.! (n-1) + (seql (n-1)))
+
     seql i  = fromIntegral . (\(c,n) -> n-c) . terminals $ peps G.! i
 
