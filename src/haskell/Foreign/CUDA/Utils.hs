@@ -11,6 +11,7 @@ module Foreign.CUDA.Utils where
 import Foreign
 import Control.Exception
 
+import Data.Vector.Storable      as S
 import Data.Vector.Generic       as G
 import Data.Vector.Fusion.Stream as Stream
 import Foreign.CUDA              as CUDA
@@ -35,5 +36,18 @@ withVector vec action = let l = G.length vec in
 
     -- Release host memory and perform computation on device array
     --
+    action d_ptr
+
+
+--
+-- Copy the contents of a storable-based vector to the device and perform a
+-- computation, returning the result. As storable vectors are stored as foreign
+-- pointers which are visible to the C heap, it is not necessary to marshal the
+-- data via a temporary array.
+--
+withVectorS :: Storable a => S.Vector a -> (DevicePtr a -> IO b) -> IO b
+withVectorS vec action = let l = S.length vec in
+  CUDA.allocaArray l $ \d_ptr -> do
+    S.unsafeWith vec $ \p -> CUDA.pokeArray l p d_ptr
     action d_ptr
 
