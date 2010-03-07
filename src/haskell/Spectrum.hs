@@ -24,7 +24,6 @@ module Spectrum
 import Config
 
 import Data.ByteString.Lazy             (ByteString)
-import Data.Vector.Storable             (Vector, Storable)
 import qualified Data.Vector.Storable   as V
 
 
@@ -35,9 +34,9 @@ import qualified Data.Vector.Storable   as V
 --
 -- A group of multiple spectra, read from the same experimental results file.
 --
-data SpectrumCollection a = SpectrumCollection
+data SpectrumCollection = SpectrumCollection
     {
-        spectra :: [Spectrum a],        -- Collection of measurements
+        spectra :: [Spectrum],          -- Collection of measurements
         header  :: ByteString           -- Description/header from the input file
     }
     deriving (Eq, Show)
@@ -54,20 +53,21 @@ data SpectrumCollection a = SpectrumCollection
 -- information about the m/z of the intact ion that generated the spectrum,
 -- known as the "precursor".
 --
-type Peak a = (a, a)
+type Peak = (Float, Float)
 
-data Spectrum a = Spectrum
+data Spectrum = Spectrum
     {
-        precursor :: a,                 -- The precursor mass; (M+zH)/z
-        charge    :: a,                 -- Peptide charge state
-        peaks     :: [Peak a]           -- The actual mass/charge ratio intensity measurements
+        precursor :: Float,             -- The precursor mass; (M+zH)/z
+        charge    :: Float,             -- Peptide charge state
+        peaks     :: [Peak]             -- The actual mass/charge ratio intensity measurements
     }
     deriving (Eq, Show)
 
 --
 -- Find the m/z range of the recorded peaks
 --
-mzRange      :: Ord a => Spectrum a -> (a, a)
+--mzRange      :: Ord a => Spectrum a -> (a, a)
+mzRange :: Spectrum -> (Float, Float)
 mzRange spec =  minmax (peaks spec)
     where
         minmax []       = error "Spectrum.mzRange: empty list"
@@ -78,7 +78,7 @@ mzRange spec =  minmax (peaks spec)
 -- A mz/intensity spectrum array of experimental data suitable for sequest
 -- cross-correlation ranking
 --
-type XCorrSpecExp a = Vector a
+type XCorrSpecExp = V.Vector Float
 
 
 --------------------------------------------------------------------------------
@@ -89,14 +89,16 @@ type XCorrSpecExp a = Vector a
 -- Width of the mass/charge ratio bins used to discretize the spectra. These are
 -- stolen from Crux.
 --
-specBinWidth    :: Fractional a => ConfigParams a -> a
+--specBinWidth    :: Fractional a => ConfigParams a -> a
+specBinWidth    :: ConfigParams -> Float
 specBinWidth cp =  if aaMassTypeMono cp then 1.0005079 else 1.0011413
 
 --
 -- Process the observed spectral peaks and generate an array suitable for
 -- Sequest cross correlation analysis
 --
-buildExpSpecXCorr    :: (Floating a, RealFrac a, Storable a) => ConfigParams a -> Spectrum a -> XCorrSpecExp a
+--buildExpSpecXCorr    :: (Floating a, RealFrac a, Storable a) => ConfigParams a -> Spectrum a -> XCorrSpecExp a
+buildExpSpecXCorr    :: ConfigParams -> Spectrum -> XCorrSpecExp
 buildExpSpecXCorr cp =  calculateXCorr . normaliseByRegion . observedIntensity cp
 
 
@@ -113,7 +115,8 @@ buildExpSpecXCorr cp =  calculateXCorr . normaliseByRegion . observedIntensity c
 --   3. Since this must mimic a FFT in real space, we need to include space for
 --      the "wings" in the (-75,+75) region in calculateXCorr
 --
-observedIntensity :: (Floating a, RealFrac a, Storable a) => ConfigParams a -> Spectrum a -> XCorrSpecExp a
+--observedIntensity :: (Floating a, RealFrac a, Storable a) => ConfigParams a -> Spectrum a -> XCorrSpecExp a
+observedIntensity :: ConfigParams -> Spectrum -> XCorrSpecExp
 observedIntensity cp spec =
   V.accum max (V.replicate (75 + ceiling cutoff) 0) [(bin x,sqrt y) | (x,y) <- filter limits (peaks spec)]
   where
@@ -139,7 +142,8 @@ observedIntensity cp spec =
 -- This means that some values from the input will not be considered, and be set
 -- to zero.
 --
-normaliseByRegion :: (Fractional a, Ord a, Storable a) => XCorrSpecExp a -> XCorrSpecExp a
+--normaliseByRegion :: (Fractional a, Ord a, Storable a) => XCorrSpecExp a -> XCorrSpecExp a
+normaliseByRegion :: XCorrSpecExp -> XCorrSpecExp
 normaliseByRegion a = V.zipWith norm ix a
   where
     rgn_max  = V.accum max (V.replicate 11 0) [(rgn i, a V.! i) | i <- [0 .. V.length a - 1]]
@@ -158,7 +162,8 @@ normaliseByRegion a = V.zipWith norm ix a
 -- Each sequest matching score is then a dot product between a theoretical input
 -- and this pre-processed spectrum.
 --
-calculateXCorr :: (Fractional a, Storable a) => XCorrSpecExp a -> XCorrSpecExp a
+--calculateXCorr :: (Fractional a, Storable a) => XCorrSpecExp a -> XCorrSpecExp a
+calculateXCorr :: XCorrSpecExp -> XCorrSpecExp
 calculateXCorr a = V.zipWith xcorr ix a
   where
     ix        = V.enumFromN 0 (V.length a)
