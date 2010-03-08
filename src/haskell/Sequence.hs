@@ -22,7 +22,7 @@ module Sequence
 import Mass
 import Config
 
-import Data.Int
+import Data.Word
 import Data.List
 import Control.Applicative
 
@@ -95,7 +95,7 @@ ionMasses cp = U.unfoldr step . map F.seqdata
 -- global offsets, not into the individual parent sequence. This is suitable for
 -- indexing into the similarly globally concatenated 'ionMass' output.
 --
-peptides :: ConfigParams -> [F.Sequence F.Amino] -> U.Vector (Float,Int32,Int32)
+peptides :: ConfigParams -> [F.Sequence F.Amino] -> U.Vector (Float,Word32,Word32)
 peptides cp db
   = U.fromList . concat
   . zipWith offset (scanl (+) 0 . map (fromIntegral . L.length . F.seqdata) $ db)
@@ -119,7 +119,7 @@ peptides cp db
 -- total residual mass of the fragment, together with the indices of the C- and
 -- N- terminals from parent sequence.
 --
-fragment :: ConfigParams -> F.Sequence F.Amino -> [(Float,Int32,Int32)]
+fragment :: ConfigParams -> F.Sequence F.Amino -> [(Float,Word32,Word32)]
 fragment cp = unfoldr step . (0,) . F.seqdata
   where
     rule = fst . digestionRule $ cp
@@ -140,7 +140,7 @@ fragment cp = unfoldr step . (0,) . F.seqdata
 -- Generate additional sequences from missed cleavages of sequential, adjacent
 -- peptide fragments.
 --
-splice :: ConfigParams -> [(Float,Int32,Int32)] -> [(Float,Int32,Int32)]
+splice :: ConfigParams -> [(Float,Word32,Word32)] -> [(Float,Word32,Word32)]
 splice cp = loop
   where
     loop []     = []

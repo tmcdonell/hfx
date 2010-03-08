@@ -21,6 +21,140 @@
 --
 --------------------------------------------------------------------------------
 
+{-# LANGUAGE TupleSections #-}
+
+module Sequest where
+
+import Mass
+import Config
+import Spectrum
+import Sequence
+
+import Data.Word
+import Foreign.CUDA (DevicePtr)
+
+import qualified Bio.Sequence                   as F
+import qualified Data.Vector.Generic            as G
+import qualified Foreign.CUDA                   as CUDA
+import qualified Foreign.CUDA.Utils             as CUDA
+import qualified Foreign.CUDA.Algorithms        as CUDA
+
+
+--------------------------------------------------------------------------------
+-- Data Structures
+--------------------------------------------------------------------------------
+
+type Candidates      = (DevicePtr Word32, Int)
+type XCorrSpecThry   = DevicePtr Word32
+
+data ProteinDatabase = PDB
+  {
+    dbNumIons     :: Int,
+    dbNumPeptides :: Int,
+    dbResiduals   :: DevicePtr Float,
+    dbIonMasses   :: DevicePtr Float,
+    dbTerminals   :: (DevicePtr Word32, DevicePtr Word32)
+  }
+  deriving Show
+
+--------------------------------------------------------------------------------
+-- Database Generation
+--------------------------------------------------------------------------------
+
+--
+-- Transfer sequence data to the graphics device in a suitable format.
+--
+withSeqs :: ConfigParams -> [F.Sequence F.Amino] -> (ProteinDatabase -> IO a) -> IO a
+withSeqs cp db action =
+  CUDA.withVector ions $ \d_ions ->
+  CUDA.withVector res  $ \d_res  ->
+  CUDA.withVector ct   $ \d_ct   ->
+  CUDA.withVector nt   $ \d_nt   ->
+  action $ PDB (G.length ions) (G.length res) d_res d_ions (d_ct,d_nt)
+  where
+    ions        = ionMasses cp db
+    (res,ct,nt) = G.unzip3 $ peptides cp db
+
+
+--------------------------------------------------------------------------------
+-- Search
+--------------------------------------------------------------------------------
+
+--
+-- Search an amino acid sequence database to find the most likely matches to a
+-- given experimental spectrum.
+--
+searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> IO [(Float,Int)]
+searchForMatches cp db dta =
+  findCandidates cp db dta                                  $ \candidates ->
+  mkSpecXCorr db candidates (charge dta) (G.length specExp) $ \specThry   ->
+  sequestXC cp candidates specExp specThry
+  where
+    specExp = buildExpSpecXCorr cp dta
+
+
+--
+-- Search the protein database for candidate peptides within the specified mass
+-- tolerance that should be examined by spectral cross-correlation.
+--
+-- This generates a device array containing the indices of the relevant
+-- sequences, together with the number of candidates found.
+--
+findCandidates :: ConfigParams -> ProteinDatabase -> Spectrum -> (Candidates -> IO b) -> IO b
+findCandidates cp db dta action =
+  CUDA.allocaArray np $ \d_idx ->
+  CUDA.findIndicesInRange (dbResiduals db) d_idx np (mass-delta) (mass+delta) >>= action . (d_idx,)
+  where
+    np    = dbNumPeptides db
+    delta = massTolerance cp
+    mass  = (precursor dta * charge dta) - ((charge dta * massH) - 1) - (massH + massH2O)
+
+
+--
+-- Generate a theoretical spectral representation for each of the specified
+-- candidates. This generates spectral peaks for all of the A-, B- and Y-ions of
+-- the given sequences, retaining only the most intense peak in each bin.
+--
+-- On the device, this is stored as a dense matrix, each row corresponding to a
+-- single sequence.
+--
+mkSpecXCorr :: ProteinDatabase -> Candidates -> Float -> Int -> (XCorrSpecThry -> IO b) -> IO b
+mkSpecXCorr db (d_idx, nIdx) chrg len action =
+  CUDA.allocaArray n $ \d_spec -> do
+    let bytes = fromIntegral $ n * CUDA.sizeOfPtr d_spec
+
+    CUDA.memset  d_spec bytes 0
+    CUDA.addIons d_spec (dbResiduals db) (dbIonMasses db) (dbTerminals db) d_idx nIdx ch len
+
+    action d_spec
+  where
+    n  = len * nIdx
+    ch = round $ max 1 (chrg - 1)
+
+
+--
+-- Score each candidate sequence against the observed intensity spectra,
+-- returning the most relevant results.
+--
+sequestXC :: ConfigParams -> Candidates -> XCorrSpecExp -> XCorrSpecThry -> IO [(Float,Int)]
+sequestXC cp (d_idx,nIdx) expr d_thry = let n = max (numMatches cp) (numMatchesDetail cp) in
+  CUDA.withVectorS expr $ \d_expr  ->
+  CUDA.allocaArray nIdx $ \d_score -> do
+
+    -- Score and rank each candidate sequence
+    --
+    CUDA.mvm       d_score d_thry d_expr nIdx (G.length expr)
+    CUDA.radixsort d_score d_idx nIdx
+
+    -- Retrieve the most relevant matches
+    --
+    sc <- CUDA.peekListArray n (d_score `CUDA.advanceDevPtr` (nIdx-n))
+    ix <- CUDA.peekListArray n (d_idx   `CUDA.advanceDevPtr` (nIdx-n))
+
+    return . reverse $ zipWith (\s i -> (s/10000,fromIntegral i)) sc ix
+
+
+{-
 module Sequest
   (
     Match(..),
@@ -101,4 +235,5 @@ findCandidates cp spec
 --
 sequestXC :: (Fractional a, Storable a) => XCorrSpecExp a -> XCorrSpecThry a -> a
 sequestXC x y = G.sum ( G.zipWith (*) x y ) / 10000
+-}
 
