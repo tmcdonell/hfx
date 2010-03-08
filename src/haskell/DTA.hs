@@ -79,7 +79,7 @@ eol =  try (string "\n\r")
 --
 -- Encase the values read from the DTA file into a data structure
 --
-mkSpec :: RealFrac a => [(a,a)] -> Either String (Spectrum a)
+mkSpec :: [(Float,Float)] -> Either String Spectrum
 mkSpec []           =  Left "Error: empty spectrum"
 mkSpec ((m,c):ss)
     | trunc' c /= c =  Left "Error: invalid peptide charge state\nexpecting integer"
@@ -95,7 +95,7 @@ mkSpec ((m,c):ss)
 --
 -- Read the given file and return either an error or the MS/MS spectrum data.
 --
-readDTA :: RealFrac a => FilePath -> IO (Either String (Spectrum a))
+readDTA :: FilePath -> IO (Either String Spectrum)
 readDTA name =  do
     dta <- parseFromFile dtaFile name
     case dta of
