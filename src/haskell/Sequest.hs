@@ -33,7 +33,6 @@ import Sequence
 import Data.Word
 import Foreign.CUDA (DevicePtr)
 
-import qualified Bio.Sequence                   as F
 import qualified Data.Vector.Generic            as G
 import qualified Foreign.CUDA                   as CUDA
 import qualified Foreign.CUDA.Utils             as CUDA
@@ -64,7 +63,7 @@ data ProteinDatabase = PDB
 --
 -- Transfer sequence data to the graphics device in a suitable format.
 --
-withSeqs :: ConfigParams -> [F.Sequence F.Amino] -> (ProteinDatabase -> IO a) -> IO a
+withSeqs :: ConfigParams -> [Protein] -> (ProteinDatabase -> IO a) -> IO a
 withSeqs cp db action =
   CUDA.withVector ions $ \d_ions ->
   CUDA.withVector res  $ \d_res  ->

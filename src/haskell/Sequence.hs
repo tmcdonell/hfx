@@ -13,6 +13,7 @@
 
 module Sequence
   (
+    Protein,
     readFasta, countSeqs,
     ionMasses,
     peptides,
@@ -38,12 +39,14 @@ import qualified Data.Vector.Unboxed        as U
 -- Reading FASTA Files
 --------------------------------------------------------------------------------
 
+type Protein = F.Sequence F.Amino
+
 --
 -- Lazily read sequences from a FASTA-formatted file. This is identical to the
 -- code of the bio package, except the sequence type is cast on output and GZip
 -- compressed files are deflated as necessary.
 --
-readFasta :: FilePath -> IO [F.Sequence F.Amino]
+readFasta :: FilePath -> IO [Protein]
 readFasta fp = map F.castToAmino . F.mkSeqs . L.lines . prepare <$> L.readFile fp
   where
     prepare = if ".gz" `isSuffixOf` fp then GZip.decompress
@@ -81,7 +84,7 @@ thd3 (_,_,c) = c
 -- Translate the amino acid character codes of the database into the
 -- corresponding ion masses in a single, flattened vector.
 --
-ionMasses :: ConfigParams -> [F.Sequence F.Amino] -> U.Vector Float
+ionMasses :: ConfigParams -> [Protein] -> U.Vector Float
 ionMasses cp = U.unfoldr step . map F.seqdata
   where
     step []     = Nothing
@@ -95,7 +98,7 @@ ionMasses cp = U.unfoldr step . map F.seqdata
 -- global offsets, not into the individual parent sequence. This is suitable for
 -- indexing into the similarly globally concatenated 'ionMass' output.
 --
-peptides :: ConfigParams -> [F.Sequence F.Amino] -> U.Vector (Float,Word32,Word32)
+peptides :: ConfigParams -> [Protein] -> U.Vector (Float,Word32,Word32)
 peptides cp db
   = U.fromList . concat
   . zipWith offset (scanl (+) 0 . map (fromIntegral . L.length . F.seqdata) $ db)
@@ -119,7 +122,7 @@ peptides cp db
 -- total residual mass of the fragment, together with the indices of the C- and
 -- N- terminals from parent sequence.
 --
-fragment :: ConfigParams -> F.Sequence F.Amino -> [(Float,Word32,Word32)]
+fragment :: ConfigParams -> Protein -> [(Float,Word32,Word32)]
 fragment cp = unfoldr step . (0,) . F.seqdata
   where
     rule = fst . digestionRule $ cp
