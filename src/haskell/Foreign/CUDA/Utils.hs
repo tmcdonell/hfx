@@ -18,6 +18,13 @@ import Foreign.CUDA              as CUDA
 
 
 --
+-- Return the size of each element in a device array
+--
+sizeOfPtr :: Storable a => DevicePtr a -> Int
+sizeOfPtr =  sizeOf . (undefined :: DevicePtr a -> a)
+
+
+--
 -- Copy a vector to the device and perform a computation, returning the result.
 -- This requires the data to be marshalled to a heap allocated array so that it
 -- can be copied to the device.

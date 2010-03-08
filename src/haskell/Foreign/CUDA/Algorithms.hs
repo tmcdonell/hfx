@@ -29,15 +29,14 @@ findIndicesInRange :: DevicePtr Float -> DevicePtr Word32 -> Int -> Float -> Flo
 findIndicesInRange a1 a2 a3 a4 a5 =
   withDevicePtr a1 $ \a1' ->
   withDevicePtr a2 $ \a2' ->
-  findIndicesInRange'_ a1' a2' (cIntConv a3) a4 a5 >>= \res ->
-  return (cIntConv res)
+  cIntConv `fmap` findIndicesInRange'_ a1' a2' (cIntConv a3) a4 a5
 
 foreign import ccall unsafe "algorithms.h findIndicesInRange_f"
   findIndicesInRange'_ :: Ptr Float -> Ptr Word32 -> Word32 -> Float -> Float -> IO Word32
 
 
-addIons :: DevicePtr Word32 -> DevicePtr Float -> DevicePtr Float -> DevicePtr Word32 -> DevicePtr Word32 -> DevicePtr Word32 -> Int -> Int -> Int -> IO ()
-addIons a1 a2 a3 a4 a5 a6 a7 a8 a9 =
+addIons :: DevicePtr Word32 -> DevicePtr Float -> DevicePtr Float -> (DevicePtr Word32, DevicePtr Word32) -> DevicePtr Word32 -> Int -> Int -> Int -> IO ()
+addIons a1 a2 a3 (a4,a5) a6 a7 a8 a9 =
   withDevicePtr a1 $ \a1' ->
   withDevicePtr a2 $ \a2' ->
   withDevicePtr a3 $ \a3' ->
