@@ -101,11 +101,12 @@ ionMasses cp = U.unfoldr step . map F.seqdata
 peptides :: ConfigParams -> [Protein] -> U.Vector (Float,Word32,Word32)
 peptides cp db
   = U.fromList . concat
-  . zipWith offset (scanl (+) 0 . map (fromIntegral . L.length . F.seqdata) $ db)
+  . zipWith global offset
   . map (digest cp)
   $ db
   where
-    offset o = map (\(r,c,n) -> (r,c+o,n+o))
+    offset   = scanl (+) 0 . map (fromIntegral . L.length . F.seqdata) $ db
+    global o = map (\(r,c,n) -> (r,c+o,n+o))
 
 
 --
