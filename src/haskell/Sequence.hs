@@ -102,17 +102,23 @@ peptides :: ConfigParams -> [Protein] -> U.Vector (Float,Word32,Word32)
 peptides cp db
   = U.fromList . concat
   . zipWith offset (scanl (+) 0 . map (fromIntegral . L.length . F.seqdata) $ db)
-  . map digest
+  . map (digest cp)
   $ db
   where
-    digest    = filter (inrange . fst3) . splice cp . fragment cp
-    offset o  = map (\(r,c,n) -> (r,c+o,n+o))
+    offset o = map (\(r,c,n) -> (r,c+o,n+o))
 
-    --
-    -- The mass of the peptide is the sum of the amino acid residue masses plus
-    -- the mass of the water molecule released in forming the peptide bond (plus
-    -- one; from Eq. 1 of Eng.[1])
-    --
+
+--
+-- Digest a single protein sequence with the given enzyme and cleavage rules,
+-- removing any fragments outside the broad mass range of interest.
+--
+-- The mass of the peptide is the sum of the amino acid residue masses plus the
+-- mass of the water molecule released in forming the peptide bond (plus one;
+-- from Eq. 1 of Eng.[1])
+--
+digest :: ConfigParams -> Protein -> [(Float,Word32,Word32)]
+digest cp = filter (inrange . fst3) . splice cp . fragment cp
+  where
     inrange m = let m' = m + massH2O + massH
                 in  minPeptideMass cp <= m' && m' <= maxPeptideMass cp
 
