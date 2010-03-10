@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns  #-}
+{-# LANGUAGE TupleSections #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Sequence
@@ -8,15 +10,13 @@
 --
 --------------------------------------------------------------------------------
 
-{-# LANGUAGE BangPatterns  #-}
-{-# LANGUAGE TupleSections #-}
-
 module Sequence
   (
     Protein,
     readFasta, countSeqs,
-    ionMasses,
-    peptides,
+    ionMasses, peptides, digest,
+
+    Fragment(..), fraglabel
   )
   where
 
@@ -64,6 +64,25 @@ countSeqs fp = length . headers . prepare <$> L.readFile fp
     headers = filter (('>' ==) . L.head) . filter (not . L.null) . L.lines
     prepare = if ".gz" `isSuffixOf` fp then GZip.decompress
                                        else id
+
+
+--------------------------------------------------------------------------------
+-- Fragments
+--------------------------------------------------------------------------------
+
+--
+-- Sequence fragments (typically to store results for pretty printing)
+--
+data Fragment = Fragment
+  {
+    fragmass   :: Float,
+    fragheader :: L.ByteString,
+    fragdata   :: L.ByteString
+  }
+  deriving (Eq, Show)
+
+fraglabel :: Fragment -> L.ByteString
+fraglabel = head . L.words . fragheader
 
 
 --------------------------------------------------------------------------------
