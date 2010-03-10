@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Sequest
@@ -21,18 +22,22 @@
 --
 --------------------------------------------------------------------------------
 
-{-# LANGUAGE TupleSections #-}
-
 module Sequest where
 
 import Mass
+import Match
 import Config
 import Spectrum
 import Sequence
+import Location
 
 import Data.Word
+import Data.Maybe
+import Control.Monad
 import Foreign.CUDA (DevicePtr)
 
+import qualified Bio.Sequence                   as F
+import qualified Data.ByteString.Lazy.Char8     as L
 import qualified Data.Vector.Generic            as G
 import qualified Foreign.CUDA                   as CUDA
 import qualified Foreign.CUDA.Utils             as CUDA
@@ -52,7 +57,9 @@ data ProteinDatabase = PDB
     dbNumPeptides :: Int,
     dbResiduals   :: DevicePtr Float,
     dbIonMasses   :: DevicePtr Float,
-    dbTerminals   :: (DevicePtr Word32, DevicePtr Word32)
+    dbTerminals   :: (DevicePtr Word32, DevicePtr Word32),
+
+    dbLookup      :: (Int -> Maybe Fragment)
   }
   deriving Show
 
@@ -69,10 +76,14 @@ withSeqs cp db action =
   CUDA.withVector res  $ \d_res  ->
   CUDA.withVector ct   $ \d_ct   ->
   CUDA.withVector nt   $ \d_nt   ->
-  action $ PDB (G.length ions) (G.length res) d_res d_ions (d_ct,d_nt)
+  action $ PDB (G.length ions) (G.length res) d_res d_ions (d_ct,d_nt) (lookupSeq seqmap)
   where
     ions        = ionMasses cp db
     (res,ct,nt) = G.unzip3 $ peptides cp db
+
+    seqmap      = SeqMap (G.fromList db) (zones db) res (offset db) (G.zip ct nt)
+    offset      = G.fromList . scanl (+) 0 . map (fromIntegral . L.length . F.seqdata)
+    zones       = G.fromList . scanl1 (+) . map (length . digest cp)
 
 
 --------------------------------------------------------------------------------
@@ -83,13 +94,14 @@ withSeqs cp db action =
 -- Search an amino acid sequence database to find the most likely matches to a
 -- given experimental spectrum.
 --
-searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> IO [(Float,Int)]
+searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> IO MatchCollection
 searchForMatches cp db dta =
   findCandidates cp db dta                                  $ \candidates ->
   mkSpecXCorr db candidates (charge dta) (G.length specExp) $ \specThry   ->
-  sequestXC cp candidates specExp specThry
+  mapMaybe lookupF `fmap` sequestXC cp candidates specExp specThry
   where
-    specExp = buildExpSpecXCorr cp dta
+    specExp       = buildExpSpecXCorr cp dta
+    lookupF (s,i) = liftM (flip Match s) (dbLookup db i)
 
 
 --
