@@ -21,7 +21,7 @@ module PrettyPrint
 import Mass
 import Match
 import Config
-import Protein
+import Sequence
 import Spectrum
 
 import Numeric
@@ -69,7 +69,7 @@ printDoc m hdl doc = do
 -- Configuration -> Render
 --------------------------------------------------------------------------------
 
-printConfig :: RealFrac a => ConfigParams a -> FilePath -> Spectrum a -> IO ()
+printConfig :: ConfigParams -> FilePath -> Spectrum -> IO ()
 printConfig cp fp spec = displayIO . ppAsRows 0 . map (intersperse (text "::")) $
     [ [text "Spectrum"   , text fp]
     , [text "Database"   , text (fromJust (databasePath cp))]
@@ -88,30 +88,30 @@ title :: [[Doc]]
 title = map (map text) [[" # ", " (M+H)+  ", "deltCn", "XCorr", "Reference", "Peptide"],
                         ["---", "---------", "------", "-----", "---------", "-------"]]
 
-toDoc :: RealFloat a => Int -> a -> Match a -> [Doc]
-toDoc n s0 (Match pro pep sc) =
+toDoc :: Int -> Float -> Match -> [Doc]
+toDoc n s0 (Match frag sc) =
     [ space <> int n <> char '.'
-    , float' (pmass pep)
+    , float' (fragmass frag)
     , float' (realToFrac ((s0 - sc)/s0))
     , float' (realToFrac sc)
-    , text   (label pro)
-    , text   (slice pro pep)
+    , ppr    (fraglabel frag)
+    , ppr    (fragdata  frag)
     ]
     where float' = text . flip (showFFloat (Just 4)) ""
 
-toDocDetail :: Int -> Match a -> [Doc]
-toDocDetail n (Match pro _ _)  =
+toDocDetail :: Int -> Match -> [Doc]
+toDocDetail n (Match frag _)  =
     [ space <> int n <> char '.'
-    , text (description pro)
+    , ppr (fragheader frag)
     ]
 
-printResults   :: RealFloat a => MatchCollection a -> IO ()
+printResults   :: MatchCollection -> IO ()
 printResults m =  displayIO . ppAsRows 1 . (++) title . snd . mapAccumL k 1 $ m
     where
         s0    = scoreXC (head m)
         k n z = (n+1, toDoc n s0 z)
 
-printResultsDetail   :: RealFloat a => MatchCollection a -> IO ()
+printResultsDetail   :: MatchCollection -> IO ()
 printResultsDetail m =  displayIO . ppAsRows 1 . snd . mapAccumL k 1 $ m
     where
         k n z = (n+1, toDocDetail n z)

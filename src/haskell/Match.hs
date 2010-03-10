@@ -8,24 +8,21 @@
 
 module Match where
 
-import Protein
-
-type MatchCollection a = [Match a]
+import Sequence
 
 --
 -- A structure to store the result of a peptide/spectrum similarity test
 --
-data Match a = Match
-    {
-	parent    :: Protein a,		-- The parent protein
-        candidate :: Peptide a,         -- The fragment that was examined
-        scoreXC   :: a                  -- Sequest cross-correlation score
---        scoreSP   :: (Int, Int)         -- Matched ions / total ions
-    }
-    deriving (Show)
+type MatchCollection = [Match]
 
-instance (Fractional a, Ord a) => Eq (Match a) where
-  Match p f s == Match p' f' s' = p == p' && f == f' && (s-s')/(s+s'+0.0005) < 0.0005
+data Match = Match
+  {
+    fragment :: Fragment,       -- The sequence fragment (header and amino acid chain)
+    scoreXC  :: Float           -- Sequest cross-correlation score
+--  scoreSP  :: (Int, Int)      -- Matched ions / total ions
+  }
+  deriving (Show)
 
-
+instance Eq Match where
+  Match f s == Match f' s' = f == f' && (s-s')/(s+s'+0.0005) < 0.0005
 
