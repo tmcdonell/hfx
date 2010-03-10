@@ -53,7 +53,7 @@ data ConfigParams = ConfigParams
         massTolerance       :: Float,                    -- Search peptides within ± this value of the spectrum mass
         removePrecursorPeak :: Bool,                     -- Remove a ±5 da window surrounding the precursor mass
         missedCleavages     :: Int,                      -- Number of missed cleavage sites to consider
-        digestionRule       :: ((Char -> Bool), String), -- Protein fragmentation rule and description text
+        digestionRule       :: (Char -> Bool, String),   -- Protein fragmentation rule and description text
         minPeptideMass      :: Float,                    -- Minimum mass of peptides to be considered
         maxPeptideMass      :: Float,                    -- Maximum peptide mass
 
@@ -112,9 +112,8 @@ getAAMass cp aa =  aaMassTable cp U.! index ('A','Z') aa
 sequestConfig :: FilePath -> [String] -> IO (ConfigParams, [String])
 sequestConfig fp argv = do
     p  <- doesFileExist fp
-    cp <- case p of
-        True  -> readConfigFile fp (baseParams)
-        False -> return baseParams
+    cp <- if p then readConfigFile fp baseParams
+               else return baseParams
 
     --
     -- Parse the command line options
@@ -237,7 +236,7 @@ initializeAAMasses cp = cp { aaMassTable = U.accum (+) (aaMassTable cp) (zipWith
 options :: [ OptDescr (ConfigParams -> IO ConfigParams) ]
 options =
     [ Option "p" ["parameters"]
-        (ReqArg (\fp cp -> readConfigFile fp cp) "FILE")
+        (ReqArg readConfigFile "FILE")
         "Read configuration options from file"
 
     , Option "d" ["database"]
@@ -256,7 +255,7 @@ options =
         (OptArg (\v cp -> return $ case v of
                             Nothing    -> cp { removePrecursorPeak = True }
                             Just []    -> cp { removePrecursorPeak = True }
-                            Just (x:_) -> cp { removePrecursorPeak = (toLower x `elem` "t1") }) "True|False")
+                            Just (x:_) -> cp { removePrecursorPeak = toLower x `elem` "t1" }) "True|False")
         "Remove a 5 da window surrounding the precursor mass"
 
     , Option "" ["missed-cleavages"]
@@ -276,7 +275,7 @@ options =
         "Maximum peptide mass to be considered"
 
     , Option "" ["aa-mass-type"]
-        (ReqArg (\(v:_) cp -> return cp { aaMassTypeMono = (toLower v == 'm') }) "Mono|Average")
+        (ReqArg (\(v:_) cp -> return cp { aaMassTypeMono = toLower v == 'm' }) "Mono|Average")
         "Use monoisotopic or average molecular mass of amino acids"
 
     , Option "n" ["num-matches"]
@@ -314,10 +313,10 @@ options =
 -- as part of the help text.
 --
 digestionRuleHelp :: String
-digestionRuleHelp = unlines $ ["Digestion Rules:"] ++ (map (snd . getDigestionRule) [0..13])
+digestionRuleHelp = unlines $ "Digestion Rules:" : map (snd . getDigestionRule) [0..13]
 
-getDigestionRule :: Int -> ((Char -> Bool), String)
-getDigestionRule 0  = ((const False)        , "  0:  No enzyme              0      -           -")
+getDigestionRule :: Int -> (Char -> Bool, String)
+getDigestionRule 0  = (const False          , "  0:  No enzyme              0      -           -")
 getDigestionRule 1  = ((`elem` "KR")        , "  1.  Trypsin                1      KR          P")
 getDigestionRule 2  = ((`elem` "FWY")       , "  2.  Chymotrypsin           1      FWY         P")
 getDigestionRule 3  = ((== 'R')             , "  3.  Clostripain            1      R           -")
@@ -393,7 +392,7 @@ item = liftM2 (\k v -> (k, rstrip v)) key val
 line :: Parser (Maybe (String, String))
 line =  skipMany space >> content
     where content =  try (comment >> return Nothing)
-                 <|> (item >>= return . Just)
+                 <|> Just `fmap` item
 
 --
 -- Get just the name/value pairs from the file

@@ -134,5 +134,5 @@ ppAsColumns q =  vcat . map hsep . transpose . map (\col -> pad (width col) col)
     where
         len   = length . render
         width = maximum . map len
-        pad w = map (\x -> x <> (hcat $ replicate (w - (len x) + q) space))
+        pad w = map (\x -> x <> hcat (replicate (w - len x + q) space))
 

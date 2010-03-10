@@ -65,6 +65,6 @@ search cp pdb fp = do
   matches <- searchForMatches cp pdb dta
 
   printConfig cp fp dta
-  printResults       $! (take (numMatches cp)       matches)
-  printResultsDetail $! (take (numMatchesDetail cp) matches)
+  printResults       $! take (numMatches cp)       matches
+  printResultsDetail $! take (numMatchesDetail cp) matches
 

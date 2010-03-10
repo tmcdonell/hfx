@@ -153,7 +153,7 @@ normaliseByRegion a = V.zipWith norm ix a
     cutoff   = V.length a - 75
 
     ix       = V.enumFromN 0 (V.length a)
-    norm i e = let m = rgn_max V.! (rgn i)  in
+    norm i e = let m = rgn_max V.! rgn i  in
                if  m > 1E-6 && i < sel*10 then 50 * (e / m) else 0
 
 

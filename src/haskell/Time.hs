@@ -18,7 +18,7 @@ import Control.Monad
 
 -- Timing
 --
-data Time = Time { cpu_time :: Integer }
+data Time = Time { cpuTime :: Integer }
 
 type TimeUnit = Integer -> Integer
 
@@ -52,7 +52,7 @@ showTime (Time t) = showsT . nubBy (\a b -> a == ' ' && b == ' ') $ ' ':si_unit:
 -- Shows with SI prefix
 --
 showFFloatSI :: RealFloat a => a -> ShowS
-showFFloatSI n = showString . nubBy (\a b -> a == ' ' && b == ' ') $ showFFloat (Just 3) n' (' ':si_unit:[])
+showFFloatSI n = showString . nubBy (\a b -> a == ' ' && b == ' ') $ showFFloat (Just 3) n' [ ' ', si_unit ]
   where
     n'      = n / (1000 ^^ (pow-4))
     pow     = max 0 . min 8 . (+) 4 . floor $ logBase 1000 n
