@@ -72,7 +72,7 @@ bracketTime :: IO a -> IO (Time, a)
 bracketTime f = do
   t1 <- getTime
   r  <- f
-  t2 <- getTime
+  t2 <- r `seq` getTime
   return (elapsedTime t1 t2, r)
 
 {-# NOINLINE benchmark #-}
