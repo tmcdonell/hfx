@@ -26,13 +26,16 @@ import Config
 import Data.Word
 import Data.List
 import Control.Applicative
+import System.IO.Unsafe
 
-import qualified Bio.Sequence               as F
-import qualified Bio.Sequence.Fasta         as F
-import qualified Data.ByteString.Lazy.Char8 as L
-import qualified Codec.Compression.GZip     as GZip
+import qualified Bio.Sequence                   as F
+import qualified Bio.Sequence.Fasta             as F
+import qualified Data.ByteString.Lazy.Char8     as L
+import qualified Codec.Compression.GZip         as GZip
 
-import qualified Data.Vector.Unboxed        as U
+import qualified Data.Vector.Unboxed            as U
+import qualified Data.Vector.Generic            as G
+import qualified Data.Vector.Generic.Mutable    as GM
 
 
 --------------------------------------------------------------------------------
@@ -100,15 +103,33 @@ thd3 (_,_,c) = c
 
 
 --
+-- Determine the total number of ions represented by the protein sequences
+--
+numIons :: [Protein] -> Int
+numIons = fromIntegral . foldl (+) 0 . map (L.length . F.seqdata)
+
+--
 -- Translate the amino acid character codes of the database into the
 -- corresponding ion masses in a single, flattened vector.
 --
-ionMasses :: ConfigParams -> [Protein] -> U.Vector Float
-ionMasses cp = U.unfoldr step . map F.seqdata
-  where
-    step []     = Nothing
-    step (s:ss) | L.null s  = step ss
-                | otherwise = Just (getAAMass cp (L.head s), L.tail s : ss)
+ionMasses :: ConfigParams -> [Protein] -> IO (U.Vector Float)
+ionMasses cp db = do
+  let n = numIons db
+  mv <- GM.new n
+
+  --
+  -- I would claim this to be "morally sound", since effects cannot escape, but
+  -- then Nicko would reprimand me for personifying my programs, and that as
+  -- tekne, they "just are" and do not have a choice between right or wrong.
+  --
+  let put !i !x = (unsafePerformIO $ GM.unsafeWrite mv i (getAAMass cp x)) `seq` (i+1)
+
+      fill _ []     = return ()
+      fill i (s:ss) = let i' = L.foldl put i s
+                      in  i' `seq` fill i' ss
+
+  fill 0 . map F.seqdata $ db
+  G.unsafeFreeze mv
 
 
 --
