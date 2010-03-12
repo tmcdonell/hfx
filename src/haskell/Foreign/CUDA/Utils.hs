@@ -29,6 +29,7 @@ sizeOfPtr =  sizeOf . (undefined :: DevicePtr a -> a)
 -- This requires the data to be marshalled to a heap allocated array so that it
 -- can be copied to the device.
 --
+{-# INLINE withVector #-}
 withVector :: (G.Vector v a, Storable a) => v a -> (DevicePtr a -> IO b) -> IO b
 withVector vec action = let l = G.length vec in
   CUDA.allocaArray l  $ \d_ptr -> do
@@ -52,6 +53,7 @@ withVector vec action = let l = G.length vec in
 -- pointers which are visible to the C heap, it is not necessary to marshal the
 -- data via a temporary array.
 --
+{-# INLINE withVectorS #-}
 withVectorS :: Storable a => S.Vector a -> (DevicePtr a -> IO b) -> IO b
 withVectorS vec action = let l = S.length vec in
   CUDA.allocaArray l $ \d_ptr -> do
