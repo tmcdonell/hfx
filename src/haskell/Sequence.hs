@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns  #-}
 {-# LANGUAGE TupleSections #-}
 --------------------------------------------------------------------------------
@@ -38,6 +39,12 @@ import qualified Data.Vector.Fusion.Stream         as Stream
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Fusion.Stream.Size    as S
 import Data.Vector.Fusion.Util
+
+#define PHASE_STREAM [1]
+#define PHASE_INNER  [0]
+
+#define INLINE_STREAM INLINE PHASE_STREAM
+#define INLINE_INNER  INLINE PHASE_INNER
 
 
 --------------------------------------------------------------------------------
@@ -122,10 +129,10 @@ ionMasses :: ConfigParams -> Int -> [Protein] -> U.Vector Float
 ionMasses cp n db = G.unstream (ionMassesS cp n db)
 
 ionMassesS :: ConfigParams -> Int -> [Protein] -> Stream.Stream Float
-{-# INLINE [1] ionMassesS #-}
+{-# INLINE_STREAM ionMassesS #-}
 ionMassesS cp n db = S.Stream (return . step) (map F.seqdata db) (S.Exact (delay_inline max n 0))
   where
-    {-# INLINE [0] step #-}
+    {-# INLINE_INNER step #-}
     step []     = S.Done
     step (s:ss) = case L.uncons s of
                     Nothing    -> S.Skip ss
@@ -141,11 +148,11 @@ seqOffset :: [Protein] -> U.Vector Int
 seqOffset = G.unstream . seqOffsetS
 
 seqOffsetS :: [Protein] -> Stream.Stream Int
-{-# INLINE [1] seqOffsetS #-}
+{-# INLINE_STREAM seqOffsetS #-}
 seqOffsetS db = S.prescanl' (+) 0
               $ S.Stream (return . step) (map F.seqdata db) S.Unknown
   where
-    {-# INLINE [0] step #-}
+    {-# INLINE_INNER step #-}
     step []     = S.Done
     step (s:ss) = S.Yield (fromIntegral (L.length s)) ss
 
