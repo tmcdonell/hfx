@@ -14,7 +14,7 @@ module Sequence
   (
     Protein,
     readFasta, countSeqs,
-    ionMasses, peptides, digest,
+    numIons, ionMasses, peptides, digest,
 
     Fragment(..), fraglabel
   )
@@ -26,16 +26,18 @@ import Config
 import Data.Word
 import Data.List
 import Control.Applicative
-import System.IO.Unsafe
 
-import qualified Bio.Sequence                   as F
-import qualified Bio.Sequence.Fasta             as F
-import qualified Data.ByteString.Lazy.Char8     as L
-import qualified Codec.Compression.GZip         as GZip
+import qualified Bio.Sequence                      as F
+import qualified Bio.Sequence.Fasta                as F
+import qualified Data.ByteString.Lazy.Char8        as L
+import qualified Codec.Compression.GZip            as GZip
 
-import qualified Data.Vector.Unboxed            as U
-import qualified Data.Vector.Generic            as G
-import qualified Data.Vector.Generic.Mutable    as GM
+import qualified Data.Vector.Unboxed               as U
+import qualified Data.Vector.Generic               as G
+import qualified Data.Vector.Fusion.Stream         as Stream
+import qualified Data.Vector.Fusion.Stream.Monadic as S
+import qualified Data.Vector.Fusion.Stream.Size    as S
+import Data.Vector.Fusion.Util
 
 
 --------------------------------------------------------------------------------
@@ -50,6 +52,7 @@ type Protein = F.Sequence F.Amino
 -- compressed files are deflated as necessary.
 --
 readFasta :: FilePath -> IO [Protein]
+{-# INLINE readFasta #-}
 readFasta fp = map F.castToAmino . F.mkSeqs . L.lines . prepare <$> L.readFile fp
   where
     prepare = if ".gz" `isSuffixOf` fp then GZip.decompress
@@ -62,6 +65,7 @@ readFasta fp = map F.castToAmino . F.mkSeqs . L.lines . prepare <$> L.readFile f
 -- function of the same name.
 --
 countSeqs :: FilePath -> IO Int
+{-# INLINE countSeqs #-}
 countSeqs fp = length . headers . prepare <$> L.readFile fp
   where
     headers = filter (('>' ==) . L.head) . filter (not . L.null) . L.lines
@@ -106,30 +110,26 @@ thd3 (_,_,c) = c
 -- Determine the total number of ions represented by the protein sequences
 --
 numIons :: [Protein] -> Int
+{-# INLINE numIons #-}
 numIons = fromIntegral . foldl (+) 0 . map (L.length . F.seqdata)
 
 --
 -- Translate the amino acid character codes of the database into the
 -- corresponding ion masses in a single, flattened vector.
 --
-ionMasses :: ConfigParams -> [Protein] -> IO (U.Vector Float)
-ionMasses cp db = do
-  let n = numIons db
-  mv <- GM.new n
+ionMasses :: ConfigParams -> Int -> [Protein] -> U.Vector Float
+{-# INLINE ionMasses #-}
+ionMasses cp n db = G.unstream (ionMassesS cp n db)
 
-  --
-  -- I would claim this to be "morally sound", since effects cannot escape, but
-  -- then Nicko would reprimand me for personifying my programs, and that as
-  -- tekne, they "just are" and do not have a choice between right or wrong.
-  --
-  let put !i !x = (unsafePerformIO $ GM.unsafeWrite mv i (getAAMass cp x)) `seq` (i+1)
-
-      fill _ []     = return ()
-      fill i (s:ss) = let i' = L.foldl put i s
-                      in  i' `seq` fill i' ss
-
-  fill 0 . map F.seqdata $ db
-  G.unsafeFreeze mv
+ionMassesS :: ConfigParams -> Int -> [Protein] -> Stream.Stream Float
+{-# INLINE [1] ionMassesS #-}
+ionMassesS cp n db = S.Stream (return . step) (map F.seqdata db) (S.Exact (delay_inline max n 0))
+  where
+    {-# INLINE [0] step #-}
+    step []     = S.Done
+    step (s:ss) = case L.uncons s of
+                    Nothing    -> S.Skip ss
+                    Just (c,t) -> S.Yield (getAAMass cp c) (t:ss)
 
 
 --
@@ -142,8 +142,7 @@ peptides :: ConfigParams -> [Protein] -> U.Vector (Float,Word32,Word32)
 peptides cp db
   = U.fromList . concat
   . zipWith global offset
-  . map (digest cp)
-  $ db
+  $ map (digest cp) db
   where
     offset   = scanl (+) 0 . map (fromIntegral . L.length . F.seqdata) $ db
     global o = map (\(r,c,n) -> (r,c+o,n+o))
