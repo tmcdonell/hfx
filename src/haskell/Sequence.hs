@@ -119,6 +119,24 @@ countIons :: [Protein] -> Int
 {-# INLINE countIons #-}
 countIons = fromIntegral . foldl (+) 0 . map (L.length . F.seqdata)
 
+
+--
+-- Estimate the number of fragments that will be produced from a collection of
+-- peptide sequences. This is an upper bound, as it does not take into account:
+--   * fragments outside of the designated mass bounds
+--   * split points at the end of a sequence, producing one fragment and not two
+--
+-- The latter accounts for a rather small discrepancy (<1%), while the former
+-- may result in significant overestimation (>10%).
+--
+countFrags :: ConfigParams -> [Protein] -> Int
+{-# INLINE countFrags #-}
+countFrags cp = foldl' (+) 0 . map (count . F.seqdata)
+  where
+    rule  = fst (digestionRule cp)
+    count = ((missedCleavages cp + 1) * ) . length . L.findIndices rule
+
+
 --
 -- Translate the amino acid character codes of the database into the
 -- corresponding ion masses in a single, flattened vector.
