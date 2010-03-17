@@ -14,8 +14,8 @@
 module Sequence
   (
     Protein,
-    readFasta, countSeqs,
-    numIons, ionMasses, peptides, digest,
+    readFasta, countSeqs, countIons,
+    ionMasses, peptides, digest,
 
     Fragment(..), fraglabel
   )
@@ -35,7 +35,6 @@ import qualified Codec.Compression.GZip            as GZip
 
 import qualified Data.Vector.Unboxed               as U
 import qualified Data.Vector.Generic               as G
-import qualified Data.Vector.Fusion.Stream         as Stream
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Fusion.Stream.Size    as S
 import Data.Vector.Fusion.Util
@@ -116,9 +115,9 @@ thd3 (_,_,c) = c
 --
 -- Determine the total number of ions represented by the protein sequences
 --
-numIons :: [Protein] -> Int
-{-# INLINE numIons #-}
-numIons = fromIntegral . foldl (+) 0 . map (L.length . F.seqdata)
+countIons :: [Protein] -> Int
+{-# INLINE countIons #-}
+countIons = fromIntegral . foldl (+) 0 . map (L.length . F.seqdata)
 
 --
 -- Translate the amino acid character codes of the database into the
@@ -126,12 +125,11 @@ numIons = fromIntegral . foldl (+) 0 . map (L.length . F.seqdata)
 --
 ionMasses :: ConfigParams -> Int -> [Protein] -> U.Vector Float
 {-# INLINE ionMasses #-}
-ionMasses cp n db = G.unstream (ionMassesS cp n db)
-
-ionMassesS :: ConfigParams -> Int -> [Protein] -> Stream.Stream Float
-{-# INLINE_STREAM ionMassesS #-}
-ionMassesS cp n db = S.Stream (return . step) (map F.seqdata db) (S.Exact (delay_inline max n 0))
+ionMasses cp n db = G.unstream ionS
   where
+    {-# INLINE_STREAM ionS #-}
+    ionS = S.Stream (return . step) (map F.seqdata db) (S.Exact (delay_inline max n 0))
+
     {-# INLINE_INNER step #-}
     step []     = S.Done
     step (s:ss) = case L.uncons s of
@@ -145,13 +143,12 @@ ionMassesS cp n db = S.Stream (return . step) (map F.seqdata db) (S.Exact (delay
 --
 seqOffset :: [Protein] -> U.Vector Int
 {-# INLINE seqOffset #-}
-seqOffset = G.unstream . seqOffsetS
-
-seqOffsetS :: [Protein] -> Stream.Stream Int
-{-# INLINE_STREAM seqOffsetS #-}
-seqOffsetS db = S.prescanl' (+) 0
-              $ S.Stream (return . step) (map F.seqdata db) S.Unknown
+seqOffset = G.unstream . offsetS
   where
+    {-# INLINE_STREAM offsetS #-}
+    offsetS db = S.prescanl' (+) 0
+               $ S.Stream (return . step) (map F.seqdata db) S.Unknown
+
     {-# INLINE_INNER step #-}
     step []     = S.Done
     step (s:ss) = S.Yield (fromIntegral (L.length s)) ss
