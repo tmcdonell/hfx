@@ -22,7 +22,6 @@ import Utils
 import Config
 
 import Prelude                          hiding (lookup)
-import Data.Int
 import Data.List                        (unfoldr, isSuffixOf)
 import Data.Word
 import Control.Monad                    (foldM)
@@ -95,11 +94,11 @@ type SKey = Int32
 --
 data SequenceDB = SeqDB
   {
-    dbHeader  :: V.Vector L.ByteString,          -- sequence ion description headers
-    dbIon     :: U.Vector Word8,                 -- flattened array of amino character codes
-    dbIonSeg  :: U.Vector Int32,                 -- segmenting information for ions
-    dbFrag    :: U.Vector (Float, Int32, Int32), -- (residual mass, c-idx, n-idx)
-    dbFragSeg :: U.Vector Int32                  -- fragment segmenting information for deriving parent
+    dbHeader  :: V.Vector L.ByteString,            -- sequence ion description headers
+    dbIon     :: U.Vector Word8,                   -- flattened array of amino character codes
+    dbIonSeg  :: U.Vector Word32,                  -- segmenting information for ions
+    dbFrag    :: U.Vector (Float, Word32, Word32), -- (residual mass, c-idx, n-idx)
+    dbFragSeg :: U.Vector Word32                   -- fragment segmenting information for deriving parent
   }
   deriving Show
 
@@ -109,11 +108,11 @@ data SequenceDB = SeqDB
 --
 data DeviceSeqDB = DevDB
   {
-    dbNumIons  :: Int,
+    dbNumIon   :: Int,
     dbNumFrag  :: Int,
     dbIonMass  :: CUDA.DevicePtr Float,
     dbResidual :: CUDA.DevicePtr Float,
-    dbTerminal :: (CUDA.DevicePtr Int32, CUDA.DevicePtr Int32)
+    dbTerminal :: (CUDA.DevicePtr Word32, CUDA.DevicePtr Word32)
   }
   deriving Show
 
@@ -251,7 +250,7 @@ ionSeq n db
   $ S.fromList (concatMap (L.unpack . F.seqdata) db) `S.sized` S.Exact n
 
 
-ionSeg :: Int -> [Protein] -> U.Vector Int32
+ionSeg :: Int -> [Protein] -> U.Vector Word32
 {-# INLINE ionSeg #-}
 ionSeg n db
   = G.unstream
@@ -266,7 +265,7 @@ ionSeg n db
 -- mass of the water molecule released in forming the peptide bond (plus one;
 -- from Eq. 1 of Eng.[1])
 --
-digest :: ConfigParams -> U.Vector Word8 -> (Int32,Int32) -> [(Float,Int32,Int32)]
+digest :: ConfigParams -> U.Vector Word8 -> (Word32,Word32) -> [(Float,Word32,Word32)]
 {-# INLINE digest #-}
 digest cp ions (!x,!y) = filter (inrange . fst3) . splice cp . fragment cp x $ segment
   where
@@ -279,7 +278,7 @@ digest cp ions (!x,!y) = filter (inrange . fst3) . splice cp . fragment cp x $ s
 -- total residual mass of the fragment, together with the indices of the C- and
 -- N- terminals in global index coordinates.
 --
-fragment :: ConfigParams -> Int32 -> U.Vector Word8 -> [(Float,Int32,Int32)]
+fragment :: ConfigParams -> Word32 -> U.Vector Word8 -> [(Float,Word32,Word32)]
 {-# INLINE fragment #-}
 fragment cp gid ions = unfoldr step (gid,ions)
   where
@@ -300,7 +299,7 @@ fragment cp gid ions = unfoldr step (gid,ions)
 -- Generate additional sequences from missed cleavages of sequential, adjacent
 -- peptide fragments.
 --
-splice :: ConfigParams -> [(Float,Int32,Int32)] -> [(Float,Int32,Int32)]
+splice :: ConfigParams -> [(Float,Word32,Word32)] -> [(Float,Word32,Word32)]
 {-# INLINE splice #-}
 splice cp = loop
   where
