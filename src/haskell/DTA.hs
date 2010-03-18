@@ -79,10 +79,10 @@ eol =  try (string "\n\r")
 --
 -- Encase the values read from the DTA file into a data structure
 --
-mkSpec :: [(Float,Float)] -> Either String Spectrum
-mkSpec []           =  Left "Error: empty spectrum"
-mkSpec ((m,c):ss)
-    | trunc' c /= c =  Left "Error: invalid peptide charge state\nexpecting integer"
+mkSpec :: FilePath -> [(Float,Float)] -> Either String Spectrum
+mkSpec name []      =  Left ("Error parsing file: " ++ show name ++ "\nempty spectrum")
+mkSpec name ((m,c):ss)
+    | trunc' c /= c =  Left ("Error parsing file: " ++ show name ++ "\ninvalid peptide charge state\nexpecting integer")
     | otherwise     =  Right (Spectrum pcr c ss)
     where
         pcr    = (m - 1) / c + massH
@@ -100,5 +100,5 @@ readDTA name =  do
     dta <- parseFromFile dtaFile name
     case dta of
         Left  e -> return (Left ("Error parsing file: " ++ show e))
-        Right s -> return (mkSpec s)
+        Right s -> return (mkSpec name s)
 
