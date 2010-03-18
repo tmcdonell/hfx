@@ -8,36 +8,25 @@
 --
 --------------------------------------------------------------------------------
 
-module Location (SeqMap(..), lookupSeq) where
+module Location (SKey, lookup) where
 
 
 import Mass
+import Utils
 import Sequence
 
-import Data.Int
-import Data.Word
+import Prelude                          hiding (lookup)
 import Numeric.Search.Range
 
-import qualified Bio.Sequence               as F
-import qualified Data.ByteString.Lazy.Char8 as L
-import qualified Data.Vector                as V
-import qualified Data.Vector.Unboxed        as U
-import qualified Data.Vector.Generic        as G
+import qualified Data.ByteString.Lazy   as L
+import qualified Data.Vector.Generic    as G
 
 
-data SeqMap = SeqMap
-  {
-    smSeqs      :: V.Vector Protein,
-    smZones     :: U.Vector Int,
-    smResiduals :: U.Vector Float,
-    smOffset    :: U.Vector Word32,
-    smTerminals :: U.Vector (Word32, Word32)
-  }
-
+type SKey = Int
 
 --
 -- Find the last index in the ordered array whose value is less than or equal to
--- the given search element.
+-- the given search element. Binary search, O(log n).
 --
 searchVector :: (Ord a, G.Vector v a) => v a -> a -> Maybe Int
 searchVector vec x =
@@ -45,31 +34,22 @@ searchVector vec x =
 
 
 --
--- Extract an amino acid sequence between the given terminals, including the
--- flanking residuals (if present)
+-- Locate a particular sequence in the database
 --
-slice :: L.ByteString -> (Int64,Int64) -> L.ByteString
-slice s (c,n) = L.pack [ca,'.'] `L.append` aa `L.append` L.pack ['.',na]
-  where
-    aa = L.take (n-c+1) . L.drop c $ s
-    l  = L.length s - 2
-    ca = if c > 0 then L.index s (c-1) else '-'
-    na = if n < l then L.index s (n+1) else '-'
+lookup :: SequenceDB -> SKey -> Maybe Fragment
+lookup db k = do
+  -- Index of the sequence this fragment derives from
+  --
+  seqIdx <- searchVector (G.tail (dbFragSeg db)) (fromIntegral k)
 
+  -- Extract the supporting information for the fragment
+  --
+  let (res,c,n) = dbFrag db G.! k
+      [a,b]     = G.toList $ G.slice seqIdx 2 (dbIonSeg db)
+      hdr       = dbHeader db G.! seqIdx
+      aa        = G.toList $ G.slice (fromIntegral c) (fromIntegral (n-c+1)) (dbIon db)
+      ca        = if c > a   then dbIon db G.! (fromIntegral c-1) else c2w '-'
+      na        = if n < b-1 then dbIon db G.! (fromIntegral n+2) else c2w '-'
 
---
--- Locate a fragment from its index key, returning the parent description text
--- and sequence representation, including flanking residuals.
---
-lookupSeq :: SeqMap -> Int -> Maybe Fragment
-lookupSeq sm key = do
-  idx <- searchVector (smZones sm) key
-  pro <- smSeqs sm `G.indexM` idx
-  let o     = smOffset sm    G.! idx
-      (c,n) = smTerminals sm G.! key
-      res   = smResiduals sm G.! key + massH2O + massH
-      aa    = slice (F.seqdata pro) (fromIntegral (c-o), fromIntegral (n-o))
-      hdr   = F.seqheader pro
-
-  return $ Fragment res hdr aa
+  return $ Frag (res + massH + massH2O) hdr (L.pack $ [ca,c2w '.'] ++ aa ++ [c2w '.',na])
 

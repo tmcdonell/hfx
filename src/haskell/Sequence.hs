@@ -12,8 +12,8 @@
 
 module Sequence
   (
-    SequenceDB(..), DeviceSeqDB(..), Fragment(..), SKey,
-    makeSeqDB, withDeviceDB, lookup, fraglabel
+    SequenceDB(..), DeviceSeqDB(..), Fragment(..),
+    makeSeqDB, withDeviceDB, fraglabel
   )
   where
 
@@ -87,8 +87,6 @@ countSeqs fp = length . headers . prepare <$> L.readFile fp
 -- Sequences
 --------------------------------------------------------------------------------
 
-type SKey = Int32
-
 --
 -- A collection of protein sequences
 --
@@ -115,13 +113,6 @@ data DeviceSeqDB = DevDB
     dbTerminal :: (CUDA.DevicePtr Word32, CUDA.DevicePtr Word32)
   }
   deriving Show
-
-
---
--- Locate a particular sequence in the database
---
-lookup :: SKey -> SequenceDB -> Maybe Fragment
-lookup =  undefined
 
 
 --
