@@ -76,11 +76,11 @@ readFasta fp = map F.castToAmino . F.mkSeqs . LC.lines . prepare <$> L.readFile 
 --
 countSeqs :: FilePath -> IO Int
 {-# INLINE countSeqs #-}
-countSeqs fp = length . headers . prepare <$> L.readFile fp
+countSeqs fp = length . describe . prepare <$> L.readFile fp
   where
-    headers = filter (('>' ==) . LC.head) . filter (not . L.null) . LC.lines
-    prepare = if ".gz" `isSuffixOf` fp then GZip.decompress
-                                       else id
+    describe = filter (('>' ==) . LC.head) . filter (not . L.null) . LC.lines
+    prepare  = if ".gz" `isSuffixOf` fp then GZip.decompress
+                                        else id
 
 
 --------------------------------------------------------------------------------
