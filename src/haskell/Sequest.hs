@@ -29,62 +29,21 @@ import Match
 import Config
 import Spectrum
 import Sequence
-import Location
 
 import Data.Word
 import Data.Maybe
 import Control.Monad
-import Foreign.CUDA (DevicePtr)
+import Prelude                                  hiding (lookup)
 
-import qualified Bio.Sequence                   as F
-import qualified Data.ByteString.Lazy.Char8     as L
+import Foreign.CUDA (DevicePtr)
 import qualified Data.Vector.Generic            as G
 import qualified Foreign.CUDA                   as CUDA
 import qualified Foreign.CUDA.Utils             as CUDA
 import qualified Foreign.CUDA.Algorithms        as CUDA
 
 
---------------------------------------------------------------------------------
--- Data Structures
---------------------------------------------------------------------------------
-
 type Candidates      = (DevicePtr Word32, Int)
 type XCorrSpecThry   = DevicePtr Word32
-
-data ProteinDatabase = PDB
-  {
-    dbNumIons     :: Int,
-    dbNumPeptides :: Int,
-    dbResiduals   :: DevicePtr Float,
-    dbIonMasses   :: DevicePtr Float,
-    dbTerminals   :: (DevicePtr Word32, DevicePtr Word32),
-
-    dbLookup      :: (Int -> Maybe Fragment)
-  }
-  deriving Show
-
---------------------------------------------------------------------------------
--- Database Generation
---------------------------------------------------------------------------------
-
---
--- Transfer sequence data to the graphics device in a suitable format.
---
-withSeqs :: ConfigParams -> [Protein] -> (ProteinDatabase -> IO a) -> IO a
-withSeqs cp db action =
-  CUDA.withVector ions $ \d_ions ->
-  CUDA.withVector res  $ \d_res  ->
-  CUDA.withVector ct   $ \d_ct   ->
-  CUDA.withVector nt   $ \d_nt   ->
-  action $ PDB (G.length ions) (G.length res) d_res d_ions (d_ct,d_nt) (lookupSeq seqmap)
-  where
-    ions        = ionMasses cp db
-    (res,ct,nt) = G.unzip3 $ peptides cp db
-
-    seqmap      = SeqMap (G.fromList db) (zones db) res (offset db) (G.zip ct nt)
-    offset      = G.fromList . scanl (+) 0 . map (fromIntegral . L.length . F.seqdata)
-    zones       = G.fromList . scanl1 (+) . map (length . digest cp)
-
 
 --------------------------------------------------------------------------------
 -- Search
@@ -94,14 +53,14 @@ withSeqs cp db action =
 -- Search an amino acid sequence database to find the most likely matches to a
 -- given experimental spectrum.
 --
-searchForMatches :: ConfigParams -> ProteinDatabase -> Spectrum -> IO MatchCollection
-searchForMatches cp db dta =
-  findCandidates cp db dta                                  $ \candidates ->
-  mkSpecXCorr db candidates (charge dta) (G.length specExp) $ \specThry   ->
+searchForMatches :: ConfigParams -> SequenceDB -> DeviceSeqDB -> Spectrum -> IO MatchCollection
+searchForMatches cp sdb ddb dta =
+  findCandidates cp ddb dta                                  $ \candidates ->
+  mkSpecXCorr ddb candidates (charge dta) (G.length specExp) $ \specThry   ->
   mapMaybe lookupF `fmap` sequestXC cp candidates specExp specThry
   where
     specExp       = buildExpSpecXCorr cp dta
-    lookupF (s,i) = liftM (flip Match s) (dbLookup db i)
+    lookupF (s,i) = liftM (flip Match s) (lookup sdb i)
 
 
 --
@@ -111,12 +70,12 @@ searchForMatches cp db dta =
 -- This generates a device array containing the indices of the relevant
 -- sequences, together with the number of candidates found.
 --
-findCandidates :: ConfigParams -> ProteinDatabase -> Spectrum -> (Candidates -> IO b) -> IO b
+findCandidates :: ConfigParams -> DeviceSeqDB -> Spectrum -> (Candidates -> IO b) -> IO b
 findCandidates cp db dta action =
   CUDA.allocaArray np $ \d_idx ->
-  CUDA.findIndicesInRange (dbResiduals db) d_idx np (mass-delta) (mass+delta) >>= action . (d_idx,)
+  CUDA.findIndicesInRange (dbResidual db) d_idx np (mass-delta) (mass+delta) >>= action . (d_idx,)
   where
-    np    = dbNumPeptides db
+    np    = dbNumFrag db
     delta = massTolerance cp
     mass  = (precursor dta * charge dta) - ((charge dta * massH) - 1) - (massH + massH2O)
 
@@ -129,13 +88,13 @@ findCandidates cp db dta action =
 -- On the device, this is stored as a dense matrix, each row corresponding to a
 -- single sequence.
 --
-mkSpecXCorr :: ProteinDatabase -> Candidates -> Float -> Int -> (XCorrSpecThry -> IO b) -> IO b
+mkSpecXCorr :: DeviceSeqDB -> Candidates -> Float -> Int -> (XCorrSpecThry -> IO b) -> IO b
 mkSpecXCorr db (d_idx, nIdx) chrg len action =
   CUDA.allocaArray n $ \d_spec -> do
     let bytes = fromIntegral $ n * CUDA.sizeOfPtr d_spec
 
     CUDA.memset  d_spec bytes 0
-    CUDA.addIons d_spec (dbResiduals db) (dbIonMasses db) (dbTerminals db) d_idx nIdx ch len
+    CUDA.addIons d_spec (dbResidual db) (dbIonMass db) (dbTerminal db) d_idx nIdx ch len
 
     action d_spec
   where

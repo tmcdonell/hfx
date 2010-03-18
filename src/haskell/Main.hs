@@ -14,7 +14,7 @@ module Main where
 -- Custom libraries
 --
 import DTA
-import Utils
+import Time
 import Config
 import Sequest
 import Sequence
@@ -23,10 +23,14 @@ import PrettyPrint
 --
 -- System libraries
 --
-import Control.Monad            (when)
-import System.Environment       (getArgs)
+import Data.Maybe
+import Control.Monad
+import System.Environment
 import System.IO
-import qualified Foreign.CUDA   as CUDA
+import Prelude                          hiding (lookup)
+
+import qualified Data.Vector.Generic    as G
+import qualified Foreign.CUDA           as CUDA
 
 
 --------------------------------------------------------------------------------
@@ -43,28 +47,48 @@ defaultConfigFile =  "sequest.params"
 
 main :: IO ()
 main = do
-  (cp,files) <- sequestConfig defaultConfigFile =<< getArgs
-  sequences  <- maybe (error "Protein database not specified") readFasta (databasePath cp)
+  (cp,dta) <- sequestConfig defaultConfigFile =<< getArgs
+  let fp   = fromMaybe (error "Protein database not specified") (databasePath cp)
 
   when (verbose cp && not (useCPU cp)) $ do
     dev   <- CUDA.get
     props <- CUDA.props dev
-    hPutStrLn stderr $ "> device " ++ shows dev ": "
-                                   ++ CUDA.deviceName props
-                                   ++ " (compute " ++ shows (CUDA.computeCapability props) ")"
+    hPutStrLn stderr $ "device " ++ shows dev ": "
+                                 ++ CUDA.deviceName props
+                                 ++ ", compute " ++ show (CUDA.computeCapability props)
 
-  withSeqs cp sequences $ \pdb -> mapM_ (search cp pdb) files
+  --
+  -- Load the proteins from file, marshal to the device, and then get to work!
+  --
+  sdb <- makeSeqDB' cp fp
+  withDeviceDB cp sdb $ forM_ dta . search cp sdb
+
+
+makeSeqDB' :: ConfigParams -> FilePath -> IO SequenceDB
+{-# INLINE makeSeqDB' #-}
+makeSeqDB' cp fp = do
+  when (verbose cp) $ hPutStr stderr "loading database ... " >> hFlush stdout
+  (t,sdb) <- bracketTime $ makeSeqDB cp fp
+
+  when (verbose cp) $ do
+    hPutStrLn stderr $ "done (" ++ showTime t ++ ")"
+    hPutStrLn stderr $ "  " ++ shows (G.length (dbHeader sdb)) " proteins"
+    hPutStrLn stderr $ "  " ++ shows (G.length (dbFrag   sdb)) " fragments"
+
+  return sdb
 
 
 --
 -- Search the protein database for a match to the experimental spectra
 --
-search :: ConfigParams -> ProteinDatabase -> FilePath -> IO ()
-search cp pdb fp = do
-  dta     <- forceEitherStr `fmap` readDTA fp
-  matches <- searchForMatches cp pdb dta
+search :: ConfigParams -> SequenceDB -> DeviceSeqDB -> FilePath -> IO ()
+search cp sdb ddb fp = do
+  readDTA fp >>= \r -> case r of
+    Left  s   -> hPutStrLn stderr s
+    Right dta -> do
+      matches <- searchForMatches cp sdb ddb dta
 
-  printConfig cp fp dta
-  printResults       $! take (numMatches cp)       matches
-  printResultsDetail $! take (numMatchesDetail cp) matches
+      printConfig cp fp dta
+      printResults       $! take (numMatches cp)       matches
+      printResultsDetail $! take (numMatchesDetail cp) matches
 
