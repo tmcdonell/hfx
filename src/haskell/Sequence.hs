@@ -12,8 +12,8 @@
 
 module Sequence
   (
-    SequenceDB(..), Fragment(..), SKey,
-    makeSeqDB, lookup, fraglabel
+    SequenceDB(..), DeviceSeqDB(..), Fragment(..), SKey,
+    makeSeqDB, withDeviceDB, lookup, fraglabel
   )
   where
 
@@ -40,6 +40,9 @@ import qualified Data.Vector.Generic            as G
 import qualified Data.Vector.Generic.Mutable    as GM
 import qualified Data.Vector.Fusion.Stream      as S
 import qualified Data.Vector.Fusion.Stream.Size as S
+
+import qualified Foreign.CUDA                   as CUDA
+import qualified Foreign.CUDA.Utils             as CUDA
 
 #define PHASE_STREAM [1]
 #define PHASE_INNER  [0]
@@ -101,6 +104,21 @@ data SequenceDB = SeqDB
   deriving Show
 
 --
+-- An extension of the above referencing memory actually stored on the graphics
+-- device. Meant to be used in tandem.
+--
+data DeviceSeqDB = DevDB
+  {
+    dbNumIons  :: Int,
+    dbNumFrag  :: Int,
+    dbIonMass  :: CUDA.DevicePtr Float,
+    dbResidual :: CUDA.DevicePtr Float,
+    dbTerminal :: (CUDA.DevicePtr Int32, CUDA.DevicePtr Int32)
+  }
+  deriving Show
+
+
+--
 -- Locate a particular sequence in the database
 --
 lookup :: SKey -> SequenceDB -> Maybe Fragment
@@ -128,7 +146,7 @@ makeSeqDB cp fp = do
   fs <- GM.new (ns+1)           -- include the zero index
 
   --
-  -- OPT: make versions that operate directly from (boxed) streams?
+  -- OPT: make versions that operate directly from (unboxed) streams?
   --
   let put !i !v = do GM.unsafeWrite f i v
                      return (i+1)
@@ -149,6 +167,24 @@ makeSeqDB cp fp = do
   fs' <- G.unsafeFreeze fs
 
   return $ SeqDB hdr ions iseg f' fs'
+
+
+--
+-- Transfer sequence data to the graphics device and execute some computation
+--
+withDeviceDB :: ConfigParams -> SequenceDB -> (DeviceSeqDB -> IO a) -> IO a
+{-# INLINE withDeviceDB #-}
+withDeviceDB cp sdb action =
+  let (r,c,n) = G.unzip3 (dbFrag sdb)
+      ions    = G.unstream . S.map (getAAMass cp . w2c) . G.stream $ dbIon sdb :: U.Vector Float
+      numIon  = G.length (dbIon  sdb)
+      numFrag = G.length (dbFrag sdb)
+  in
+    CUDA.withVector r    $ \d_r    ->
+    CUDA.withVector c    $ \d_c    ->
+    CUDA.withVector n    $ \d_n    ->
+    CUDA.withVector ions $ \d_ions ->
+      action (DevDB numIon numFrag d_ions d_r (d_c, d_n))
 
 
 --------------------------------------------------------------------------------
