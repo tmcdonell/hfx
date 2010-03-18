@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Utils
@@ -10,6 +11,14 @@
 
 module Utils where
 
+import Data.Char
+import Data.Word
+
+#if defined(__GLASGOW_HASKELL__)
+import GHC.Base                         (unsafeChr)
+#endif
+
+{-
 import Data.Int
 import Data.Bits
 import Data.List
@@ -106,6 +115,38 @@ stats (x:xs) = finish . foldl' stats' (x,x,x,x*x,1) $ xs
                                   var   = (1/(n-1))*ss - (n/(n-1))*av*av
                                   stdev = sqrt var
                               in (mn, mx, av, var, stdev, n)
+-}
+
+
+--
+-- Extract components from a three-tuple
+--
+fst3 :: (a,b,c) -> a
+fst3 (a,_,_) = a
+{-# INLINE fst3 #-}
+
+snd3 :: (a,b,c) -> b
+snd3 (_,b,_) = b
+{-# INLINE snd3 #-}
+
+thd3 :: (a,b,c) -> c
+thd3 (_,_,c) = c
+{-# INLINE thd3 #-}
+
+--
+-- Conversion between 'Word8' and 'Char'. Should compile to a no-op.
+--
+w2c :: Word8 -> Char
+#if !defined(__GLASGOW_HASKELL__)
+w2c = chr . fromIntegral
+#else
+w2c = unsafeChr . fromIntegral
+#endif
+{-# INLINE w2c #-}
+
+c2w :: Char -> Word8
+c2w = fromIntegral . ord
+{-# INLINE c2w #-}
 
 
 --------------------------------------------------------------------------------

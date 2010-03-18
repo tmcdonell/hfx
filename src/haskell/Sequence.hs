@@ -18,11 +18,11 @@ module Sequence
   where
 
 import Mass
+import Utils
 import Config
 
-import Prelude                                  hiding (lookup)
+import Prelude                          hiding (lookup)
 import Data.Int
-import Data.Char
 import Data.List                        (unfoldr, isSuffixOf)
 import Data.Word
 import Control.Monad                    (foldM)
@@ -41,47 +41,11 @@ import qualified Data.Vector.Generic.Mutable    as GM
 import qualified Data.Vector.Fusion.Stream      as S
 import qualified Data.Vector.Fusion.Stream.Size as S
 
-#if defined(__GLASGOW_HASKELL__)
-import GHC.Base                         (unsafeChr)
-#endif
-
 #define PHASE_STREAM [1]
 #define PHASE_INNER  [0]
 
 #define INLINE_STREAM INLINE PHASE_STREAM
 #define INLINE_INNER  INLINE PHASE_INNER
-
-
---
--- Extract components from a three-tuple
---
-fst3 :: (a,b,c) -> a
-fst3 (a,_,_) = a
-{-# INLINE fst3 #-}
-
-snd3 :: (a,b,c) -> b
-snd3 (_,b,_) = b
-{-# INLINE snd3 #-}
-
-thd3 :: (a,b,c) -> c
-thd3 (_,_,c) = c
-{-# INLINE thd3 #-}
-
---
--- Conversion between 'Word8' and 'Char'. Should compile to a no-op.
---
-w2c :: Word8 -> Char
-#if !defined(__GLASGOW_HASKELL__)
-w2c = chr . fromIntegral
-#else
-w2c = unsafeChr . fromIntegral
-#endif
-{-# INLINE w2c #-}
-
-c2w :: Char -> Word8
-c2w = fromIntegral . ord
-{-# INLINE c2w #-}
-
 
 
 --------------------------------------------------------------------------------
