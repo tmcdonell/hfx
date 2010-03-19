@@ -9,4 +9,6 @@
 #ifndef __FILTER_H__
 #define __FILTER_H__
 
+#define FILTER_ELT_PER_THREAD           4
+
 #endif

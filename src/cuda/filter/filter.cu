@@ -10,6 +10,7 @@
 #include "device.h"
 #include "filter.h"
 #include "algorithms.h"
+#include "cudpp/type_vector.h"
 
 #include <stdint.h>
 
@@ -17,8 +18,11 @@
 static void
 filter_control(uint32_t n, uint32_t &blocks, uint32_t &threads)
 {
-    threads = min(ceilPow2(n), MAX_THREADS);
-    blocks  = min((n + threads - 1) / threads, MAX_BLOCKS);
+    threads = ceilPow2(n + FILTER_ELT_PER_THREAD - 1) / FILTER_ELT_PER_THREAD;
+    threads = min(threads, MAX_THREADS);
+
+    blocks  = (n + threads * FILTER_ELT_PER_THREAD - 1) / (threads * FILTER_ELT_PER_THREAD);
+    blocks  = min(blocks, MAX_BLOCKS);
 }
 
 
@@ -42,13 +46,35 @@ filterInRange_core
     const T             n
 )
 {
-    uint32_t idx;
+    uint32_t            idx;
+    uint4               tmp;
+    uint4               *d_valid4 = (uint4*) d_valid;
+    const uint32_t      len4      = length / FILTER_ELT_PER_THREAD;
+
+    typename typeToVector<T,4>::Result  val;
+    typename typeToVector<T,4>::Result* d_in4 = (typename typeToVector<T,4>::Result*) d_in;
 
     /*
      * Mark elements that pass the predicate with a [0,1] head flag. Can not
      * store the index directly, as `compact' needs to scan this result. Boo.
      */
-    for (idx = blockIdx.x * blockDim.x + threadIdx.x; idx < length; idx += gridDim.x)
+    for (idx = blockIdx.x * blockDim.x + threadIdx.x; idx < len4; idx += gridDim.x)
+    {
+        val   = d_in4[idx];
+        tmp.x = (m <= val.x && val.x <= n);
+        tmp.y = (m <= val.y && val.y <= n);
+        tmp.z = (m <= val.z && val.z <= n);
+        tmp.w = (m <= val.w && val.w <= n);
+
+        d_valid4[idx] = tmp;
+    }
+
+    /*
+     * Translate the indices back into single-element coordinates. This method
+     * ensures that that successive threads retain sequential indices.
+     */
+    idx += (FILTER_ELT_PER_THREAD - 1) * len4;
+    if (idx < length)
     {
         T val        = d_in[idx];
         d_valid[idx] = (m <= val && val <= n);
