@@ -9,6 +9,4 @@
 #ifndef __PERMUTE_H__
 #define __PERMUTE_H__
 
-#define MAX_THREADS	128
-
 #endif

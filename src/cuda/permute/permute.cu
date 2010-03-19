@@ -7,6 +7,7 @@
  * ---------------------------------------------------------------------------*/
 
 #include "utils.h"
+#include "device.h"
 #include "permute.h"
 #include "algorithms.h"
 
@@ -17,7 +18,7 @@ static void
 permute_control(uint32_t n, uint32_t &blocks, uint32_t &threads)
 {
     threads = min(ceilPow2(n), MAX_THREADS);
-    blocks  = (n + threads - 1) / threads;
+    blocks  = min((n + threads - 1) / threads, MAX_BLOCKS);
 }
 
 
@@ -58,7 +59,7 @@ permute_core
     uint32_t            *num_valid = NULL
 )
 {
-    const uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     /*
      * Return the number of valid entries found
@@ -69,7 +70,7 @@ permute_core
         else          num_valid[0] = valid[length-1] + indices[length-1];
     }
 
-    if (lengthIsPow2 || idx < length)
+    for (; idx < length; idx += gridDim.x)
     {
         if (compact)
         {
