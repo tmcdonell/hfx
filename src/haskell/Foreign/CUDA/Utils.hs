@@ -37,10 +37,10 @@ withVector vec action = let l = G.length vec in
     -- Transfer via a pinned heap array, which the device can read directly at
     -- much higher bandwidth than pageable memory.
     --
-    bracket (CUDA.mallocHostArray [] l) CUDA.freeHost $
-      flip withHostPtr $ \ptr ->
+    bracket (CUDA.mallocHostArray [] l) CUDA.freeHost $ \h_ptr ->
+      withHostPtr h_ptr $ \ptr ->
         Stream.foldM' (\p e -> poke p e >> return (p `advancePtr` 1)) ptr (G.stream vec) >>
-        CUDA.pokeArray l ptr d_ptr
+        CUDA.pokeArrayAsync l h_ptr d_ptr Nothing
 
     -- Release host memory and perform computation on device array
     --
