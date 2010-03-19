@@ -63,7 +63,7 @@ permute_core
     /*
      * Return the number of valid entries found
      */
-    if (compact && threadIdx.x == 0)
+    if (compact && idx == 0)
     {
         if (backward) num_valid[0] = valid[0] + indices[0];
         else          num_valid[0] = valid[length-1] + indices[length-1];
