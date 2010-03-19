@@ -71,9 +71,12 @@ makeSeqDB' cp fp = do
   (t,sdb) <- bracketTime $ makeSeqDB cp fp
 
   when (verbose cp) $ do
+    let lh = G.length (dbHeader sdb)
+        lf = G.length (dbFrag   sdb)
+        li = G.length (dbIon    sdb)
     hPutStrLn stderr $ "done (" ++ showTime t ++ ")"
-    hPutStrLn stderr $ "  " ++ shows (G.length (dbHeader sdb)) " proteins"
-    hPutStrLn stderr $ "  " ++ shows (G.length (dbFrag   sdb)) " fragments"
+    hPutStrLn stderr $ "  " ++ shows lh " proteins, "  ++ showFFloatSI (fromIntegral (li * 4)  :: Double) "B"
+    hPutStrLn stderr $ "  " ++ shows lf " fragments, " ++ showFFloatSI (fromIntegral (lf * 12) :: Double) "B"
 
   return sdb
 
@@ -82,11 +85,12 @@ makeSeqDB' cp fp = do
 -- Search the protein database for a match to the experimental spectra
 --
 search :: ConfigParams -> SequenceDB -> DeviceSeqDB -> FilePath -> IO ()
-search cp sdb ddb fp = do
+search cp sdb ddb fp =
   readDTA fp >>= \r -> case r of
     Left  s   -> hPutStrLn stderr s
     Right dta -> do
-      matches <- searchForMatches cp sdb ddb dta
+      (t,matches) <- bracketTime $ searchForMatches cp sdb ddb dta
+      when (verbose cp) $ hPutStrLn stderr ("elapsed time: " ++ showTime t)
 
       printConfig cp fp dta
       printResults       $! take (numMatches cp)       matches
