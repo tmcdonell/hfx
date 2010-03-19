@@ -7,6 +7,7 @@
  * ---------------------------------------------------------------------------*/
 
 #include "utils.h"
+#include "device.h"
 #include "filter.h"
 #include "algorithms.h"
 
@@ -17,7 +18,7 @@ static void
 filter_control(uint32_t n, uint32_t &blocks, uint32_t &threads)
 {
     threads = min(ceilPow2(n), MAX_THREADS);
-    blocks  = (n + threads - 1) / threads;
+    blocks  = min((n + threads - 1) / threads, MAX_BLOCKS);
 }
 
 
@@ -41,13 +42,13 @@ filterInRange_core
     const T             n
 )
 {
-    const uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    uint32_t idx;
 
     /*
      * Mark elements that pass the predicate with a [0,1] head flag. Can not
      * store the index directly, as `compact' needs to scan this result. Boo.
      */
-    if (lengthIsPow2 || idx < length)
+    for (idx = blockIdx.x * blockDim.x + threadIdx.x; idx < length; idx += gridDim.x)
     {
         T val        = d_in[idx];
         d_valid[idx] = (m <= val && val <= n);

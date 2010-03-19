@@ -9,6 +9,4 @@
 #ifndef __FILTER_H__
 #define __FILTER_H__
 
-#define MAX_THREADS	128
-
 #endif
