@@ -7,7 +7,8 @@
 # ------------------------------------------------------------------------------
 STATIC_LIB      := libpermute.a
 
-CUFILES         := permute.cu
+CUFILES         := permute.cu \
+                   compact.cu
 
 EXTRALIBS       := stdc++
 
