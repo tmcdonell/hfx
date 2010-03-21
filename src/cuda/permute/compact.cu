@@ -98,7 +98,7 @@ static unsigned int
 compact
 (
     const Ta            *d_in,
-    Ta                  *d_out,
+    Tb                  *d_out,
     const uint32_t      *d_flags,
     const uint32_t      length
 )
