@@ -53,9 +53,11 @@ main = do
   when (verbose cp && not (useCPU cp)) $ do
     dev   <- CUDA.get
     props <- CUDA.props dev
-    hPutStrLn stderr $ "device " ++ shows dev ": "
-                                 ++ CUDA.deviceName props
-                                 ++ ", compute " ++ show (CUDA.computeCapability props)
+    hPutStrLn stderr $ "Device " ++ shows dev ": "
+                                 ++ CUDA.deviceName props ++ ", "
+                                 ++ "compute v" ++ shows (CUDA.computeCapability props) ", "
+                                 ++ "global memory: " ++ showFFloatSI2 (fromIntegral $ CUDA.totalGlobalMem props :: Double) "B, "
+                                 ++ "core clock: " ++ showFFloatSI (fromIntegral $ 1000 * CUDA.clockRate props   :: Double) "Hz"
 
   --
   -- Load the proteins from file, marshal to the device, and then get to work!
@@ -67,7 +69,7 @@ main = do
 makeSeqDB' :: ConfigParams -> FilePath -> IO SequenceDB
 {-# INLINE makeSeqDB' #-}
 makeSeqDB' cp fp = do
-  when (verbose cp) $ hPutStr stderr "loading database ... " >> hFlush stdout
+  when (verbose cp) $ hPutStr stderr "Loading database ... " >> hFlush stdout
   (t,sdb) <- bracketTime $ makeSeqDB cp fp
 
   when (verbose cp) $ do
@@ -75,8 +77,8 @@ makeSeqDB' cp fp = do
         lf = G.length (dbFrag   sdb)
         li = G.length (dbIon    sdb)
     hPutStrLn stderr $ "done (" ++ showTime t ++ ")"
-    hPutStrLn stderr $ "  " ++ shows lh " proteins, "  ++ showFFloatSI (fromIntegral (li * 4)  :: Double) "B"
-    hPutStrLn stderr $ "  " ++ shows lf " fragments, " ++ showFFloatSI (fromIntegral (lf * 12) :: Double) "B"
+    hPutStrLn stderr $ "  " ++ shows lh " proteins, "  ++ showFFloatSI2 (fromIntegral (li * 4)  :: Double) "B"
+    hPutStrLn stderr $ "  " ++ shows lf " fragments, " ++ showFFloatSI2 (fromIntegral (lf * 12) :: Double) "B"
 
   return sdb
 
@@ -90,7 +92,7 @@ search cp sdb ddb fp =
     Left  s   -> hPutStrLn stderr s
     Right dta -> do
       (t,matches) <- bracketTime $ searchForMatches cp sdb ddb dta
-      when (verbose cp) $ hPutStrLn stderr ("elapsed time: " ++ showTime t)
+      when (verbose cp) $ hPutStrLn stderr ("Elapsed time: " ++ showTime t)
 
       printConfig cp fp dta
       printResults       $! take (numMatches cp)       matches

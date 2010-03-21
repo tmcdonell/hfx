@@ -58,6 +58,14 @@ showFFloatSI n = showString . nubBy (\a b -> a == ' ' && b == ' ') $ showFFloat 
     pow     = max 0 . min 8 . (+) 4 . floor $ logBase 1000 n
     si_unit = "pnµm kMGT" !! pow
 
+-- base-2
+showFFloatSI2 :: RealFloat a => a -> ShowS
+showFFloatSI2 n = showString . nubBy (\a b -> a == ' ' && b == ' ') $ showFFloat (Just 3) n' [ ' ', si_unit ]
+  where
+    n'      = n / (1024 ^^ (pow-4))
+    pow     = max 0 . min 8 . (+) 4 . floor $ logBase 1024 n
+    si_unit = "pnµm kMGT" !! pow
+
 
 -- Show the rate of "things / second", with SI unit prefix
 --
