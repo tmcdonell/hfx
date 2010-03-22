@@ -11,15 +11,6 @@
 #define __ION_SERIES_H__
 
 /*
- * Based on Tesla C1060 (compute 1.3)
- * http://developer.download.nvidia.com/compute/cuda/CUDA_Occupancy_calculator.xls
- */
-#define WARP_SIZE               32
-#define MAX_THREADS             128
-#define MAX_BLOCKS_PER_SM       8
-#define MAX_BLOCKS              (MAX_BLOCKS_PER_SM * 30)
-
-/*
  * Spectrum bin width
  */
 #define BIN_WIDTH_MONO  1.0005079f

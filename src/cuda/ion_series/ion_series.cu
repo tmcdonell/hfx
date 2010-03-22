@@ -7,6 +7,7 @@
  * ---------------------------------------------------------------------------*/
 
 #include "utils.h"
+#include "device.h"
 #include "ion_series.h"
 #include "algorithms.h"
 
