@@ -50,6 +50,7 @@ filterInRange_core
     uint4               tmp;
     uint4               *d_valid4 = (uint4*) d_valid;
     const uint32_t      len4      = length / FILTER_ELT_PER_THREAD;
+    const uint32_t      gridSize  = __umul24(blockDim.x, gridDim.x);
 
     typename typeToVector<T,4>::Result  val;
     typename typeToVector<T,4>::Result* d_in4 = (typename typeToVector<T,4>::Result*) d_in;
@@ -58,7 +59,7 @@ filterInRange_core
      * Mark elements that pass the predicate with a [0,1] head flag. Can not
      * store the index directly, as `compact' needs to scan this result. Boo.
      */
-    for (idx = blockIdx.x * blockDim.x + threadIdx.x; idx < len4; idx += gridDim.x)
+    for (idx = __umul24(blockIdx.x, blockDim.x) + threadIdx.x; idx < len4; idx += gridSize)
     {
         val   = d_in4[idx];
         tmp.x = (m <= val.x && val.x <= n);
@@ -76,8 +77,8 @@ filterInRange_core
     idx += (FILTER_ELT_PER_THREAD - 1) * len4;
     if (idx < length)
     {
-        T val        = d_in[idx];
-        d_valid[idx] = (m <= val && val <= n);
+        T x          = d_in[idx];
+        d_valid[idx] = (m <= x && x <= n);
     }
 }
 

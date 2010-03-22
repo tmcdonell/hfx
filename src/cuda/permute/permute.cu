@@ -45,9 +45,10 @@ permute_core
     const uint32_t      length
 )
 {
-    uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    uint32_t       idx;
+    const uint32_t gridSize = __umul24(blockDim.x, gridDim.x);
 
-    for (; idx < length; idx += gridDim.x)
+    for (idx = __umul24(blockDim.x, blockIdx.x) + threadIdx.x; idx < length; idx += gridSize)
     {
         if (backward) d_out[idx]          = d_in[indices[idx]];
         else          d_out[indices[idx]] = d_in[idx];

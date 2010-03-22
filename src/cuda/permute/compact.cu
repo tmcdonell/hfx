@@ -54,7 +54,8 @@ compact_core
 )
 {
     const uint32_t      len2      = length / COMPACT_ELT_PER_THREAD;
-    uint32_t            idx       = blockIdx.x * blockDim.x + threadIdx.x;
+    const uint32_t      gridSize  = __umul24(blockDim.x, gridDim.x);
+    uint32_t            idx       = __umul24(blockDim.x, blockIdx.x) + threadIdx.x;
     uint2               *d_valid2 = (uint2*) d_valid;
     uint2               tmp;
     uint32_t            gid;
@@ -68,7 +69,7 @@ compact_core
         else          num_valid[0] = d_valid[length-1] + d_indices[length-1];
     }
 
-    for (; idx < len2; idx += gridDim.x)
+    for (; idx < len2; idx += gridSize)
     {
         gid = idx * COMPACT_ELT_PER_THREAD;
         tmp = d_valid2[idx];
