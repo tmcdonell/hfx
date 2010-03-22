@@ -8,6 +8,7 @@
 STATIC_LIB      := libion_series.a
 
 CUFILES_sm_11   := ion_series.cu
+CUFILES		:= ion_series_inplace.cu
 
 EXTRALIBS       := stdc++
 maxregisters    := 16
