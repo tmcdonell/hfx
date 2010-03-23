@@ -7,8 +7,7 @@
 # ------------------------------------------------------------------------------
 STATIC_LIB      := libradix_sort.a
 
-CUFILES         := radix_sort.cu
-CCFILES         := radix_sort.cpp
+CCFILES         := radix_sort_cudpp.cpp
 
 EXTRALIBS       := stdc++
 
