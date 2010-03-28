@@ -2,7 +2,7 @@
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Foreign.CUDA.Algorithms
--- Copyright : (c) 2010 Trevor L. McDonell
+-- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
 -- FFI Bindings to a collection of algorithms, implemented to run on the

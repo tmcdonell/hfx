@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
 -- |
 -- Module    : DTA
--- Copyright : (c) 2009 Trevor L. McDonell
+-- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
 -- Parse a DTA LC-MS/MS results file.

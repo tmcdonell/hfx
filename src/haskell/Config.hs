@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Config
--- Copyright : (c) 2009 Trevor L. McDonell
+-- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
 -- Functions to process user configuration parameters

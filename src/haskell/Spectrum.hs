@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Spectrum
--- Copyright : (c) 2009 Trevor L. McDonell
+-- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
 -- Data structures and functions to store and manipulate the results of a

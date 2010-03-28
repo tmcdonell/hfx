@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------
  *
  * Module    : Operator
- * Copyright : (c) 2009 Trevor L. McDonell
+ * Copyright : (c) [2009..2010] Trevor L. McDonell
  * License   : BSD
  *
  * A template class for unary/binary kernel operations

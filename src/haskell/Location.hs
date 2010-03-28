@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Location
--- Copyright : (c) 2010 Trevor L. McDonell
+-- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
 -- Locate sequences fragments from index keys

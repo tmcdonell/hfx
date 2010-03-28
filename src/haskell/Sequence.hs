@@ -1,9 +1,8 @@
-{-# LANGUAGE CPP          #-}
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns, CPP #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Sequence
--- Copyright : (c) 2010 Trevor L. McDonell
+-- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
 -- Reading and processing sequence related stuff
