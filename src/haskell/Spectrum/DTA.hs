@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- |
--- Module    : DTA
+-- Module    : Spectrum.DTA
 -- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
@@ -17,17 +17,12 @@
 --
 --------------------------------------------------------------------------------
 
-module DTA
-    (
-      Spectrum(..),     -- Data structure
-      readDTA           -- File formats
-    ) where
+module Spectrum.DTA (readDTA) where
 
 import Mass
 import Spectrum
+import Spectrum.Parsec
 
-import Numeric
-import Control.Monad (liftM2)
 import Text.ParserCombinators.Parsec
 
 
@@ -42,40 +37,6 @@ import Text.ParserCombinators.Parsec
 dtaFile :: RealFrac a => Parser [(a,a)]
 dtaFile =  endBy line eol
 
--- 
--- Each line contains exactly two data values, separated by white space. These
--- are returned as a pair of (mass/charge ratio, intensity) values. Detecting
--- signed values isn't really necessary, but is done for completeness.
---
-line :: RealFrac a => Parser (a,a)
-line =  liftM2 (,) fval fval
-    where fval = (fst . head . readSigned readFloat) `fmap` value
-
---
--- Each value is a floating point number. Discard any leading white space
--- encountered.
---
-value :: Parser String
-value =  skipMany (oneOf " \t") >> getValue
-    where getValue =  many1 (digit <|> char '.' <|> char '-')
-                  <?> "floating-point number"
-
---
--- The end of line character. Different operating systems use different
--- characters to mark the end-of-line, so just look for all combinations
---
-eol :: Parser String
-eol =  try (string "\n\r")
-   <|> try (string "\r\n")
-   <|> string "\r"
-   <|> string "\n"
-   <?> "end of line"
-
-
---------------------------------------------------------------------------------
--- Spectrum
---------------------------------------------------------------------------------
-
 --
 -- Encase the values read from the DTA file into a data structure
 --
@@ -87,6 +48,7 @@ mkSpec name ((m,c):ss)
     where
         pcr    = (m - 1) / c + massH
         trunc' = fromInteger . truncate
+
 
 --------------------------------------------------------------------------------
 -- File I/O
