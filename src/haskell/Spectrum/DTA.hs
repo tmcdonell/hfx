@@ -23,6 +23,8 @@ import Mass
 import Spectrum
 import Spectrum.Parsec
 
+import Data.Vector.Unboxed  (fromList)
+import Data.ByteString.Lazy (empty)
 import Text.ParserCombinators.Parsec
 
 
@@ -40,11 +42,11 @@ dtaFile =  endBy line eol
 --
 -- Encase the values read from the DTA file into a data structure
 --
-mkSpec :: FilePath -> [(Float,Float)] -> Either String Spectrum
+mkSpec :: FilePath -> [(Float,Float)] -> Either String MS2Data
 mkSpec name []      =  Left ("Error parsing file: " ++ show name ++ "\nempty spectrum")
 mkSpec name ((m,c):ss)
     | trunc' c /= c =  Left ("Error parsing file: " ++ show name ++ "\ninvalid peptide charge state\nexpecting integer")
-    | otherwise     =  Right (Spectrum pcr c ss)
+    | otherwise     =  Right (MS2Data empty pcr c (fromList ss))
     where
         pcr    = (m - 1) / c + massH
         trunc' = fromInteger . truncate
@@ -55,9 +57,9 @@ mkSpec name ((m,c):ss)
 --------------------------------------------------------------------------------
 
 --
--- Read the given file and return either an error or the MS/MS spectrum data.
+-- Read the given file and return either an error or the MS/MS data.
 --
-readDTA :: FilePath -> IO (Either String Spectrum)
+readDTA :: FilePath -> IO (Either String MS2Data)
 readDTA name =  do
     dta <- parseFromFile dtaFile name
     case dta of
