@@ -18,6 +18,7 @@ module Config
 
 import Mass
 import Utils.Misc
+import Utils.Parsec
 
 import Control.Monad
 import Data.Char
@@ -339,60 +340,12 @@ getDigestionRule _  = error "getDigestionRule: unknown enzyme digestion rule"
 --------------------------------------------------------------------------------
 
 --
--- The left hand side of an identifier is a C-like string, which must begin with
--- a letter or underscore, and may subsequently also contain numbers and dashes.
---
-identifier :: Parser String
-identifier =
-    do  c  <- letter <|> char '_'
-        cs <- many (letter <|> digit <|> char '_' <|> char '-')
-        return (c:cs)
-    <?> "identifier"
-
---
--- The right hand side is any sequence of characters until the end of line or
--- the newline symbol, stripping trailing whitespace
---
-value :: Parser String
-value =
-    do  c  <- noneOf "#\n\r"
-        cs <- manyTill anyChar (try comment <|> try eol <|> eof)
-        return (c:cs)
-    <?> "value"
-
---
--- Comments begin with the pound sign, and continue to the end of the line
---
-comment :: Parser ()
-comment =  char '#' >> skipMany (noneOf "\n\r")
-       <?> "comment"
-
---
--- The end of line character. Different operating systems use different
--- characters to mark the end-of-line, so just look for all combinations
---
-eol :: Parser ()
-eol =  many1 (oneOf "\n\r") >> return ()
-   <?> "end of line"
-
-
---
--- A configuration key/value pair
---
-item :: Parser (String, String)
-item = liftM2 (\k v -> (k, rstrip v)) key val
-    where
-        key    = skipMany space >> identifier
-        val    = skipMany space >> char '=' >> skipMany space >> value
-        rstrip = reverse . dropWhile isSpace . reverse
-
---
 -- A line can be a empty, contain a comment, or a configuration item
 --
 line :: Parser (Maybe (String, String))
 line =  skipMany space >> content
     where content =  try (comment >> return Nothing)
-                 <|> Just `fmap` item
+                 <|> Just `fmap` keyval
 
 --
 -- Get just the name/value pairs from the file

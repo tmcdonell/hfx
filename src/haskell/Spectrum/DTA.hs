@@ -21,7 +21,7 @@ module Spectrum.DTA (readDTA) where
 
 import Mass
 import Spectrum
-import Spectrum.Parsec
+import Utils.Parsec
 
 import Data.Vector.Unboxed  (fromList)
 import Data.ByteString.Lazy (empty)
@@ -37,7 +37,7 @@ import Text.ParserCombinators.Parsec
 -- end-of-line character (eol)
 --
 dtaFile :: RealFrac a => Parser [(a,a)]
-dtaFile =  endBy line eol
+dtaFile =  endBy readF2 eol
 
 --
 -- Encase the values read from the DTA file into a data structure
