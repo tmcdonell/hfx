@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- |
--- Module    : IonSeries
+-- Module    : Sequence.IonSeries
 -- Copyright : (c) 2009 Trevor L. McDonell
 -- License   : BSD
 --
@@ -10,7 +10,7 @@
 --
 --------------------------------------------------------------------------------
 
-module IonSeries
+module Sequence.IonSeries
   (
     XCorrSpecThry,
     buildThrySpecXCorr
