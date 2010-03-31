@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- |
--- Module    : Location
+-- Module    : Sequence.Location
 -- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
@@ -8,8 +8,7 @@
 --
 --------------------------------------------------------------------------------
 
-module Location (SKey, lookup) where
-
+module Sequence.Location (SKey, lookup) where
 
 import Mass
 import Sequence

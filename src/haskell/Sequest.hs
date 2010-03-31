@@ -29,7 +29,7 @@ import Match
 import Config
 import Spectrum
 import Sequence
-import Location
+import Sequence.Location
 
 import Data.Word
 import Data.Maybe
