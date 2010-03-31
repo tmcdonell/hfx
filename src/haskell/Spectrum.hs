@@ -52,4 +52,5 @@ data MS2Data  = MS2Data
     ms2charge    :: Float,              -- Peptide charge state
     ms2data      :: U.Vector Peak       -- The actual mass/charge ratio intensity measurements
   }
+  deriving (Eq, Show)
 
