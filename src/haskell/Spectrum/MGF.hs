@@ -16,7 +16,7 @@
 module Spectrum.MGF (readMGF) where
 
 import Mass
-import Utils.Parsec
+import Util.Parsec
 import Spectrum.Data
 
 import Numeric

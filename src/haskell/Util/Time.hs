@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 --
--- Module    : Utils.Time
+-- Module    : Util.Time
 -- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
@@ -8,7 +8,7 @@
 --
 --------------------------------------------------------------------------------
 
-module Utils.Time where
+module Util.Time where
 
 import System.CPUTime
 import Control.Monad

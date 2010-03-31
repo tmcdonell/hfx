@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 --------------------------------------------------------------------------------
 -- |
--- Module    : Utils.Misc
+-- Module    : Util.Misc
 -- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
@@ -9,7 +9,7 @@
 --
 --------------------------------------------------------------------------------
 
-module Utils.Misc where
+module Util.Misc where
 
 import Data.Char
 import Data.Word

@@ -18,7 +18,7 @@ module Sequence
 
 import Mass
 import Config
-import Utils.Misc
+import Util.Misc
 
 import Prelude                          hiding (lookup)
 import Data.List                        (unfoldr, isSuffixOf)
@@ -40,7 +40,7 @@ import qualified Data.Vector.Fusion.Stream      as S
 import qualified Data.Vector.Fusion.Stream.Size as S
 
 import qualified Foreign.CUDA                   as CUDA
-import qualified Foreign.CUDA.Utils             as CUDA
+import qualified Foreign.CUDA.Util              as CUDA
 
 #define PHASE_STREAM [1]
 #define PHASE_INNER  [0]

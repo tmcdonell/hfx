@@ -19,7 +19,7 @@ module Foreign.CUDA.Algorithms
   )
   where
 
-import Utils.C2HS
+import Util.C2HS
 import Data.Word
 import Foreign
 import Foreign.CUDA                             (DevicePtr, withDevicePtr)

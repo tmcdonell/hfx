@@ -1,12 +1,12 @@
 --------------------------------------------------------------------------------
 -- |
--- Module    : Foreign.CUDA.Utils
+-- Module    : Foreign.CUDA.Util
 -- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
 --------------------------------------------------------------------------------
 
-module Foreign.CUDA.Utils where
+module Foreign.CUDA.Util where
 
 import Foreign
 import Control.Exception

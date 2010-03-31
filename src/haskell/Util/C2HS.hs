@@ -34,7 +34,7 @@
 --  with the C->HS-specific higher-level marshalling routines.
 --
 
-module Utils.C2HS (
+module Util.C2HS (
 
   -- * Re-export the language-independent component of the FFI 
 --  module Foreign,

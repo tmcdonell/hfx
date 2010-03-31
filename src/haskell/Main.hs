@@ -13,13 +13,13 @@ module Main where
 --
 -- Custom libraries
 --
-import DTA
 import Config
 import Sequest
 import Sequence
-import Utils.Time
-import Utils.Show
-import Utils.PrettyPrint
+import Spectrum
+import Util.Time
+import Util.Show
+import Util.PrettyPrint
 
 --
 -- System libraries

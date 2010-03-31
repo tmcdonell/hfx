@@ -13,7 +13,7 @@ module Location (SKey, lookup) where
 
 import Mass
 import Sequence
-import Utils.Misc
+import Util.Misc
 
 import Prelude                          hiding (lookup)
 import Numeric.Search.Range

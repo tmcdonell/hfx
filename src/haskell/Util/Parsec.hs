@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- |
--- Module    : Utils.Parsec
+-- Module    : Util.Parsec
 -- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
@@ -8,7 +8,7 @@
 --
 --------------------------------------------------------------------------------
 
-module Utils.Parsec
+module Util.Parsec
   where
 
 import Numeric

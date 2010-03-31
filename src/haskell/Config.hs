@@ -17,8 +17,8 @@ module Config
   where
 
 import Mass
-import Utils.Misc
-import Utils.Parsec
+import Util.Misc
+import Util.Parsec
 
 import Control.Monad
 import Data.Char

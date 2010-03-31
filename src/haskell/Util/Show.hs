@@ -1,16 +1,16 @@
 --------------------------------------------------------------------------------
 --
--- Module    : Utils.Show
+-- Module    : Util.Show
 -- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
 --------------------------------------------------------------------------------
 
-module Utils.Show where
+module Util.Show where
 
 import Numeric
 import Data.List
-import Utils.Time
+import Util.Time
 
 
 

@@ -39,7 +39,7 @@ import Prelude                                  hiding (lookup)
 import Foreign.CUDA (DevicePtr)
 import qualified Data.Vector.Generic            as G
 import qualified Foreign.CUDA                   as CUDA
-import qualified Foreign.CUDA.Utils             as CUDA
+import qualified Foreign.CUDA.Util              as CUDA
 import qualified Foreign.CUDA.Algorithms        as CUDA
 
 

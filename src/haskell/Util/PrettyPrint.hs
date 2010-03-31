@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- |
--- Module    : Utils.PrettyPrint
+-- Module    : Util.PrettyPrint
 -- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
@@ -8,7 +8,7 @@
 --
 --------------------------------------------------------------------------------
 
-module Utils.PrettyPrint
+module Util.PrettyPrint
   (
     Pretty(..),
 
