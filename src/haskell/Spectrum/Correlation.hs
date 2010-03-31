@@ -13,6 +13,7 @@ module Spectrum.Correlation (sequestXCorr) where
 import Config
 import Spectrum
 
+import Control.Arrow
 import Control.Applicative
 import Control.Monad.State
 import qualified Data.Vector.Generic as G
@@ -67,7 +68,7 @@ observedIntensity ms2 = do
       limits (x,_) = if r then x <= cutoff && (x <= (pcr-15) || (pcr+15) <= x)
                           else x <= cutoff
 
-  return . G.accumulate max zeros . G.map (\(x,y) -> (bin x,sqrt y)) $ G.filter limits (ms2data ms2)
+  return . G.accumulate max zeros . G.map (bin *** sqrt) $ G.filter limits (ms2data ms2)
 
   where
     zeros  = G.replicate (75 + ceiling cutoff) 0
