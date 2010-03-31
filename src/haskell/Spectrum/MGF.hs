@@ -13,11 +13,11 @@
 --
 --------------------------------------------------------------------------------
 
-module Sequence.MGF (readMGF) where
+module Spectrum.MGF (readMGF) where
 
 import Mass
-import Spectrum
 import Utils.Parsec
+import Spectrum.Data
 
 import Numeric
 import Bio.Util.Parsex

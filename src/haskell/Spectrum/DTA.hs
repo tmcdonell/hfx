@@ -20,8 +20,8 @@
 module Spectrum.DTA (readDTA) where
 
 import Mass
-import Spectrum
 import Utils.Parsec
+import Spectrum.Data
 
 import Data.Vector.Unboxed  (fromList)
 import Data.ByteString.Lazy (empty)
