@@ -1,14 +1,14 @@
 --------------------------------------------------------------------------------
 -- |
--- Module    : Match
+-- Module    : Sequence.Match
 -- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
 --------------------------------------------------------------------------------
 
-module Match where
+module Sequence.Match where
 
-import Sequence
+import Sequence.Fragment
 
 --
 -- A structure to store the result of a peptide/spectrum similarity test

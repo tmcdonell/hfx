@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns, CPP #-}
 --------------------------------------------------------------------------------
 -- |
--- Module    : Sequence
+-- Module    : Sequence.Fragment
 -- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
@@ -9,7 +9,7 @@
 --
 --------------------------------------------------------------------------------
 
-module Sequence
+module Sequence.Fragment
   (
     SequenceDB(..), DeviceSeqDB(..), Fragment(..),
     makeSeqDB, withDeviceDB, fraglabel
@@ -49,7 +49,26 @@ import qualified Foreign.CUDA.Util              as CUDA
 
 
 --------------------------------------------------------------------------------
--- Sequences
+-- Sequence Fragments
+--------------------------------------------------------------------------------
+
+data Fragment = Fragment
+  {
+    fragmass   :: Float,                -- Total mass of this fragment
+    fragheader :: L.ByteString,         -- Full header describing this fragment
+    fragdata   :: L.ByteString          -- Fragment sequence data, including flanking residuals
+  }
+  deriving (Eq, Show)
+
+--
+-- Fragment label (first word of full header)
+--
+fraglabel :: Fragment -> L.ByteString
+fraglabel = head . LC.words . fragheader
+
+
+--------------------------------------------------------------------------------
+-- Sequence Database
 --------------------------------------------------------------------------------
 
 --
@@ -143,28 +162,6 @@ withDeviceDB cp sdb action =
 
 
 --------------------------------------------------------------------------------
--- Fragments
---------------------------------------------------------------------------------
-
---
--- Sequence fragments
---
-data Fragment = Frag
-  {
-    fragmass   :: Float,                -- Total mass of this fragment
-    fragheader :: L.ByteString,         -- Full header describing this fragment
-    fragdata   :: L.ByteString          -- Fragment sequence data, including flanking residuals
-  }
-  deriving (Eq, Show)
-
---
--- Fragment label (first word of full header)
---
-fraglabel :: Fragment -> L.ByteString
-fraglabel = head . LC.words . fragheader
-
-
---------------------------------------------------------------------------------
 -- Digestion
 --------------------------------------------------------------------------------
 
@@ -179,7 +176,7 @@ fraglabel = head . LC.words . fragheader
 --
 countFrags :: ConfigParams -> U.Vector Word8 -> Int
 {-# INLINE countFrags #-}
-countFrags cp = ((missedCleavages cp + 1) * ) . count
+countFrags cp aa = (missedCleavages cp + 1) * count aa
   where
     rule  = fst (digestionRule cp) . w2c
     count = U.length . U.filter rule

@@ -8,10 +8,15 @@
 --
 --------------------------------------------------------------------------------
 
-module Sequence.Location (SKey, lookup) where
+module Sequence.Location
+  (
+    SKey, lookup,
+    Fragment(..), fraglabel
+  )
+  where
 
 import Mass
-import Sequence
+import Sequence.Fragment
 import Util.Misc
 
 import Prelude                          hiding (lookup)
@@ -20,6 +25,10 @@ import Numeric.Search.Range
 import qualified Data.ByteString.Lazy   as L
 import qualified Data.Vector.Generic    as G
 
+
+--------------------------------------------------------------------------------
+-- Database Search
+--------------------------------------------------------------------------------
 
 type SKey = Int
 
@@ -50,5 +59,5 @@ lookup db k = do
       ca        = if c > a   then dbIon db G.! (fromIntegral c-1) else c2w '-'
       na        = if n < b-1 then dbIon db G.! (fromIntegral n+2) else c2w '-'
 
-  return $ Frag (res + massH + massH2O) hdr (L.pack $ [ca,c2w '.'] ++ aa ++ [c2w '.',na])
+  return $ Fragment (res + massH + massH2O) hdr (L.pack $ [ca,c2w '.'] ++ aa ++ [c2w '.',na])
 

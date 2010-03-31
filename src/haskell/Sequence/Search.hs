@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 --------------------------------------------------------------------------------
 -- |
--- Module    : Sequest
+-- Module    : Sequence.Search
 -- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
@@ -22,13 +22,13 @@
 --
 --------------------------------------------------------------------------------
 
-module Sequest where
+module Sequence.Search (searchForMatches) where
 
 import Mass
-import Match
 import Config
 import Spectrum
-import Sequence
+import Sequence.Match
+import Sequence.Fragment
 import Sequence.Location
 
 import Data.Word
