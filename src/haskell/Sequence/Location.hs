@@ -8,12 +8,7 @@
 --
 --------------------------------------------------------------------------------
 
-module Sequence.Location
-  (
-    SKey, lookup,
-    Fragment(..), fraglabel
-  )
-  where
+module Sequence.Location (SKey, lookup) where
 
 import Mass
 import Sequence.Fragment
