@@ -13,7 +13,7 @@
 module Foreign.CUDA.Algorithms
   (
     findIndicesInRange,
-    addIons,
+    addIons, addIonsIP,
     radixsort,
     mvm
   )
@@ -47,6 +47,32 @@ addIons a1 a2 a3 (a4,a5) a6 a7 a8 a9 =
 
 foreign import ccall unsafe "algorithms.h addIons"
   addIons'_ :: Ptr Word32 -> Ptr Float -> Ptr Float -> Ptr Word32 -> Ptr Word32 -> Ptr Word32 -> Word32 -> Word32 -> Word32 -> IO ()
+
+
+addIonsIP
+    :: DevicePtr Float                          -- [out] sequence scores
+    -> DevicePtr Float                          -- experimental spectrum
+    -> DevicePtr Float                          -- residual masses
+    -> DevicePtr Float                          -- individual ion masses
+    -> (DevicePtr Word32, DevicePtr Word32)     -- c- and n- terminal indices
+    -> DevicePtr Word32                         -- indices of the sequences under consideration
+    -> Int                                      -- number of sequences to consider
+    -> Int                                      -- peptide charge state
+    -> Int                                      -- length of input spectrum
+    -> IO ()
+addIonsIP d_score d_spec d_residual d_ions (d_tc, d_tn) d_idx num_idx max_charge len_spec =
+  withDevicePtr d_score    $ \a1' ->
+  withDevicePtr d_spec     $ \a2' ->
+  withDevicePtr d_residual $ \a3' ->
+  withDevicePtr d_ions     $ \a4' ->
+  withDevicePtr d_tc       $ \a5' ->
+  withDevicePtr d_tn       $ \a6' ->
+  withDevicePtr d_idx      $ \a7' ->
+  addIons_ip'_ a1' a2' a3' a4' a5' a6' a7' (cIntConv num_idx) (cIntConv max_charge) (cIntConv len_spec)
+
+foreign import ccall unsafe "algorithms.h addIons_inplace"
+  addIons_ip'_ :: Ptr Float -> Ptr Float -> Ptr Float -> Ptr Float -> Ptr Word32 -> Ptr Word32 -> Ptr Word32 -> Word32 -> Word32 -> Word32 -> IO ()
+
 
 
 radixsort :: Storable a => DevicePtr Float -> DevicePtr a -> Int -> IO ()

@@ -79,6 +79,21 @@ addIons
     const uint32_t      len_spec
 );
 
+void
+addIons_inplace
+(
+    float               *d_score,
+    const float         *d_spec,
+    const float         *d_residual,
+    const float         *d_ions,
+    const uint32_t      *d_tc,
+    const uint32_t      *d_tn,
+    const uint32_t      *d_idx,
+    const uint32_t      num_idx,
+    const uint32_t      max_charge,
+    const uint32_t      len_spec
+);
+
 /*
  * Dense matrix-vector multiplication
  */
