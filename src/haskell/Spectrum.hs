@@ -11,7 +11,7 @@
 
 module Spectrum
   (
-    MS2Data(..),
+    MS2Data(..), Peak,
     Spectrum, SpectrumCollection(..),
   )
   where

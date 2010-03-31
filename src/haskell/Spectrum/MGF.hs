@@ -21,10 +21,11 @@ import Utils.Parsec
 
 import Numeric
 import Bio.Util.Parsex
+import Control.Monad
 import Control.Applicative                      ((<$>))
-import Data.Vector.Generic                      (fromList)
 import Text.ParserCombinators.Parsec
 
+import qualified Data.Vector.Unboxed            as U
 import qualified Data.ByteString.Lazy.Char8     as L
 
 
@@ -51,7 +52,7 @@ sample :: Parser MS2Data
 sample = do
   string "BEGIN IONS" >> eol
   kv <- params
-  i  <- ions
+  pk <- ions
   string "END IONS"   >> eol
 
   let title     = maybe L.empty L.pack (lookup "TITLE" kv)
@@ -61,7 +62,7 @@ sample = do
 
   if charge == 0 || pepmass == 0
     then unexpected "missing charge state or peptide mass"
-    else return $ MS2Data title precursor charge (fromList i)
+    else return $ MS2Data title precursor charge pk
 
 --
 -- Each sample block may contain a sequence of key/value pairs.
@@ -73,6 +74,6 @@ params = many (try keyval)
 -- Each line contains a pair of whitespace separated floating point values,
 -- representing the (mass/charge ratio, intensity) measurements.
 --
-ions :: RealFrac a => Parser [(a,a)]
-ions = endBy readF2 eol
+ions :: Parser (U.Vector Peak)
+ions = liftM U.fromList (endBy readF2 eol)
 
