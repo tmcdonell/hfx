@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- |
--- Module    : PrettyPrint
+-- Module    : Utils.PrettyPrint
 -- Copyright : (c) [2009..2010] Trevor L. McDonell
 -- License   : BSD
 --
@@ -8,7 +8,7 @@
 --
 --------------------------------------------------------------------------------
 
-module PrettyPrint
+module Utils.PrettyPrint
   (
     Pretty(..),
 
@@ -69,15 +69,15 @@ printDoc m hdl doc = do
 -- Configuration -> Render
 --------------------------------------------------------------------------------
 
-printConfig :: ConfigParams -> FilePath -> Spectrum -> IO ()
-printConfig cp fp spec = displayIO . ppAsRows 0 . map (intersperse (text "::")) $
+printConfig :: ConfigParams -> FilePath -> MS2Data -> IO ()
+printConfig cp fp ms2 = displayIO . ppAsRows 0 . map (intersperse (text "::")) $
     [ [text "Spectrum"   , text fp]
     , [text "Database"   , text (fromJust (databasePath cp))]
     , [text "Enzyme"     , hsep $ map text (tail enzyme)]
     , [text "(M+H)+ Mass", float mass <+> text "~" <+> float (realToFrac $ massTolerance cp)]
     ]
     where
-        mass   = realToFrac $ (precursor spec * charge spec) - ((charge spec * massH) - 1)
+        mass   = realToFrac $ (ms2precursor ms2 * ms2charge ms2) - ((ms2charge ms2 * massH) - 1)
         enzyme = words . snd . digestionRule $ cp
 
 --------------------------------------------------------------------------------

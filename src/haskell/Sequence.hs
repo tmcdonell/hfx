@@ -17,8 +17,8 @@ module Sequence
   where
 
 import Mass
-import Utils
 import Config
+import Utils.Misc
 
 import Prelude                          hiding (lookup)
 import Data.List                        (unfoldr, isSuffixOf)

@@ -14,11 +14,12 @@ module Main where
 -- Custom libraries
 --
 import DTA
-import Time
 import Config
 import Sequest
 import Sequence
-import PrettyPrint
+import Utils.Time
+import Utils.Show
+import Utils.PrettyPrint
 
 --
 -- System libraries

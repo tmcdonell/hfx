@@ -17,7 +17,7 @@ module Config
   where
 
 import Mass
-import Utils
+import Utils.Misc
 
 import Control.Monad
 import Data.Char
