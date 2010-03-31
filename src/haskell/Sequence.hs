@@ -19,18 +19,17 @@ module Sequence
 import Mass
 import Config
 import Util.Misc
+import Sequence.Fasta
 
 import Prelude                          hiding (lookup)
-import Data.List                        (unfoldr, isSuffixOf)
+import Data.List                        (unfoldr)
 import Data.Word
 import Control.Monad                    (foldM)
 import Control.Applicative              ((<$>))
 
 import qualified Bio.Sequence                   as F
-import qualified Bio.Sequence.Fasta             as F
 import qualified Data.ByteString.Lazy           as L
 import qualified Data.ByteString.Lazy.Char8     as LC
-import qualified Codec.Compression.GZip         as GZip
 
 import qualified Data.Vector                    as V
 import qualified Data.Vector.Unboxed            as U
@@ -47,39 +46,6 @@ import qualified Foreign.CUDA.Util              as CUDA
 
 #define INLINE_STREAM INLINE PHASE_STREAM
 #define INLINE_INNER  INLINE PHASE_INNER
-
-
---------------------------------------------------------------------------------
--- Reading FASTA Files
---------------------------------------------------------------------------------
-
-type Protein = F.Sequence F.Amino
-
---
--- Lazily read sequences from a FASTA-formatted file. This is identical to the
--- code of the bio package, except the sequence type is cast on output and GZip
--- compressed files are deflated as necessary.
---
-readFasta :: FilePath -> IO [Protein]
-{-# INLINE readFasta #-}
-readFasta fp = map F.castToAmino . F.mkSeqs . LC.lines . prepare <$> L.readFile fp
-  where
-    prepare = if ".gz" `isSuffixOf` fp then GZip.decompress
-                                       else id
-
---
--- Count the number of sequences in a file. Each sequence consist of a header
--- and a set of lines containing the sequence data. GZip compressed files are
--- inflated if necessary, which is the only addition over the bio package
--- function of the same name.
---
-countSeqs :: FilePath -> IO Int
-{-# INLINE countSeqs #-}
-countSeqs fp = length . describe . prepare <$> L.readFile fp
-  where
-    describe = filter (('>' ==) . LC.head) . filter (not . L.null) . LC.lines
-    prepare  = if ".gz" `isSuffixOf` fp then GZip.decompress
-                                        else id
 
 
 --------------------------------------------------------------------------------
