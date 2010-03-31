@@ -73,14 +73,12 @@ fetch_x(const uint32_t &i, const float *x)
     else          return x[i];
 }
 
-#ifndef CUDA_NO_SM_13_DOUBLE_INTRINSICS
+
+#if !defined(CUDA_NO_SM_13_DOUBLE_INTRINSICS)
 template <bool UseCache>
 __device__ __inline__ double
 fetch_x(const uint32_t &i, const double *x)
 {
-#if __CUDA_ARCH__ < 130
-#error "double precision require Compute Compatibility 1.3 or greater"
-#endif
     if (UseCache)
     {
         int2 v = tex1Dfetch(tex_x_double, i);
