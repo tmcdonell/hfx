@@ -118,7 +118,7 @@ sequestConfig fp argv = do
     --
     -- Parse the command line options
     --
-    case getOpt RequireOrder options argv of
+    case getOpt Permute options argv of
         (a,n,[]) -> do cp' <- foldl' (>>=) (return cp) a
                        return (initializeAAMasses cp', n)
         (_,_,e)  -> error (unlines e)
