@@ -14,7 +14,6 @@ module Main where
 -- Custom libraries
 --
 import Config
-import Sequest
 import Sequence
 import Spectrum
 import Util.Time
@@ -57,8 +56,8 @@ main = do
     hPutStrLn stderr $ "Device " ++ shows dev ": "
                                  ++ CUDA.deviceName props ++ ", "
                                  ++ "compute v" ++ shows (CUDA.computeCapability props) ", "
-                                 ++ "global memory: " ++ showFFloatSI2 (fromIntegral $ CUDA.totalGlobalMem props :: Double) "B, "
-                                 ++ "core clock: " ++ showFFloatSI (fromIntegral $ 1000 * CUDA.clockRate props   :: Double) "Hz"
+                                 ++ "global memory: " ++ showFFloatSIBase 1024 (fromIntegral $ CUDA.totalGlobalMem props :: Double) "B, "
+                                 ++ "core clock: "    ++ showFFloatSI (fromIntegral $ 1000 * CUDA.clockRate props :: Double) "Hz"
 
   --
   -- Load the proteins from file, marshal to the device, and then get to work!
@@ -74,12 +73,13 @@ makeSeqDB' cp fp = do
   (t,sdb) <- bracketTime $ makeSeqDB cp fp
 
   when (verbose cp) $ do
-    let lh = G.length (dbHeader sdb)
-        lf = G.length (dbFrag   sdb)
+    let lf = G.length (dbFrag   sdb)
         li = G.length (dbIon    sdb)
+        lp = G.length (dbIonSeg sdb) - 1
     hPutStrLn stderr $ "done (" ++ showTime t ++ ")"
-    hPutStrLn stderr $ "  " ++ shows lh " proteins, "  ++ showFFloatSI2 (fromIntegral (li * 4)  :: Double) "B"
-    hPutStrLn stderr $ "  " ++ shows lf " fragments, " ++ showFFloatSI2 (fromIntegral (lf * 12) :: Double) "B"
+    hPutStrLn stderr $ "  " ++ shows lp " proteins"
+    hPutStrLn stderr $ "  " ++ shows li " amino acids, " ++ showFFloatSIBase 1024 (fromIntegral (li * 4)  :: Double) "B"
+    hPutStrLn stderr $ "  " ++ shows lf " peptides, "    ++ showFFloatSIBase 1024 (fromIntegral (lf * 12) :: Double) "B"
 
   return sdb
 
