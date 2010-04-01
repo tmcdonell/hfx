@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Sequence.Search
@@ -57,7 +56,7 @@ type IonSeries  = DevicePtr Word32
 --
 searchForMatches :: ConfigParams -> SequenceDB -> DeviceSeqDB -> MS2Data -> IO MatchCollection
 searchForMatches cp sdb ddb ms2 =
-  findCandidates cp ddb ms2                                  $ \candidates ->
+  findCandidates cp ddb ms2                                     $ \candidates ->
   mkSpecXCorr ddb candidates (ms2charge ms2) (G.length specExp) $ \specThry   ->
   mapMaybe lookupF `fmap` sequestXC cp candidates specExp specThry
   where
@@ -75,7 +74,7 @@ searchForMatches cp sdb ddb ms2 =
 findCandidates :: ConfigParams -> DeviceSeqDB -> MS2Data -> (Candidates -> IO b) -> IO b
 findCandidates cp db ms2 action =
   CUDA.allocaArray np $ \d_idx ->
-  CUDA.findIndicesInRange (dbResidual db) d_idx np (mass-delta) (mass+delta) >>= action . (d_idx,)
+  CUDA.findIndicesInRange (dbResidual db) d_idx np (mass-delta) (mass+delta) >>= \n -> action (d_idx,n)
   where
     np    = dbNumFrag db
     delta = massTolerance cp
