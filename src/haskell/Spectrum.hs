@@ -11,16 +11,20 @@
 module Spectrum
   (
     -- Data Structures
-    MS2Data,
+    MS2Data(..),
     Spectrum,
 
     -- File Formats
     readDTA,
-    readMGF
+    readMGF,
+
+    -- Spectrum analysis
+    module Spectrum.Correlation
   )
   where
 
 import Spectrum.Data
 import Spectrum.DTA
 import Spectrum.MGF
+import Spectrum.Correlation
 

@@ -34,6 +34,7 @@ import Sequence.Location
 import Data.Word
 import Data.Maybe
 import Control.Monad
+import System.IO
 import Prelude                                  hiding (lookup)
 
 import Foreign.CUDA (DevicePtr)
@@ -43,8 +44,8 @@ import qualified Foreign.CUDA.Util              as CUDA
 import qualified Foreign.CUDA.Algorithms        as CUDA
 
 
-type Candidates      = (DevicePtr Word32, Int)
-type XCorrSpecThry   = DevicePtr Word32
+type Candidates = (DevicePtr Word32, Int)
+type IonSeries  = DevicePtr Word32
 
 --------------------------------------------------------------------------------
 -- Search
@@ -54,13 +55,13 @@ type XCorrSpecThry   = DevicePtr Word32
 -- Search an amino acid sequence database to find the most likely matches to a
 -- given experimental spectrum.
 --
-searchForMatches :: ConfigParams -> SequenceDB -> DeviceSeqDB -> Spectrum -> IO MatchCollection
-searchForMatches cp sdb ddb dta =
-  findCandidates cp ddb dta                                  $ \candidates ->
-  mkSpecXCorr ddb candidates (charge dta) (G.length specExp) $ \specThry   ->
+searchForMatches :: ConfigParams -> SequenceDB -> DeviceSeqDB -> MS2Data -> IO MatchCollection
+searchForMatches cp sdb ddb ms2 =
+  findCandidates cp ddb ms2                                  $ \candidates ->
+  mkSpecXCorr ddb candidates (ms2charge ms2) (G.length specExp) $ \specThry   ->
   mapMaybe lookupF `fmap` sequestXC cp candidates specExp specThry
   where
-    specExp       = buildExpSpecXCorr cp dta
+    specExp       = sequestXCorr cp ms2
     lookupF (s,i) = liftM (flip Match s) (lookup sdb i)
 
 
@@ -71,14 +72,14 @@ searchForMatches cp sdb ddb dta =
 -- This generates a device array containing the indices of the relevant
 -- sequences, together with the number of candidates found.
 --
-findCandidates :: ConfigParams -> DeviceSeqDB -> Spectrum -> (Candidates -> IO b) -> IO b
-findCandidates cp db dta action =
+findCandidates :: ConfigParams -> DeviceSeqDB -> MS2Data -> (Candidates -> IO b) -> IO b
+findCandidates cp db ms2 action =
   CUDA.allocaArray np $ \d_idx ->
   CUDA.findIndicesInRange (dbResidual db) d_idx np (mass-delta) (mass+delta) >>= action . (d_idx,)
   where
     np    = dbNumFrag db
     delta = massTolerance cp
-    mass  = (precursor dta * charge dta) - ((charge dta * massH) - 1) - (massH + massH2O)
+    mass  = (ms2precursor ms2 * ms2charge ms2) - ((ms2charge ms2 * massH) - 1) - (massH + massH2O)
 
 
 --
@@ -89,7 +90,7 @@ findCandidates cp db dta action =
 -- On the device, this is stored as a dense matrix, each row corresponding to a
 -- single sequence.
 --
-mkSpecXCorr :: DeviceSeqDB -> Candidates -> Float -> Int -> (XCorrSpecThry -> IO b) -> IO b
+mkSpecXCorr :: DeviceSeqDB -> Candidates -> Float -> Int -> (IonSeries -> IO b) -> IO b
 mkSpecXCorr db (d_idx, nIdx) chrg len action =
   CUDA.allocaArray n $ \d_spec -> do
     let bytes = fromIntegral $ n * CUDA.sizeOfPtr d_spec
@@ -107,10 +108,11 @@ mkSpecXCorr db (d_idx, nIdx) chrg len action =
 -- Score each candidate sequence against the observed intensity spectra,
 -- returning the most relevant results.
 --
-sequestXC :: ConfigParams -> Candidates -> XCorrSpecExp -> XCorrSpecThry -> IO [(Float,Int)]
+sequestXC :: ConfigParams -> Candidates -> Spectrum -> IonSeries -> IO [(Float,Int)]
 sequestXC cp (d_idx,nIdx) expr d_thry = let n = max (numMatches cp) (numMatchesDetail cp) in
-  CUDA.withVectorS expr $ \d_expr  ->
+  CUDA.withVector  expr $ \d_expr  ->
   CUDA.allocaArray nIdx $ \d_score -> do
+    when (verbose cp) $ hPutStrLn stderr ("Matched peptides: " ++ show nIdx)
 
     -- Score and rank each candidate sequence
     --

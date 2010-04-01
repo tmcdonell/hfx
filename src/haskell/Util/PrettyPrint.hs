@@ -21,6 +21,7 @@ module Util.PrettyPrint
 import Mass
 import Config
 import Sequence.Match
+import Sequence.Fragment
 import Spectrum.Data
 
 import Numeric
