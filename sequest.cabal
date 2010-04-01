@@ -1,0 +1,57 @@
+Name:                sequest
+Version:             0.1
+Synopsis:            An implementation of the SEQUEST algorithm for protein identification
+Description:
+    An implementation of the SEQUEST algorithm on NVIDIA GPUs, for fast
+    cross-correlation based identification of protein sequences from tandem MS
+    spectra.
+    .
+    [1] J. K. Eng, B. Fischer, J. Grossmann, and M. J. MacCoss. "A fast sequest
+        cross correlation algorithm." Journal of Proteome Research,
+        7(10):4598-4602, 2008.
+    .
+    [2] J. K. Eng, A. L. McCormack, and I. John R. Yates. "An approach to
+        correlate tandem mass spectral data of peptides with amino acid sequences
+        in a protein database." Journal of the American Society for Mass
+        Spectrometry, 5(11):976-989, November 1994.
+
+
+License:             BSD3
+License-file:        LICENSE
+Copyright:           Copyright (c) 2009-10. Trevor L. McDonell
+Author:              Trevor L. McDonell <tmcdonell@cse.unsw.edu.au>
+Maintainer:          Trevor L. MCDonell <tmcdonell@cse.unsw.edu.au>
+Stability:           Experimental
+Category:            Bio
+Cabal-version:       >=1.2
+
+Build-type:          Simple
+Extra-tmp-files:
+Extra-source-files:
+
+
+Flag debug
+  Description:  Enable debug support
+  Default:      False
+
+Executable sequest
+  Main-is:             Main.hs
+  hs-source-dirs:      src/haskell
+  Build-depends:       base >= 3 && < 5, haskell98, bytestring, pretty, directory,
+                       bio, parsec, cuda, vector, zlib, binary-search
+
+  ghc-options:         -Wall -Odph
+  extra-libraries:     cudpp stdc++
+  extra-lib-dirs:      dist/lib
+
+  if flag(debug)
+    extra-libraries:   filterD ion_seriesD mvmD permuteD radix_sortD scanD
+  else
+    extra-libraries:   filter  ion_series  mvm  permute  radix_sort  scan
+
+  -- Modules not exported by this package.
+  -- Other-modules:
+
+  -- Extra tools (e.g. alex, hsc2hs, ...) needed to build the source.
+  -- Build-tools:
+

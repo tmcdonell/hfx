@@ -4,18 +4,23 @@
 #
 
 ALGORITHMS := $(shell find src/cuda -name Makefile)
-PROJECTS   := $(ALGORITHMS) src/haskell/Makefile
+PROJECTS   := $(ALGORITHMS)
+CABAL      := cabal
 
 
 %.do :
 	$(MAKE) -C $(dir $*) $(MAKECMDGOALS)
 
 all : $(addsuffix .do,$(PROJECTS))
+	@$(CABAL) configure
+	@$(CABAL) build
 	@echo "Finished building all"
 
 clean : $(addsuffix .do,$(PROJECTS))
+	@$(CABAL) clean
 	@echo "Finished cleaning all"
 
 clobber : $(addsuffix .do,$(PROJECTS))
+	@$(CABAL) clean
 	@echo "Finished cleaning all"
 
