@@ -114,6 +114,11 @@ sequestXC cp (d_idx,nIdx) expr d_thry = let n = max (numMatches cp) (numMatchesD
   CUDA.allocaArray nIdx $ \d_score -> do
     when (verbose cp) $ hPutStrLn stderr ("Matched peptides: " ++ show nIdx)
 
+    -- There may be no candidates as a result of bad database search parameters,
+    -- or if something unexpected happened (out of memory)
+    --
+    if nIdx == 0 then return [] else do
+
     -- Score and rank each candidate sequence
     --
     CUDA.mvm       d_score d_thry d_expr nIdx (G.length expr)
