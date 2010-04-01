@@ -7,20 +7,30 @@ ALGORITHMS := $(shell find src/cuda -name Makefile)
 PROJECTS   := $(ALGORITHMS)
 CABAL      := cabal
 
+ifeq ($(dbg),1)
+    CABALFLAGS += -fdebug
+endif
+ifeq ($(verbose),1)
+    CABALFLAGS += --verbose
+    VERBOSE    :=
+else
+    VERBOSE    := @
+endif
+
 
 %.do :
 	$(MAKE) -C $(dir $*) $(MAKECMDGOALS)
 
 all : $(addsuffix .do,$(PROJECTS))
-	@$(CABAL) configure
-	@$(CABAL) build
+	$(VERBOSE)$(CABAL) configure $(CABALFLAGS)
+	$(VERBOSE)$(CABAL) build $(CABALFLAGS)
 	@echo "Finished building all"
 
 clean : $(addsuffix .do,$(PROJECTS))
-	@$(CABAL) clean
+	$(VERBOSE)$(CABAL) clean
 	@echo "Finished cleaning all"
 
 clobber : $(addsuffix .do,$(PROJECTS))
-	@$(CABAL) clean
+	$(VERBOSE)$(CABAL) clean
 	@echo "Finished cleaning all"
 
