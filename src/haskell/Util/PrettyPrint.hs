@@ -19,10 +19,9 @@ module Util.PrettyPrint
   where
 
 import Mass
-import Match
 import Config
-import Sequence
-import Spectrum
+import Sequence.Match
+import Spectrum.Data
 
 import Numeric
 import Data.List

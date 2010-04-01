@@ -19,9 +19,6 @@ import Control.Monad.State
 import qualified Data.Vector.Generic as G
 
 
-type SQ = StateT ConfigParams IO
-
-
 --------------------------------------------------------------------------------
 -- Experimental Intensity Spectrum
 --------------------------------------------------------------------------------

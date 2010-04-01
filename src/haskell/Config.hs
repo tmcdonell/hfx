@@ -21,6 +21,7 @@ import Util.Misc
 import Util.Parsec
 
 import Control.Monad
+import Control.Monad.State
 import Data.Char
 import Data.List
 import Data.Maybe
@@ -37,47 +38,49 @@ import qualified Data.Vector.Unboxed as U
 
 
 --------------------------------------------------------------------------------
--- Data structures
+-- The State Token
 --------------------------------------------------------------------------------
+
+type SQ = StateT ConfigParams IO
 
 --
 -- A ginormous data structure to hold all of the configurable parameters
 -- threaded throughout the program
 --
 data ConfigParams = ConfigParams
-    {
-        databasePath        :: Maybe FilePath,  -- Path to the protein database file
+  {
+    databasePath        :: Maybe FilePath,  -- Path to the protein database file
 
-        --
-        -- Enzyme search parameters
-        --
-        massTolerance       :: Float,                    -- Search peptides within ± this value of the spectrum mass
-        removePrecursorPeak :: Bool,                     -- Remove a ±5 da window surrounding the precursor mass
-        missedCleavages     :: Int,                      -- Number of missed cleavage sites to consider
-        digestionRule       :: (Char -> Bool, String),   -- Protein fragmentation rule and description text
-        minPeptideMass      :: Float,                    -- Minimum mass of peptides to be considered
-        maxPeptideMass      :: Float,                    -- Maximum peptide mass
+    --
+    -- Enzyme search parameters
+    --
+    massTolerance       :: Float,                  -- Search peptides within ± this value of the spectrum mass
+    removePrecursorPeak :: Bool,                   -- Remove a ±5 da window surrounding the precursor mass
+    missedCleavages     :: Int,                    -- Number of missed cleavage sites to consider
+    digestionRule       :: (Char -> Bool, String), -- Protein fragmentation rule and description text
+    minPeptideMass      :: Float,                  -- Minimum mass of peptides to be considered
+    maxPeptideMass      :: Float,                  -- Maximum peptide mass
 
-        --
-        -- Allow static modifications to an amino acid mass, which affects every
-        -- occurrence of that residue/terminus
-        --
-        aaMassTable         :: Vector Float,
-        aaMassTypeMono      :: Bool,
+    --
+    -- Allow static modifications to an amino acid mass, which affects every
+    -- occurrence of that residue/terminus
+    --
+    aaMassTable         :: Vector Float,
+    aaMassTypeMono      :: Bool,
 
-        --
-        -- Process configuration
-        --
-        useCPU              :: Bool,
+    --
+    -- Process configuration
+    --
+    useCPU              :: Bool,
 
-        --
-        -- Output configuration
-        --
-        verbose             :: Bool,
-        numMatches          :: Int,             -- Number of matches to show (summary statistics)
-        numMatchesDetail    :: Int              -- Number of full protein descriptions to show
-    }
-    deriving (Show)
+    --
+    -- Output configuration
+    --
+    verbose             :: Bool,
+    numMatches          :: Int,                 -- Number of matches to show (summary statistics)
+    numMatchesDetail    :: Int                  -- Number of full protein descriptions to show
+  }
+  deriving (Show)
 
 
 --------------------------------------------------------------------------------
@@ -92,11 +95,9 @@ data ConfigParams = ConfigParams
 --
 -- XXX: Shouldn't really live here...
 --
---getAAMass       :: (Fractional a, Storable a) => ConfigParams a -> Char -> a
-getAAMass       :: ConfigParams -> Char -> Float
-getAAMass cp aa =  aaMassTable cp U.! index ('A','Z') aa
-
 {-# INLINE getAAMass #-}
+getAAMass :: ConfigParams -> Char -> Float
+getAAMass cp aa = aaMassTable cp U.! index ('A','Z') aa
 
 
 --------------------------------------------------------------------------------
@@ -109,7 +110,6 @@ getAAMass cp aa =  aaMassTable cp U.! index ('A','Z') aa
 -- the list of non-option arguments, which is typically the list of input
 -- spectrum files to analyse.
 --
---sequestConfig :: (Fractional a, Storable a, Read a) => FilePath -> [String] -> IO (ConfigParams a, [String])
 sequestConfig :: FilePath -> [String] -> IO (ConfigParams, [String])
 sequestConfig fp argv = do
     p  <- doesFileExist fp
@@ -129,7 +129,6 @@ sequestConfig fp argv = do
 -- Read a configuration file, returning a modified configuration set as well as
 -- list of unprocessed options.
 --
---readConfigFile :: (Fractional a, Storable a, Read a) => FilePath -> ConfigParams a -> IO (ConfigParams a)
 readConfigFile :: FilePath -> ConfigParams -> IO ConfigParams
 readConfigFile fp cp = do
     params   <- parseFromFile configFile fp
@@ -162,7 +161,6 @@ readConfigFile fp cp = do
 -- immediately to the given configuration set, removing the command from the
 -- argument key/value list
 --
---processMods :: (Fractional a, Storable a, Read a) => ConfigParams a -> [(String, String)] -> (ConfigParams a, [(String, String)])
 processMods :: ConfigParams -> [(String, String)] -> (ConfigParams, [(String, String)])
 processMods config = foldr fn (config,[])
     where
@@ -181,7 +179,6 @@ processMods config = foldr fn (config,[])
 --
 -- The basic (almost empty) configuration set
 --
---baseParams :: (Fractional a, Storable a) => ConfigParams a
 baseParams :: ConfigParams
 baseParams =  ConfigParams
     {
@@ -208,7 +205,6 @@ baseParams =  ConfigParams
 -- Add the base residue masses for all amino acid groups to the mass table,
 -- which currently only holds user-defined modifications (if any).
 --
---initializeAAMasses :: (Fractional a, Storable a) => ConfigParams a -> ConfigParams a
 initializeAAMasses :: ConfigParams -> ConfigParams
 initializeAAMasses cp = cp { aaMassTable = U.accum (+) (aaMassTable cp) (zipWith f alphabet isolatedAAMass) }
     where
@@ -233,7 +229,6 @@ initializeAAMasses cp = cp { aaMassTable = U.accum (+) (aaMassTable cp) (zipWith
 -- NOTE: the parameters option must remain at the head of the list, as this will
 -- be dropped when reading parameters from file to prevent silly behaviour...
 --
---options :: (Fractional a, Storable a, Read a) => [ OptDescr (ConfigParams a -> IO (ConfigParams a)) ]
 options :: [ OptDescr (ConfigParams -> IO ConfigParams) ]
 options =
     [ Option "p" ["parameters"]
