@@ -71,7 +71,8 @@ printDoc m hdl doc = do
 
 printConfig :: ConfigParams -> FilePath -> MS2Data -> IO ()
 printConfig cp fp ms2 = displayIO . ppAsRows 0 . map (intersperse (text "::")) $
-    [ [text "Spectrum"   , text fp]
+    [ [text "Title"      , ppr (ms2info ms2)]
+    , [text "Spectrum"   , text fp]
     , [text "Database"   , text (fromJust (databasePath cp))]
     , [text "Enzyme"     , hsep $ map text (tail enzyme)]
     , [text "(M+H)+ Mass", float mass <+> text "~" <+> float (realToFrac $ massTolerance cp)]
