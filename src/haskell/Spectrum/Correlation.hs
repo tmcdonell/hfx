@@ -11,11 +11,9 @@
 module Spectrum.Correlation (sequestXCorr) where
 
 import Config
-import Spectrum
+import Spectrum.Data
 
 import Control.Arrow
-import Control.Applicative
-import Control.Monad.State
 import qualified Data.Vector.Generic as G
 
 
@@ -27,16 +25,16 @@ import qualified Data.Vector.Generic as G
 -- Width of the mass/charge ratio bins used to discretize the spectra. These are
 -- stolen from Crux.
 --
-binWidth :: SQ Float
-binWidth = liftM (\x -> if x then  1.0005079 else 1.0011413) (gets aaMassTypeMono)
+binWidth :: ConfigParams -> Float
+binWidth cp = if aaMassTypeMono cp then 1.0005079 else 1.0011413
 
 
 --
 -- Process the observed spectral peaks and generate an array suitable for
 -- SEQUEST cross-correlation analysis
 --
-sequestXCorr :: MS2Data -> SQ Spectrum
-sequestXCorr ms2 = crossCorrolation . normaliseByRegion <$> observedIntensity ms2
+sequestXCorr :: ConfigParams -> MS2Data -> Spectrum
+sequestXCorr cp = crossCorrolation . normaliseByRegion . observedIntensity cp
 
 
 --
@@ -56,24 +54,20 @@ sequestXCorr ms2 = crossCorrolation . normaliseByRegion <$> observedIntensity ms
 --      the "wings" in the (-75,+75) region in calculateXCorr
 --
 {-# INLINE observedIntensity #-}
-observedIntensity :: MS2Data -> SQ Spectrum
-observedIntensity ms2 = do
-  w <- binWidth
-  r <- gets removePrecursorPeak
-
-  let bin mz       = round (mz / w)
-      limits (x,_) = if r then x <= cutoff && (x <= (pcr-15) || (pcr+15) <= x)
-                          else x <= cutoff
-
-  return . G.accumulate max zeros . G.map (bin *** sqrt) $ G.filter limits (ms2data ms2)
-
+observedIntensity :: ConfigParams -> MS2Data -> Spectrum
+observedIntensity cp ms2 =
+  G.accumulate max zeros . G.map (bin *** sqrt) $ G.filter limits (ms2data ms2)
   where
     zeros  = G.replicate (75 + ceiling cutoff) 0
     pcr    = ms2precursor ms2
+    bin mz = round (mz / binWidth cp)
     cutoff = let mzcut = 50 + pcr * ms2charge ms2
                  mzlim = fromInteger (truncate (fst (G.last (ms2data ms2))/10) * 10)
              in  min mzcut mzlim
 
+    limits (x,_) = if removePrecursorPeak cp
+                     then x <= cutoff && (x <= (pcr-15) || (pcr+15) <= x)
+                     else x <= cutoff
 
 --
 -- Normalise each element of the input array according to the maximum value in

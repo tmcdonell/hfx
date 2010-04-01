@@ -21,7 +21,6 @@ import Util.Misc
 import Util.Parsec
 
 import Control.Monad
-import Control.Monad.State
 import Data.Char
 import Data.List
 import Data.Maybe
@@ -41,7 +40,7 @@ import qualified Data.Vector.Unboxed as U
 -- The State Token
 --------------------------------------------------------------------------------
 
-type SQ = StateT ConfigParams IO
+-- type SQ = State ConfigParams
 
 --
 -- A ginormous data structure to hold all of the configurable parameters
