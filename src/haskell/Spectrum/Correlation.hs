@@ -83,7 +83,7 @@ observedIntensity cp ms2 =
 normaliseByRegion :: Spectrum -> Spectrum
 normaliseByRegion s = G.zipWith norm ix s
   where
-    zeros    = G.replicate 11 0
+    zeros    = G.replicate 12 0
     rgn_max  = G.accumulate_ max zeros (G.map rgn ix) s
 
     rgn i    = i `div` sel
