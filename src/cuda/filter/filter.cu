@@ -98,7 +98,7 @@ filterInRange
     uint32_t            blocks;
     uint32_t            *d_valid;
 
-    cudaMalloc((void**) &d_valid, length * sizeof(uint32_t));
+    CUDA_SAFE_CALL( cudaMalloc((void**) &d_valid, length * sizeof(uint32_t)) );
 
     /*
      * Determine which elements satisfy the predicate

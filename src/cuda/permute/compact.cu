@@ -110,8 +110,8 @@ compact
     uint32_t threads;
     uint32_t blocks;
 
-    cudaMalloc((void**) &num, sizeof(uint32_t));
-    cudaMalloc((void**) &indices, length * sizeof(uint32_t));
+    CUDA_SAFE_CALL( cudaMalloc((void**) &num, sizeof(uint32_t)) );
+    CUDA_SAFE_CALL( cudaMalloc((void**) &indices, length * sizeof(uint32_t)) );
 
     /*
      * Scan the [0,1] flags to determine the corresponding output array index
