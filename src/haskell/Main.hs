@@ -89,13 +89,13 @@ makeSeqDB' cp fp = do
 --
 search :: ConfigParams -> SequenceDB -> DeviceSeqDB -> FilePath -> IO ()
 search cp sdb ddb fp =
-  readDTA fp >>= \r -> case r of
-    Left  s   -> hPutStrLn stderr s
-    Right dta -> do
-      (t,matches) <- bracketTime $ searchForMatches cp sdb ddb dta
+  readMS2Data fp >>= \r -> case r of
+    Left  s -> hPutStrLn stderr s
+    Right d -> forM_ d $ \ms2 -> do
+      (t,matches) <- bracketTime $ searchForMatches cp sdb ddb ms2
       when (verbose cp) $ hPutStrLn stderr ("Elapsed time: " ++ showTime t)
 
-      printConfig cp fp dta
+      printConfig cp fp ms2
       printResults       $! take (numMatches cp)       matches
       printResultsDetail $! take (numMatchesDetail cp) matches
 

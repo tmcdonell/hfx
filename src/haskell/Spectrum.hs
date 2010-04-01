@@ -15,6 +15,7 @@ module Spectrum
     Spectrum,
 
     -- File Formats
+    readMS2Data,
     readDTA,
     readMGF,
 
@@ -27,4 +28,21 @@ import Spectrum.Data
 import Spectrum.DTA
 import Spectrum.MGF
 import Spectrum.Correlation
+
+import Data.Char (toLower)
+
+
+--
+-- Read MS/MS sample data, based on file extension
+--
+readMS2Data :: FilePath -> IO (Either String [MS2Data])
+readMS2Data fp =
+  case suffix fp of
+    "dta" -> either Left (Right . unit) `fmap` readDTA fp
+    "mgf" -> Right `fmap` readMGF fp
+    _     -> return $ Left ("Unsupported file type: " ++ show fp)
+
+  where
+    unit x = [x]
+    suffix = map toLower . reverse . takeWhile (/= '.') . reverse
 
