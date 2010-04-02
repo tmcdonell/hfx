@@ -8,7 +8,8 @@
 --
 --------------------------------------------------------------------------------
 
-module Spectrum.Correlation (sequestXCorr) where
+module Spectrum.Correlation (sequestXCorr, binWidth)
+  where
 
 import Config
 import Spectrum.Data

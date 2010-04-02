@@ -20,7 +20,7 @@ module Spectrum
     readMGF,
 
     -- Spectrum analysis
-    module Spectrum.Correlation
+    sequestXCorr
   )
   where
 
