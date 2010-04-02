@@ -29,13 +29,14 @@ import Data.List
 import Data.Maybe
 import Text.PrettyPrint
 
-import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Text.PrettyPrint.Boxes     as B
+import qualified Data.ByteString.Lazy.Char8 as L
 
 class Pretty a where ppr :: a -> Doc
 
 instance Pretty Bool            where ppr = text . show
 instance Pretty Char            where ppr = char
-instance Pretty B.ByteString    where ppr = ppr . B.unpack
+instance Pretty L.ByteString    where ppr = ppr . L.unpack
 instance Pretty a => Pretty [a] where ppr = hcat . map ppr
 --instance Pretty (Peptide a)     where ppr = text . slice
 
@@ -45,6 +46,9 @@ instance Pretty a => Pretty [a] where ppr = hcat . map ppr
 
 displayIO :: Doc -> IO ()
 displayIO =  putStrLn . (++ "\n") . render
+
+displayBoxIO :: B.Box -> IO ()
+displayBoxIO =  putStrLn . B.render
 
 {-
 --
@@ -100,11 +104,13 @@ toDoc n s0 (Match frag sc) =
     ]
     where float' = text . flip (showFFloat (Just 4)) ""
 
-toDocDetail :: Int -> Match -> [Doc]
-toDocDetail n (Match frag _)  =
-    [ space <> int n <> char '.'
-    , ppr (fragheader frag)
+toDocDetail :: Int -> Match -> B.Box
+toDocDetail n (Match frag _) = B.hsep 2 B.top $
+    [ B.alignHoriz B.right 3 $ B.text (shows n ".")
+    , B.para B.left cols     $ L.unpack (fragheader frag)
     ]
+    where
+        cols = 95       -- for a total width of 100 columns
 
 printResults   :: MatchCollection -> IO ()
 printResults m =  displayIO . ppAsRows 1 . (++) title . snd . mapAccumL k 1 $ m
@@ -112,11 +118,10 @@ printResults m =  displayIO . ppAsRows 1 . (++) title . snd . mapAccumL k 1 $ m
         s0    = scoreXC (head m)
         k n z = (n+1, toDoc n s0 z)
 
-printResultsDetail   :: MatchCollection -> IO ()
-printResultsDetail m =  displayIO . ppAsRows 1 . snd . mapAccumL k 1 $ m
+printResultsDetail :: MatchCollection -> IO ()
+printResultsDetail =  displayBoxIO . B.vcat B.left . snd . mapAccumL k 1
     where
         k n z = (n+1, toDocDetail n z)
-
 
 --------------------------------------------------------------------------------
 -- Pretty Print
