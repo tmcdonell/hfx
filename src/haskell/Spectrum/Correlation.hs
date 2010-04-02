@@ -83,10 +83,10 @@ observedIntensity cp ms2 =
 normaliseByRegion :: Spectrum -> Spectrum
 normaliseByRegion s = G.zipWith norm ix s
   where
-    zeros    = G.replicate 12 0
+    zeros    = G.replicate 11 0
     rgn_max  = G.accumulate_ max zeros (G.map rgn ix) s
 
-    rgn i    = i `div` sel
+    rgn i    = min 10 (i `div` sel)     -- index 10 is our (11th) overflow bin
     sel      = cutoff `div` 10
     cutoff   = G.length s - 75
 
