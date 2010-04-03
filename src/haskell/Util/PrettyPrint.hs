@@ -90,22 +90,23 @@ printConfig cp fp ms2 = displayIO . ppAsRows 0 . map (intersperse (text "::")) $
 --------------------------------------------------------------------------------
 
 title :: [[Doc]]
-title = map (map text) [[" # ", " (M+H)+  ", "deltCn", "XCorr", "Reference", "Peptide"],
-                        ["---", "---------", "------", "-----", "---------", "-------"]]
+title = map (map text) [[" # ", " (M+H)+  ", "deltCn", "XCorr", "Ions", "Reference", "Peptide"],
+                        ["---", "---------", "------", "-----", "----", "---------", "-------"]]
 
 toDoc :: Int -> Float -> Match -> [Doc]
-toDoc n s0 (Match frag sc) =
+toDoc n s0 (Match frag sc sp) =
     [ space <> int n <> char '.'
     , float' (fragmass frag)
     , float' (realToFrac ((s0 - sc)/s0))
     , float' (realToFrac sc)
+    , int    (fst sp) <> char '/' <> int (snd sp)
     , ppr    (fraglabel frag)
     , ppr    (fragdata  frag)
     ]
     where float' = text . flip (showFFloat (Just 4)) ""
 
 toDocDetail :: Int -> Match -> B.Box
-toDocDetail n (Match frag _) = B.hsep 2 B.top $
+toDocDetail n (Match frag _ _) = B.hsep 2 B.top
     [ B.alignHoriz B.right 3 $ B.text (shows n ".")
     , B.para B.left cols     $ L.unpack (fragheader frag)
     ]

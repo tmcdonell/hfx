@@ -18,11 +18,11 @@ type MatchCollection = [Match]
 data Match = Match
   {
     fragment :: Fragment,       -- The sequence fragment (header and amino acid chain)
-    scoreXC  :: Float           -- Sequest cross-correlation score
---  scoreSP  :: (Int, Int)      -- Matched ions / total ions
+    scoreXC  :: Float,          -- Sequest cross-correlation score
+    scoreSP  :: (Int, Int)      -- Matched ions / total ions
   }
   deriving (Show)
 
 instance Eq Match where
-  Match f s == Match f' s' = f == f' && (s-s')/(s+s'+0.0005) < 0.0005
+  Match f s p == Match f' s' p' =  f == f' && p == p' && (s-s')/(s+s'+0.0005) < 0.0005
 

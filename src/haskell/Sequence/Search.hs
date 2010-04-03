@@ -29,6 +29,7 @@ import Spectrum
 import Sequence.Match
 import Sequence.Fragment
 import Sequence.Location
+import Sequence.IonSeries
 
 import Data.Word
 import Data.Maybe
@@ -56,12 +57,15 @@ type IonSeries  = DevicePtr Word32
 --
 searchForMatches :: ConfigParams -> SequenceDB -> DeviceSeqDB -> MS2Data -> IO MatchCollection
 searchForMatches cp sdb ddb ms2 =
-  findCandidates cp ddb ms2                                     $ \candidates ->
-  mkSpecXCorr ddb candidates (ms2charge ms2) (G.length specExp) $ \specThry   ->
-  mapMaybe lookupF `fmap` sequestXC cp candidates specExp specThry
+  findCandidates cp ddb ms2                                  $ \candidates ->
+  mkSpecXCorr ddb candidates (ms2charge ms2) (G.length spec) $ \specThry   ->
+  mapMaybe finish `fmap` sequestXC cp candidates spec specThry
   where
-    specExp       = sequestXCorr cp ms2
-    lookupF (s,i) = liftM (flip Match s) (lookup sdb i)
+    spec          = sequestXCorr cp ms2
+    peaks         = extractPeaks spec
+
+    finish (sx,i) = liftM (\f -> Match f sx (sp f)) (lookup sdb i)
+    sp            = matchIons cp (ms2charge ms2) peaks
 
 
 --
