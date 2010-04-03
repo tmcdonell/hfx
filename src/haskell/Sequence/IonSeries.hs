@@ -97,7 +97,7 @@ bions cp charge s = concatMap f [1 .. max 1 (charge-1)]
 extractPeaks :: Spectrum -> PeakSpectrum
 extractPeaks spec = peaks
   where
-    zeros = G.replicate (G.length spec `div` 3) 0
+    zeros = G.replicate ((G.length spec `div` 3) + 1) 0
     peaks = G.accumulate max zeros . G.take 200 . apply (sortBy (flip compare `on` snd)) . G.imap (\i v -> (i `div` 3, v)) $ spec
 
 
