@@ -38,7 +38,7 @@ Executable sequest
   Main-is:             Main.hs
   hs-source-dirs:      src/haskell
   Build-depends:       base >= 3 && < 5, haskell98, bytestring, directory, pretty,
-                       binary-search, bio, boxes, cuda, parsec, vector,
+                       binary-search, bio, boxes, cuda, parsec, vector >= 0.5,
                        vector-algorithms, zlib
 
   ghc-options:         -Wall -Odph
