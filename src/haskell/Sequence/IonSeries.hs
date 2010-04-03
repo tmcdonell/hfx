@@ -12,6 +12,8 @@
 
 module Sequence.IonSeries
   (
+    PeakSpectrum,
+    extractPeaks,
     matchIons,
     matchIonSequence
   )
@@ -23,12 +25,15 @@ import Sequence.Fragment
 import Spectrum.Data
 import Spectrum.Correlation
 
+import Control.Arrow
 import Data.Function
 import Data.Vector.Algorithms.Combinators
 import Data.Vector.Algorithms.Intro
 import qualified Data.ByteString.Lazy.Char8     as L
 import qualified Data.Vector.Generic            as G
 
+
+type PeakSpectrum = Spectrum
 
 --
 -- Convert mass to mass/charge ratio
@@ -80,37 +85,54 @@ addIonsY charge mass =
 bions :: ConfigParams -> Float -> L.ByteString -> [Float]
 bions cp charge s = concatMap f [1 .. max 1 (charge-1)]
   where
-    f c = map (flip ionMZ c) ms
+    f c = map (`ionMZ` c) ms
     ms  = scanl1 (+) . map (getAAMass cp) . L.unpack $ s
 
 
 --
--- Calculate the number of predicted fragment ions which match the observed
--- spectrum to within 1 da. Returns the number matched together with the total
--- number of ions. This does not consider neutral loss.
+-- Extract the 200 most intense peaks from an observed spectrum, collecting each
+-- set of three adjacent bins into a single output.
+--
+{-# INLINE extractPeaks #-}
+extractPeaks :: Spectrum -> PeakSpectrum
+extractPeaks spec = peaks
+  where
+    zeros = G.replicate (G.length spec `div` 3) 0
+    peaks = G.accumulate max zeros . G.take 200 . apply (sortBy (flip compare `on` snd)) . G.imap (\i v -> (i `div` 3, v)) $ spec
+
+
+--
+-- Calculate the number of predicted fragment ions which match the peak spectrum
+-- to within 1 da. Returns the number matched together with the total number of
+-- ions. This does not consider neutral loss.
 --
 {-# INLINE matchIons #-}
-matchIons :: ConfigParams -> Float -> Spectrum -> Fragment -> (Int, Int)
-matchIons cp charge spec (Fragment m _ fd) = (matched, total)
+matchIons :: ConfigParams -> Float -> PeakSpectrum -> Fragment -> (Int, Int)
+matchIons cp charge peaks = matched &&& total
   where
-    pep     = L.drop 2 $ L.take (L.length fd - 2) fd
-    total   = fromIntegral $ L.length pep * 2 - 2
+    boolToInt True  = 1
+    boolToInt False = 0
 
-    ions    = bions cp charge pep
-    matched = sum . map (peaks G.!)
-                  . filter (\i -> i >= 0 && i < G.length peaks)
-                  . map bin
-                  $ ions ++ map (m-) ions
+    total   f = fromIntegral $ (L.length (fragdata f) - 5) * 2
+    matched f = let (b,y) = matchIonSequence cp charge peaks f
+                in  sum   $ map boolToInt (b ++ y)
 
+
+--
+-- Determine which of the predicted fragment ions match the observed peak
+-- spectrum, for the b- and y-ion sequences respectively.
+--
+{-# INLINE matchIonSequence #-}
+matchIonSequence :: ConfigParams -> Float -> PeakSpectrum -> Fragment -> ([Bool], [Bool])
+matchIonSequence cp charge peaks (Fragment r _ f) =
+  ( init (matched ions)
+  , tail (matched (map (r-) ions))
+  )
+  where
     bin x = round (x / binWidth cp / 3)
-    zeros = G.replicate (G.length spec `div` 3) 0
-    peaks = G.accumulate (\_ _ -> 1) zeros . G.take 200 . apply (sortBy (flip compare `on` snd)) . G.imap (\i v -> (i `div` 3, v)) $ spec
+    pep   = L.drop 2 $ L.take (L.length f - 2) f
+    ions  = bions cp charge pep
 
-
---
--- Calculate the number of predicted fragment ions that match the observed
--- spectrum, together with a record of exactly which ions matched.
---
-matchIonSequence :: ConfigParams -> Spectrum -> Fragment -> (Int, Int, [Bool])
-matchIonSequence = undefined
+    inrange i = i >= 0 && i < G.length peaks    -- unnecessary?
+    matched   = map ((\i -> inrange i && peaks G.! i > 0) . bin)
 
