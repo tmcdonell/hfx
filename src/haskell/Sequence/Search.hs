@@ -65,7 +65,7 @@ searchForMatches cp sdb ddb ms2 =
     peaks         = extractPeaks spec
 
     finish (sx,i) = liftM (\f -> Match f sx (sp f)) (lookup sdb i)
-    sp            = matchIons cp (ms2charge ms2) peaks
+    sp            = matchIonSequence cp (ms2charge ms2) peaks
 
 
 --

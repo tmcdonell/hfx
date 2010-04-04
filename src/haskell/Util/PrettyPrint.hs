@@ -94,7 +94,7 @@ title = map (map text) [[" # ", " (M+H)+  ", "deltCn", "XCorr", "Ions", "Referen
                         ["---", "---------", "------", "-----", "----", "---------", "-------"]]
 
 toDoc :: Int -> Float -> Match -> [Doc]
-toDoc n s0 (Match frag sc sp) =
+toDoc n s0 m@(Match frag sc _) =
     [ space <> int n <> char '.'
     , float' (fragmass frag)
     , float' (realToFrac ((s0 - sc)/s0))
@@ -104,6 +104,7 @@ toDoc n s0 (Match frag sc sp) =
     , ppr    (fragdata  frag)
     ]
     where float' = text . flip (showFFloat (Just 4)) ""
+          sp     = scoreSP m
 
 toDocDetail :: Int -> Match -> B.Box
 toDocDetail n (Match frag _ _) = B.hsep 2 B.top
