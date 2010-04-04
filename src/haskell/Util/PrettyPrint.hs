@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Util.PrettyPrint
@@ -14,7 +15,8 @@ module Util.PrettyPrint
 
     printConfig,
     printResults,
-    printResultsDetail
+    printResultsDetail,
+    printIonMatchDetail
   )
   where
 
@@ -93,6 +95,12 @@ title :: [[Doc]]
 title = map (map text) [[" # ", " (M+H)+  ", "deltCn", "XCorr", "Ions", "Reference", "Peptide"],
                         ["---", "---------", "------", "-----", "----", "---------", "-------"]]
 
+titleIon :: [B.Box]
+titleIon = map (B.vcat B.center2)
+         $ transpose [["Seq",  "#",     "B ",         "Y ",    "(+1)"]
+                     ,["---", "--", "--------- ", "--------- ", "--" ]]
+
+
 toDoc :: Int -> Float -> Match -> [Doc]
 toDoc n s0 m@(Match frag sc _) =
     [ space <> int n <> char '.'
@@ -114,6 +122,21 @@ toDocDetail n (Match frag _ _) = B.hsep 2 B.top
     where
         cols = 95       -- for a total width of 100 columns
 
+toIonDetail :: ConfigParams -> Match -> [B.Box]
+toIonDetail cp (Match f _ (b,y)) = map (B.vcat B.right)
+    [ map B.char (L.unpack pep)
+    , map (B.text . show) [1 .. L.length pep]
+    , map showIon (zip ladder b) ++ ["-     "]
+    , "-     " : map showIon (zipWith (\m x -> (fragmass f-m,x)) ladder y)
+    , map (B.text . show) [L.length pep, L.length pep - 1 .. 1]
+    ]
+    where
+        showIon (m,x) = float' m B.<> if x then B.char '+' else B.char ' '
+        float'        = B.text . flip (showFFloat (Just 4)) ""
+        pep           = L.drop 2 $ L.take (L.length (fragdata f) - 2) (fragdata f)
+        ladder        = scanl1 (+) . map (getAAMass cp) $ L.unpack pep
+
+
 printResults   :: MatchCollection -> IO ()
 printResults m =  displayIO . ppAsRows 1 . (++) title . snd . mapAccumL k 1 $ m
     where
@@ -124,6 +147,11 @@ printResultsDetail :: MatchCollection -> IO ()
 printResultsDetail =  displayBoxIO . B.vcat B.left . snd . mapAccumL k 1
     where
         k n z = (n+1, toDocDetail n z)
+
+printIonMatchDetail :: ConfigParams -> Match -> IO ()
+printIonMatchDetail cp m = displayBoxIO . B.hsep 2 B.left . map (B.vcat B.center2)
+    $ transpose [titleIon, toIonDetail cp m]
+
 
 --------------------------------------------------------------------------------
 -- Pretty Print

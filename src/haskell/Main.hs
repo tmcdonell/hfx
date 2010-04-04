@@ -96,6 +96,7 @@ search cp sdb ddb fp =
       when (verbose cp) $ hPutStrLn stderr ("Elapsed time: " ++ showTime t)
 
       printConfig cp fp ms2
-      printResults       $! take (numMatches cp)       matches
-      printResultsDetail $! take (numMatchesDetail cp) matches
+      printResults           $! take (numMatches cp)       matches
+      printResultsDetail     $! take (numMatchesDetail cp) matches
+      printIonMatchDetail cp $! head matches
 
