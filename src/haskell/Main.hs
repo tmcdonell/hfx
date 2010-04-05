@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Main
@@ -23,6 +24,7 @@ import Util.PrettyPrint
 --
 -- System libraries
 --
+import Data.Char
 import Data.Maybe
 import Control.Monad
 import System.Environment
@@ -62,37 +64,38 @@ main = do
   --
   -- Load the proteins from file, marshal to the device, and then get to work!
   --
-  sdb <- makeSeqDB' cp fp
-  withDeviceDB cp sdb $ forM_ dta . search cp sdb
+  (cp',db) <- loadDatabase cp fp
+  withDeviceDB cp' db $ forM_ dta . search cp' db
 
 
-makeSeqDB' :: ConfigParams -> FilePath -> IO SequenceDB
-{-# INLINE makeSeqDB' #-}
-makeSeqDB' cp fp = do
-  when (verbose cp) $ hPutStr stderr "Loading database ... " >> hFlush stdout
-  (t,sdb) <- bracketTime $ makeSeqDB cp fp
+{-# INLINE loadDatabase #-}
+loadDatabase :: ConfigParams -> FilePath -> IO (ConfigParams, SequenceDB)
+loadDatabase cp fp = do
+  (cp',db) <- case suffix fp of
+    "fasta" -> (cp,) `fmap` makeSeqDB cp fp
+    "index" -> readIndex cp fp
+    _       -> error ("Unsupported database type: " ++ show fp)
 
   when (verbose cp) $ do
-    let lf = G.length (dbFrag   sdb)
-        li = G.length (dbIon    sdb)
-        lp = G.length (dbIonSeg sdb) - 1
-    hPutStrLn stderr $ "done (" ++ showTime t ++ ")"
-    hPutStrLn stderr $ "  " ++ shows lp " proteins"
-    hPutStrLn stderr $ "  " ++ shows li " amino acids, " ++ showFFloatSIBase 1024 (fromIntegral (li * 4)  :: Double) "B"
-    hPutStrLn stderr $ "  " ++ shows lf " peptides, "    ++ showFFloatSIBase 1024 (fromIntegral (lf * 12) :: Double) "B"
+    hPutStrLn stderr $ "Database: " ++ fp
+    hPutStrLn stderr $ " # amino acids: " ++ (show . G.length . dbIon    $ db)
+    hPutStrLn stderr $ " # proteins:    " ++ (show . G.length . dbHeader $ db)
+    hPutStrLn stderr $ " # peptides:    " ++ (show . G.length . dbFrag   $ db)
 
-  return sdb
+  return (cp',db)
+  where
+    suffix = map toLower . reverse . takeWhile (/= '.') . reverse
 
 
 --
 -- Search the protein database for a match to the experimental spectra
 --
 search :: ConfigParams -> SequenceDB -> DeviceSeqDB -> FilePath -> IO ()
-search cp sdb ddb fp =
+search cp db dev fp =
   readMS2Data fp >>= \r -> case r of
     Left  s -> hPutStrLn stderr s
     Right d -> forM_ d $ \ms2 -> do
-      (t,matches) <- bracketTime $ searchForMatches cp sdb ddb ms2
+      (t,matches) <- bracketTime $ searchForMatches cp db dev ms2
       when (verbose cp) $ hPutStrLn stderr ("Elapsed time: " ++ showTime t)
 
       printConfig cp fp ms2
