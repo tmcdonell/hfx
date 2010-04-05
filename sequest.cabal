@@ -37,7 +37,7 @@ Flag debug
 Executable sequest
   Main-is:             Main.hs
   hs-source-dirs:      src/haskell
-  Build-depends:       base >= 3 && < 5, haskell98, bytestring, directory, pretty,
+  build-depends:       base >= 3 && < 5, haskell98, bytestring, directory, pretty,
                        binary-search, bio, boxes, cuda, parsec, vector >= 0.5,
                        vector-algorithms, zlib
 
@@ -55,4 +55,11 @@ Executable sequest
 
   -- Extra tools (e.g. alex, hsc2hs, ...) needed to build the source.
   -- Build-tools:
+
+
+Executable generate-peptides
+  Main-is:             MainGen.hs
+  hs-source-dirs:      src/haskell
+  build-depends:       binary, vector-binary-instances
+  ghc-options:         -Wall -Odph
 
