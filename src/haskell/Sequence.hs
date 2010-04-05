@@ -14,6 +14,7 @@ module Sequence
     module Sequence.Fasta,
 
     -- Digesting protein sequences
+    module Sequence.Index,
     module Sequence.Fragment,
 
     -- Locating sequences from index keys
@@ -26,6 +27,7 @@ module Sequence
   where
 
 import Sequence.Fasta
+import Sequence.Index
 import Sequence.Fragment
 import Sequence.Location
 import Sequence.Search
