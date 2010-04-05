@@ -14,6 +14,7 @@ import Mass
 import Config
 import Sequence.Fragment
 
+import Data.Ix
 import Data.Binary
 import Data.Char
 import Data.Maybe
@@ -62,7 +63,7 @@ readIndex cp fp = do
   f   <- L.readFile fp
   let opt = decode f
       db  = decode . decompress $ L.drop (L.length opt + 8) f
-  cp' <- readConfig (L.unpack opt) fp cp
+  cp' <- readConfig (L.unpack opt) fp (cp {aaMassTable = G.replicate (rangeSize ('A','Z')) 0})
 
   return (cp' {databasePath = Just fp}, db)
 
