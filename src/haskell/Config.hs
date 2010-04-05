@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Config
@@ -11,7 +12,7 @@
 module Config
   (
     ConfigParams(..),
-    sequestConfig,
+    sequestConfig, readConfig,
     getAAMass
   )
   where
@@ -119,8 +120,7 @@ sequestConfig fp argv = do
     -- Parse the command line options
     --
     case getOpt Permute options argv of
-        (a,n,[]) -> do cp' <- foldl' (>>=) (return cp) a
-                       return (initializeAAMasses cp', n)
+        (a,n,[]) -> (,n) `fmap` foldl' (>>=) (return cp) a
         (_,_,e)  -> error (unlines e)
 
 
@@ -129,21 +129,24 @@ sequestConfig fp argv = do
 -- list of unprocessed options.
 --
 readConfigFile :: FilePath -> ConfigParams -> IO ConfigParams
-readConfigFile fp cp = do
-    params   <- parseFromFile configFile fp
+readConfigFile fp cp =
+    readFile fp >>= \c -> readConfig c fp cp
 
+readConfig :: String -> FilePath -> ConfigParams -> IO ConfigParams
+readConfig opt fp cp = do
     --
-    -- Apply amino-acid modifications. Theres are a special case for parameter
+    -- Apply amino-acid modifications. These are a special option for parameter
     -- files only.
     --
-    let (cp', args) = processMods cp (forceEither params)
+    let params      = parse configFile fp opt
+        (cp', args) = processMods cp (forceEither params)
 
     --
     -- Parse file, getting a list of actions which we then apply to the supplied 
     -- configuration record. Any unrecognised options cause an exception
     --
     case getOpt RequireOrder (tail options) (map toOpt args) of
-        (a,[],[]) -> foldl' (>>=) (return cp') a
+        (a,[],[]) -> initializeAAMasses `fmap` foldl' (>>=) (return cp') a
         (_,n,e)   -> error . concat $ if (not.null) n then n else e
 
     where
@@ -296,7 +299,7 @@ options =
 
     , Option "h" ["help"]
         (NoArg (\_ -> do prg <- getProgName
-                         hPutStrLn stderr (usageInfo ("Usage: " ++ prg ++ " [OPTIONS...] dta_files...") options)
+                         hPutStrLn stderr (usageInfo ("Usage: " ++ prg ++ " [OPTIONS...] spectra...") options)
                          hPutStrLn stderr digestionRuleHelp
                          exitWith ExitSuccess))
         "This help text"
