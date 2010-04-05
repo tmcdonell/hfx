@@ -24,8 +24,10 @@ import Sequence.Fasta
 import Prelude                          hiding (lookup)
 import Data.List                        (unfoldr)
 import Data.Word
-import Control.Monad                    (foldM)
-import Control.Applicative              ((<$>))
+import Data.Binary
+import Data.Vector.Binary ()
+import Control.Monad
+import Control.Applicative
 
 import qualified Bio.Sequence                   as F
 import qualified Data.ByteString.Lazy           as L
@@ -85,6 +87,18 @@ data SequenceDB = SeqDB
   deriving Show
 
 --
+-- Binary instance of the digested sequence database, for serialising to disk
+-- and (hopefully) fast retrieval for later reuse.
+--
+instance Binary SequenceDB where
+  put (SeqDB h i is f fs) =
+    let (r,c,n) = G.unzip3 f
+    in  put h >> put i >> put is >> put r >> put c >> put n >> put fs
+
+  get = liftM5 SeqDB get get get (liftM3 G.zip3 get get get) get
+
+
+--
 -- An extension of the above referencing memory actually stored on the graphics
 -- device. Meant to be used in tandem.
 --
@@ -122,11 +136,11 @@ makeSeqDB cp fp = do
   --
   -- OPT: make versions that operate directly from (unboxed) streams?
   --
-  let put !i !v = do GM.unsafeWrite f i v
-                     return (i+1)
+  let write !i !v = do GM.unsafeWrite f i v
+                       return (i+1)
 
   let fill (!i,!n) (!x,!y) = do GM.unsafeWrite fs i (fromIntegral n)
-                                n' <- foldM put n (digest cp ions (x,y))
+                                n' <- foldM write n (digest cp ions (x,y))
                                 return (i+1, n')
 
   --
@@ -257,8 +271,8 @@ splice :: ConfigParams -> [(Float,Word32,Word32)] -> [(Float,Word32,Word32)]
 splice cp = loop
   where
     loop []     = []
-    loop (p:ps) = scanl join p (take n ps) ++ loop ps
+    loop (p:ps) = scanl fuse p (take n ps) ++ loop ps
 
     n        = missedCleavages cp
-    join a b = (fst3 a + fst3 b, snd3 a, thd3 b)
+    fuse a b = (fst3 a + fst3 b, snd3 a, thd3 b)
 
