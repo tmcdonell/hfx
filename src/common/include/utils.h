@@ -115,7 +115,7 @@ floorPow2(unsigned int x)
 #endif
 
     int exp;
-    frexp(x, &exp);
+    frexp((double)x, &exp);
     return 1 << (exp - 1);
 }
 
