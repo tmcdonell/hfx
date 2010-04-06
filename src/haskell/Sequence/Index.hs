@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Sequence.Index
@@ -15,11 +16,13 @@ import Config
 import Sequence.Fragment
 
 import Data.Ix
-import Data.Binary
 import Data.Char
 import Data.Maybe
-import System.IO
+import Data.Binary
+import Data.Binary.Get
 import Codec.Compression.GZip
+import System.IO
+
 import qualified Data.ByteString.Lazy.Char8 as L
 import qualified Data.Vector.Generic        as G
 
@@ -61,9 +64,9 @@ writeIndex hdl cp db = L.hPut hdl header >> L.hPut hdl content
 readIndex :: ConfigParams -> FilePath -> IO (ConfigParams, SequenceDB)
 readIndex cp fp = do
   f   <- L.readFile fp
-  let opt = decode f
-      db  = decode . decompress $ L.drop (L.length opt + 8) f
-  cp' <- readConfig (L.unpack opt) fp (cp {aaMassTable = G.replicate (rangeSize ('A','Z')) 0})
+  let (opt,f',_) = runGetState get f 0
+      db         = decode (decompress f')
+      table      = G.replicate (rangeSize ('A','Z')) 0
 
-  return (cp' {databasePath = Just fp}, db)
+  (,db) `fmap` readConfig (L.unpack opt) fp (cp {aaMassTable = table, databasePath = Just fp})
 
