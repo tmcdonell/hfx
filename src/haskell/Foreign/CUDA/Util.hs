@@ -6,7 +6,11 @@
 --
 --------------------------------------------------------------------------------
 
-module Foreign.CUDA.Util where
+module Foreign.CUDA.Util
+  (
+    sizeOfPtr,
+    withVector
+  ) where
 
 import Foreign
 import Control.Exception
@@ -54,6 +58,7 @@ withVector vec action = let l = G.length vec in
 -- data via a temporary array.
 --
 {-# INLINE withVectorS #-}
+{-# RULES "withVector/Vector.Storable" withVector = withVectorS #-}
 withVectorS :: Storable a => S.Vector a -> (DevicePtr a -> IO b) -> IO b
 withVectorS vec action = let l = S.length vec in
   CUDA.allocaArray l $ \d_ptr -> do
