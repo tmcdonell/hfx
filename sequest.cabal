@@ -45,10 +45,14 @@ Executable sequest
   extra-libraries:     cudpp stdc++
   extra-lib-dirs:      dist/lib
 
+  c-sources:           src/cuda/cudpp/radix_sort.cpp
+                       src/cuda/cudpp/scan.cpp
+  include-dirs:        src/common/include
+
   if flag(debug)
-    extra-libraries:   filterD ion_seriesD mvmD permuteD radix_sortD scanD
+    extra-libraries:   filterD ion_seriesD mvmD permuteD
   else
-    extra-libraries:   filter  ion_series  mvm  permute  radix_sort  scan
+    extra-libraries:   filter  ion_series  mvm  permute
 
   -- Modules not exported by this package.
   -- Other-modules:

@@ -652,6 +652,10 @@
 			RelativePath=".\ion_series.h"
 			>
 		</File>
+		<File
+			RelativePath=".\ion_series_inplace.cu"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
