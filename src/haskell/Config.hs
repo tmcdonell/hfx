@@ -303,7 +303,7 @@ options =
                          exitWith ExitSuccess))
         "Print version and exit"
 
-    , Option "h" ["help"]
+    , Option "h?" ["help"]
         (NoArg (\_ -> do prg <- getProgName
                          hPutStrLn stderr (usageInfo ("Usage: " ++ prg ++ " [OPTIONS...] spectra...") options)
                          hPutStrLn stderr digestionRuleHelp
