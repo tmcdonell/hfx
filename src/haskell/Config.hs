@@ -290,9 +290,9 @@ options =
 --        (ReqArg (\v cp -> return cp { numMatchesIon = read v}) "INT")
 --        "Number of matching ion peak descriptions to show"
 
-    , Option "" ["cpu"]
-        (NoArg (\cp -> return cp { useCPU = True }))
-        "Use CPU backend"
+--    , Option "" ["cpu"]
+--        (NoArg (\cp -> return cp { useCPU = True }))
+--        "Use CPU backend"
 
     , Option "v" ["verbose"]
         (NoArg (\cp -> return cp { verbose = True }))
