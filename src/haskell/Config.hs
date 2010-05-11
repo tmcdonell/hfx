@@ -25,6 +25,7 @@ import Control.Monad
 import Data.Char
 import Data.List
 import Data.Maybe
+import Data.Version
 import System
 import System.Console.GetOpt
 import System.Directory
@@ -35,6 +36,8 @@ import Text.ParserCombinators.Parsec
 import Data.Ix
 import Data.Vector.Unboxed (Vector)
 import qualified Data.Vector.Unboxed as U
+
+import Paths_sequest (version)
 
 
 --------------------------------------------------------------------------------
@@ -299,7 +302,7 @@ options =
         "Extra output on stderr"
 
     , Option "V" ["version"]
-        (NoArg (\_ -> do hPutStrLn stderr "sequest version 2.71"
+        (NoArg (\_ -> do hPutStrLn stderr ("sequest-" ++ showVersion version)
                          exitWith ExitSuccess))
         "Print version and exit"
 
