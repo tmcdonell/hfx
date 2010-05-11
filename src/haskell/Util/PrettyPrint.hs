@@ -148,9 +148,10 @@ printResultsDetail =  displayBoxIO . B.vcat B.left . snd . mapAccumL k 1
     where
         k n z = (n+1, toDocDetail n z)
 
-printIonMatchDetail :: ConfigParams -> Match -> IO ()
-printIonMatchDetail cp m = displayBoxIO . B.hsep 2 B.left . map (B.vcat B.center2)
-    $ transpose [titleIon, toIonDetail cp m]
+printIonMatchDetail :: ConfigParams -> [Match] -> IO ()
+printIonMatchDetail cp
+    = mapM_ (\m -> displayBoxIO . B.hsep 2 B.left . map (B.vcat B.center2)
+                 $ transpose [titleIon, toIonDetail cp m])
 
 
 --------------------------------------------------------------------------------

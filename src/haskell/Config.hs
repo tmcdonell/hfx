@@ -77,8 +77,9 @@ data ConfigParams = ConfigParams
     -- Output configuration
     --
     verbose             :: Bool,
-    numMatches          :: Int,                 -- Number of matches to show (summary statistics)
-    numMatchesDetail    :: Int                  -- Number of full protein descriptions to show
+    numMatches          :: Int,         -- # matches to show (summary statistics)
+    numMatchesDetail    :: Int,         -- # full protein descriptions to show
+    numMatchesIon       :: Int          -- # ion matching ladders to show
   }
   deriving (Show)
 
@@ -200,7 +201,8 @@ baseParams =  ConfigParams
 
         verbose             = False,
         numMatches          = 5,
-        numMatchesDetail    = 3
+        numMatchesDetail    = 3,
+        numMatchesIon       = 1
     }
 
 --
@@ -283,6 +285,10 @@ options =
     , Option "N" ["num-matches-detail"]
         (ReqArg (\v cp -> return cp { numMatchesDetail = read v}) "INT")
         "Number of full protein descriptions to show"
+
+--    , Option "N" ["num-matches-ion"]
+--        (ReqArg (\v cp -> return cp { numMatchesIon = read v}) "INT")
+--        "Number of matching ion peak descriptions to show"
 
     , Option "" ["cpu"]
         (NoArg (\cp -> return cp { useCPU = True }))
