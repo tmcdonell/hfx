@@ -52,7 +52,7 @@ lookup db k = do
       hdr       = dbHeader db G.! seqIdx
       aa        = G.toList $ G.slice (fromIntegral c) (fromIntegral (n-c+1)) (dbIon db)
       ca        = if c > a   then dbIon db G.! (fromIntegral c-1) else c2w '-'
-      na        = if n < b-1 then dbIon db G.! (fromIntegral n+2) else c2w '-'
+      na        = if n < b-1 then dbIon db G.! (fromIntegral n+1) else c2w '-'
 
   return $ Fragment (res + massH + massH2O) hdr (L.pack $ [ca,c2w '.'] ++ aa ++ [c2w '.',na])
 
