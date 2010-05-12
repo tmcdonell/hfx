@@ -302,7 +302,7 @@ options =
         "Extra output on stderr"
 
     , Option "V" ["version"]
-        (NoArg (\_ -> do hPutStrLn stderr ("sequest-" ++ showVersion version)
+        (NoArg (\_ -> do hPutStrLn stderr ("sequest version " ++ showVersion version)
                          exitWith ExitSuccess))
         "Print version and exit"
 
