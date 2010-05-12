@@ -22,11 +22,15 @@ import Spectrum.Data
 import Numeric
 import Bio.Util.Parsex
 import Control.Monad
-import Control.Applicative                      ((<$>))
+import Control.Applicative                      hiding (many)
 import Text.ParserCombinators.Parsec
 
 import qualified Data.Vector.Unboxed            as U
 import qualified Data.ByteString.Lazy.Char8     as L
+
+instance Applicative (GenParser tok st) where
+    (<*>) = ap
+    pure  = return
 
 
 --
@@ -50,10 +54,8 @@ readMGF name = lazyMany sample name <$> readFile name
 --
 sample :: Parser MS2Data
 sample = do
-  string "BEGIN IONS" >> eol
-  kv <- params
-  pk <- ions
-  string "END IONS"   >> eol
+  kv <-         string "BEGIN IONS" *> eol *> params
+  pk <- ions <* string "END IONS"   <* eol
 
   let title     = maybe L.empty L.pack (lookup "TITLE" kv)
       charge    = maybe 0 (fst . head . readSigned readFloat) (lookup "CHARGE"  kv)
