@@ -58,11 +58,10 @@ sample = do
   let title     = maybe L.empty L.pack (lookup "TITLE" kv)
       charge    = maybe 0 (fst . head . readSigned readFloat) (lookup "CHARGE"  kv)
       pepmass   = maybe 0 (fst . head . readSigned readFloat) (lookup "PEPMASS" kv)
-      precursor = (pepmass - 1) / charge + massH
 
   if charge == 0 || pepmass == 0
     then unexpected "missing charge state or peptide mass"
-    else return $ MS2Data title precursor charge pk
+    else return $ MS2Data title pepmass charge pk
 
 --
 -- Each sample block may contain a sequence of key/value pairs.
