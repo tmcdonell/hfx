@@ -83,11 +83,11 @@ printConfig cp fp ms2 = displayIO . ppAsRows 0 . map (intersperse (text "::")) $
     , [text "Enzyme"     , hsep $ map text (tail enzyme)]
     , [text "(M+H)+ Mass", float mass <+> char '~'
                                       <+> float  (massTolerance cp)
-                                      <+> parens (signedFloat (ms2charge ms2))] ]
+                                      <+> parens (signedInt (round $ ms2charge ms2))] ]
     where
-        signedFloat x = char (if x < 0 then '-' else '+') <> float x
-        mass          = realToFrac $ (ms2precursor ms2 * ms2charge ms2) - ((ms2charge ms2 * massH) - 1)
-        enzyme        = words . snd . digestionRule $ cp
+        signedInt x = char (if x < 0 then '-' else '+') <> int x
+        mass        = realToFrac $ (ms2precursor ms2 * ms2charge ms2) - ((ms2charge ms2 * massH) - 1)
+        enzyme      = words . snd . digestionRule $ cp
 
 --------------------------------------------------------------------------------
 -- Results -> Render
