@@ -54,8 +54,8 @@ ionMZ m c = (m + massH*c) / c
 addIonsAB, addIonsY :: Float -> Float -> [(Float, Float)]
 addIonsAB charge mass = addIonsA : addIonsB
   where
-    addIonsA = let m = ionMZ (mass - massCO) charge in (m, 10)
-    addIonsB = let m = ionMZ mass charge in
+    addIonsA = let m = ionMZ (mass + massH - massCO) charge in (m, 10)
+    addIonsB = let m = ionMZ (mass + massH) charge in
       [
         (m,50), (m+1,25), (m-1,25),
         (m - massH2O/charge, 10),
@@ -63,7 +63,7 @@ addIonsAB charge mass = addIonsA : addIonsB
       ]
 
 addIonsY charge mass =
-  let m = ionMZ (mass + massH2O) charge in
+  let m = ionMZ (mass + massH + massOH) charge in
     [
       (m,50), (m+1,25), (m-1,25),
       (m - massNH3/charge, 10)
