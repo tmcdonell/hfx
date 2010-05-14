@@ -48,7 +48,7 @@ mkSpec name ((m,c):ss)
     | trunc' c /= c =  Left ("Error parsing file: " ++ show name ++ "\ninvalid peptide charge state\nexpecting integer")
     | otherwise     =  Right (MS2Data empty pcr c (fromList ss))
     where
-        pcr    = (m - 1) / c + massH
+        pcr    = (m + (c-1) * massH) / c
         trunc' = fromInteger . truncate
 
 

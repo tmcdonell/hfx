@@ -82,7 +82,7 @@ findCandidates cp db ms2 action =
   where
     np    = dbNumFrag db
     delta = massTolerance cp
-    mass  = (ms2precursor ms2 * ms2charge ms2) - ((ms2charge ms2 * massH) - 1) - (massH + massH2O)
+    mass  = (ms2precursor ms2 * ms2charge ms2) - ((ms2charge ms2 - 1) * massH) - (massH + massH2O)
 
 
 --
