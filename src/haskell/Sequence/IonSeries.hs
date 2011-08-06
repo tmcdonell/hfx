@@ -1,3 +1,4 @@
+{-# LANGUAGE Rank2Types #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Sequence.IonSeries
@@ -26,11 +27,12 @@ import Spectrum.Data
 import Spectrum.Correlation
 
 import Control.Arrow
+import Control.Monad.ST
 import Data.Function
-import Data.Vector.Algorithms.Combinators
 import Data.Vector.Algorithms.Intro
 import qualified Data.ByteString.Lazy.Char8     as L
 import qualified Data.Vector.Generic            as G
+import qualified Data.Vector.Generic.Mutable    as M
 
 
 type PeakSpectrum = Spectrum
@@ -103,6 +105,10 @@ extractPeaks spec = peaks
           . apply (flip (selectBy (flip compare `on` snd)) 200)
           . G.imap (\i v -> (i `div` 3, v))
           $ spec
+
+{-# INLINE apply #-}
+apply :: G.Vector v e => (forall s mv. M.MVector mv e => mv s e -> ST s ()) -> v e -> v e
+apply algo vec = G.create $ G.thaw vec >>= \mvec -> algo mvec >> return mvec
 
 
 --

@@ -26,10 +26,11 @@ import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Version
-import System
 import System.Console.GetOpt
 import System.Directory
 import System.IO
+import System.Exit
+import System.Environment
 import Text.Show.Functions ()
 import Text.ParserCombinators.Parsec
 

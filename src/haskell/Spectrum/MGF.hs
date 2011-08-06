@@ -27,10 +27,6 @@ import Text.ParserCombinators.Parsec
 import qualified Data.Vector.Unboxed            as U
 import qualified Data.ByteString.Lazy.Char8     as L
 
-instance Applicative (GenParser tok st) where
-    (<*>) = ap
-    pure  = return
-
 
 --
 -- Read the given file and return either an error or a list of the contained

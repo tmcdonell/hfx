@@ -57,13 +57,11 @@ module Util.C2HS (
 ) where 
 
 
-import Foreign
-       hiding       (Word)
+import Foreign.C
+import Foreign hiding   (Word)
                     -- Should also hide the Foreign.Marshal.Pool exports in
                     -- compilers that export them
-import CForeign
-
-import Monad        (liftM)
+import Control.Monad    (liftM)
 
 
 -- Composite marshalling functions

@@ -91,10 +91,12 @@ data SequenceDB = SeqDB
 -- and (hopefully) fast retrieval for later reuse.
 --
 instance Binary SequenceDB where
+  {-# INLINE put #-}
   put (SeqDB h i is f fs) =
     let (r,c,n) = G.unzip3 f
     in  put h >> put i >> put is >> put r >> put c >> put n >> put fs
 
+  {-# INLINE get #-}
   get = liftM5 SeqDB get get get (liftM3 G.zip3 get get get) get
 
 

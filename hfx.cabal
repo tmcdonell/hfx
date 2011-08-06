@@ -37,11 +37,20 @@ Flag debug
 Executable sequest
   Main-is:             Main.hs
   hs-source-dirs:      src/haskell
-  build-depends:       base >= 3 && < 5, haskell98, bytestring, directory, pretty,
-                       binary-search, bio, boxes, cuda, parsec, vector >= 0.5,
-                       vector-algorithms, zlib
+  build-depends:       base                     >= 3.0 && < 5.0,
+                       binary-search            >= 0.0 && < 0.1,
+                       bio                      >= 0.5 && < 0.6,
+                       boxes                    >= 0.1 && < 0.2,
+                       bytestring               >= 0.9 && < 0.10,
+                       cuda                     >= 0.2 && < 0.4,
+                       directory                >= 1.0 && < 1.2,
+                       parsec                   >= 3.0 && < 3.2,
+                       pretty                   >= 1.0 && < 1.2,
+                       vector                   >= 0.7 && < 0.8,
+                       vector-algorithms        >= 0.4 && < 0.6,
+                       zlib                     >= 0.5 && < 0.6
 
-  ghc-options:         -Wall -Odph
+  ghc-options:         -Wall -O2 -fwarn-tabs
   extra-libraries:     cudpp stdc++
   extra-lib-dirs:      dist/lib
 
@@ -64,6 +73,8 @@ Executable sequest
 Executable generate-peptides
   Main-is:             MainGen.hs
   hs-source-dirs:      src/haskell
-  build-depends:       binary, vector-binary-instances
-  ghc-options:         -Wall -Odph
+  build-depends:       binary                   >= 0.4 && < 0.6,
+                       vector-binary-instances  >= 0.1 && < 0.2
+
+  ghc-options:         -Wall -O2
 
