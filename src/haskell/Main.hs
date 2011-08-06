@@ -40,7 +40,7 @@ import qualified Foreign.CUDA           as CUDA
 --------------------------------------------------------------------------------
 
 defaultConfigFile :: FilePath
-defaultConfigFile =  "sequest.params"
+defaultConfigFile =  "hfx.params"
 
 
 --------------------------------------------------------------------------------

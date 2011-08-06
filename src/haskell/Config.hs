@@ -37,7 +37,7 @@ import Data.Ix
 import Data.Vector.Unboxed (Vector)
 import qualified Data.Vector.Unboxed as U
 
-import Paths_sequest (version)
+import Paths_hfx (version)
 
 
 --------------------------------------------------------------------------------

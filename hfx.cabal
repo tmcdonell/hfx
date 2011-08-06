@@ -1,4 +1,4 @@
-Name:                sequest
+Name:                hfx
 Version:             0.1
 Synopsis:            An implementation of the SEQUEST algorithm for protein identification
 Description:
@@ -18,7 +18,7 @@ Description:
 
 License:             BSD3
 License-file:        LICENSE
-Copyright:           Copyright (c) 2009-10. Trevor L. McDonell
+Copyright:           Copyright (c) [2009..2011] Trevor L. McDonell
 Author:              Trevor L. McDonell <tmcdonell@cse.unsw.edu.au>
 Maintainer:          Trevor L. MCDonell <tmcdonell@cse.unsw.edu.au>
 Stability:           Experimental
