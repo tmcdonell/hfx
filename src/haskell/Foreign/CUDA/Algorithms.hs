@@ -14,7 +14,7 @@ module Foreign.CUDA.Algorithms
   (
     findIndicesInRange,
     addIons, addIonsIP,
-    radixsort,
+    rsort,
     mvm
   )
   where
@@ -75,14 +75,14 @@ foreign import ccall unsafe "algorithms.h addIons_inplace"
 
 
 
-radixsort :: Storable a => DevicePtr Float -> DevicePtr a -> Int -> IO ()
-radixsort a1 a2 a3 =
+rsort :: DevicePtr Float -> DevicePtr Word32 -> Int -> IO ()
+rsort a1 a2 a3 =
   withDevicePtr a1 $ \a1' ->
   withDevicePtr a2 $ \a2' ->
-  radixsort'_ a1' (castPtr a2') (cIntConv a3)
+  rsort'_ a1' a2' (cIntConv a3)
 
-foreign import ccall unsafe "algorithms.h radixsort_f"
-  radixsort'_ :: Ptr Float -> Ptr () -> Word32 -> IO ()
+foreign import ccall unsafe "algorithms.h sort_rf"
+  rsort'_ :: Ptr Float -> Ptr Word32 -> Word32 -> IO ()
 
 
 mvm :: DevicePtr Float -> DevicePtr Word32 -> DevicePtr Float -> Int -> Int -> IO ()

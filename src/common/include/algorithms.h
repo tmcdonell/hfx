@@ -17,6 +17,7 @@ extern "C" {
 #endif
 
 
+#if 0
 /*
  * Scan and segmented-scan
  * Unlike Haskell-style scans, the size of the output array will not change.
@@ -25,12 +26,14 @@ extern "C" {
  */
 void prescanl_plusui(const uint32_t *d_in, uint32_t *d_out, const uint32_t N);
 void prescanr_plusui(const uint32_t *d_in, uint32_t *d_out, const uint32_t N);
+#endif
 
 /*
- * Radix sort (in-place)
+ * key-value sort (in-place)
  */
-void radixsort_f(float *d_keys, void *d_vals, uint32_t N);
+void sort_rf(float *d_keys, uint32_t *d_vals, uint32_t N);
 
+#if 0
 /*
  * Permute (32-bit payload)
  */
@@ -38,7 +41,8 @@ void permute(const void *d_in, void *d_out, const uint32_t *d_indices, const uin
 void bpermute(const void *d_in, void *d_out, const uint32_t *d_indices, const uint32_t length);
 uint32_t compact(const void *d_in, void *d_out, const uint32_t *d_flags, const uint32_t length);
 uint32_t compactIndices(uint32_t *d_out, const uint32_t *d_flags, const uint32_t length);
-
+#endif
+#if 0
 /*
  * Filter
  */
@@ -51,6 +55,7 @@ filterInRange_f
     const float         min,
     const float         max
 );
+#endif
 
 uint32_t
 findIndicesInRange_f

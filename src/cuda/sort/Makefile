@@ -5,15 +5,13 @@
 # ------------------------------------------------------------------------------
 # Input files
 # ------------------------------------------------------------------------------
-EXECUTABLE      := sequest
-HSMAIN          := Main.hs
+STATIC_LIB      := libsort.a
 
-ALGORITHMS      := filter ion_series mvm sort
-EXTRALIBS       += stdc++ $(addsuffix $(LIBSUFFIX),$(ALGORITHMS))
-USECUDPP	:= 0
+CUFILES         := sort.cu
+
+EXTRALIBS       := stdc++
 
 # ------------------------------------------------------------------------------
 # Haskell/CUDA build system
 # ------------------------------------------------------------------------------
-ROOTDIR := .
-include ../common/common.mk
+include ../../common/common.mk

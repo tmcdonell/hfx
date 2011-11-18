@@ -1,142 +1,54 @@
 /* -----------------------------------------------------------------------------
  *
  * Module    : Filter
- * Copyright : (c) [2009..2010] Trevor L. McDonell
+ * Copyright : (c) [2009..2011] Trevor L. McDonell
  * License   : BSD
  *
  * ---------------------------------------------------------------------------*/
 
-#include "utils.h"
-#include "device.h"
-#include "filter.h"
-#include "algorithms.h"
-#include "cudpp/type_vector.h"
-
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/device_vector.h>
 #include <stdint.h>
 
+#include "algorithms.h"
 
-static void
-filter_control(uint32_t n, uint32_t &blocks, uint32_t &threads)
+
+template <typename T>
+struct interval : public thrust::unary_function<T,bool>
 {
-    threads = ceilPow2(n + FILTER_ELT_PER_THREAD - 1) / FILTER_ELT_PER_THREAD;
-    threads = min(threads, MAX_THREADS);
+    T min_val;
+    T max_val;
 
-    blocks  = (n + threads * FILTER_ELT_PER_THREAD - 1) / (threads * FILTER_ELT_PER_THREAD);
-    blocks  = min(blocks, MAX_BLOCKS);
-}
+    __host__ __device__
+    interval(T _m, T _n) : min_val(_m), max_val(_n) {}
 
+    __host__ __device__ bool operator() (T x)
+    {
+        return (min_val <= x && x <= max_val);
+    }
+};
 
-/*
- * Filter an array of elements predicated by lying inside some (inclusive)
- * range. The output array will be filled with zeros for elements that do not
- * pass, or the array index of the elements that do.
- *
- * The filtering result will be compacted to a dense array, with the total
- * number of elements fulfilling the predicate returned. The valid array
- * elements themselves or the indices of said elements may be returned.
- */
-template <typename T, bool lengthIsPow2>
-__global__ static void
-filterInRange_core
+uint32_t
+findIndicesInRange_f
 (
-    const T             *d_in,
-    uint32_t            *d_valid,
-    const uint32_t      length,
-    const T             m,
-    const T             n
+    const float         *d_in_raw,
+    uint32_t            *d_indices_raw,
+    const uint32_t      N,
+    const float         min_val,
+    const float         max_val
 )
 {
-    uint32_t            idx;
-    uint4               tmp;
-    uint4               *d_valid4 = (uint4*) d_valid;
-    const uint32_t      len4      = length / FILTER_ELT_PER_THREAD;
-    const uint32_t      gridSize  = __umul24(blockDim.x, gridDim.x);
+    thrust::device_ptr<const float>     d_in(d_in_raw);
+    thrust::device_ptr<uint32_t>        d_indices(d_indices_raw);
 
-    typename typeToVector<T,4>::Result  val;
-    typename typeToVector<T,4>::Result* d_in4 = (typename typeToVector<T,4>::Result*) d_in;
+    // define the sequence [0, N)
+    thrust::counting_iterator<uint32_t> first(0);
+    thrust::counting_iterator<uint32_t> last = first + N;
 
-    /*
-     * Mark elements that pass the predicate with a [0,1] head flag. Can not
-     * store the index directly, as `compact' needs to scan this result. Boo.
-     */
-    for (idx = __umul24(blockIdx.x, blockDim.x) + threadIdx.x; idx < len4; idx += gridSize)
-    {
-        val   = d_in4[idx];
-        tmp.x = (m <= val.x && val.x <= n);
-        tmp.y = (m <= val.y && val.y <= n);
-        tmp.z = (m <= val.z && val.z <= n);
-        tmp.w = (m <= val.w && val.w <= n);
+    // compute indices of elements in range
+    thrust::device_ptr<uint32_t> indices_end =
+        thrust::copy_if(first, last, d_in, d_indices, interval<const float>(min_val, max_val));
 
-        d_valid4[idx] = tmp;
-    }
-
-    /*
-     * Translate the indices back into single-element coordinates. This method
-     * ensures that that successive threads retain sequential indices.
-     */
-    idx += (FILTER_ELT_PER_THREAD - 1) * len4;
-    if (idx < length)
-    {
-        T x          = d_in[idx];
-        d_valid[idx] = (m <= x && x <= n);
-    }
-}
-
-
-template <typename T, bool findIndices>
-static unsigned int
-filterInRange
-(
-    const T             *d_in,
-    void                *d_out,
-    const uint32_t      length,
-    const T             m,
-    const T             n
-)
-{
-    uint32_t            threads;
-    uint32_t            blocks;
-    uint32_t            *d_valid;
-
-    CUDA_SAFE_CALL( cudaMalloc((void**) &d_valid, length * sizeof(uint32_t)) );
-
-    /*
-     * Determine which elements satisfy the predicate
-     */
-    filter_control(length, blocks, threads);
-    if (isPow2(length)) filterInRange_core< T,true ><<<blocks,threads>>>(d_in, d_valid, length, m, n);
-    else                filterInRange_core< T,false><<<blocks,threads>>>(d_in, d_valid, length, m, n);
-
-    /*
-     * Compact these elements into a dense array. The output array should be at
-     * least as large as the input, and the actual number of elements will be
-     * returned.
-     *
-     * Doesn't like `d_out' having different types based on a template
-     * parameter, so make untyped (compact casts internally anyway).
-     */
-    uint32_t N;
-    if (findIndices) N = compactIndices((uint32_t*)  d_out, d_valid, length);
-    else             N = compact((const void*) d_in, d_out, d_valid, length);
-
-    cudaFree(d_valid);
-    return N;
-}
-
-
-// -----------------------------------------------------------------------------
-// Instances
-// -----------------------------------------------------------------------------
-
-unsigned int filterInRange_f(const float *d_in, float *d_out, const uint32_t length, const float m, const float n)
-{
-    unsigned int N = filterInRange<float,false>(d_in, d_out, length, m, n);
-    return N;
-}
-
-unsigned int findIndicesInRange_f(const float *d_in, uint32_t *d_out, const uint32_t length, const float m, const float n)
-{
-    unsigned int N = filterInRange<float,true>(d_in, d_out, length, m, n);
-    return N;
+    return indices_end - d_indices;
 }
 

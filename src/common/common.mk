@@ -33,9 +33,6 @@ SM_VERSIONS     := sm_10 sm_11 sm_12 sm_13
 OSUPPER         := $(shell uname -s 2>/dev/null | tr [:lower:] [:upper:])
 OSLOWER         := $(shell uname -s 2>/dev/null | tr [:upper:] [:lower:])
 DARWIN          := $(strip $(findstring DARWIN, $(OSUPPER)))
-ifneq ($(DARWIN),)
-    SNOWLEOPARD := $(strip $(findstring 10.6, $(shell egrep "<string>10\.6.*</string>" /System/Library/CoreServices/SystemVersion.plist)))
-endif
 
 # detect if 32 bit or 64 bit system
 HP_64           := $(strip $(shell uname -m | grep 64))
@@ -108,11 +105,11 @@ ifeq ($(i386),1)
     else
         CXX_ARCH_FLAGS	+= -m32
     endif
-else
-    ifneq ($(SNOWLEOPARD),)
-        NVCCFLAGS	+= -m32
-        CXX_ARCH_FLAGS	+= -arch i386 -m32
-    endif
+# else
+#     ifneq ($(SNOWLEOPARD),)
+#         NVCCFLAGS	+= -m32
+#         CXX_ARCH_FLAGS	+= -arch i386 -m32
+#     endif
 endif
 endif
 

@@ -124,13 +124,13 @@ sequestXC cp (d_idx,nIdx) expr d_thry = let n = max (numMatches cp) (numMatchesD
 
     -- Score and rank each candidate sequence
     --
-    CUDA.mvm       d_score d_thry d_expr nIdx (G.length expr)
-    CUDA.radixsort d_score d_idx nIdx
+    CUDA.mvm   d_score d_thry d_expr nIdx (G.length expr)
+    CUDA.rsort d_score d_idx nIdx
 
     -- Retrieve the most relevant matches
     --
-    sc <- CUDA.peekListArray n (d_score `CUDA.advanceDevPtr` (nIdx-n))
-    ix <- CUDA.peekListArray n (d_idx   `CUDA.advanceDevPtr` (nIdx-n))
+    sc <- CUDA.peekListArray n d_score
+    ix <- CUDA.peekListArray n d_idx
 
-    return . reverse $ zipWith (\s i -> (s/10000,fromIntegral i)) sc ix
+    return $ zipWith (\s i -> (s/10000,fromIntegral i)) sc ix
 
