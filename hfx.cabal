@@ -34,7 +34,7 @@ Flag debug
   Description:  Enable debug support
   Default:      False
 
-Executable sequest
+Executable hfx
   Main-is:             Main.hs
   hs-source-dirs:      src/haskell
   build-depends:       base                     >= 3.0 && < 5.0,
