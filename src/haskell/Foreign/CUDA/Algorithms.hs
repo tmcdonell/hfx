@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE CPP, ForeignFunctionInterface #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Foreign.CUDA.Algorithms
@@ -13,7 +13,7 @@
 module Foreign.CUDA.Algorithms
   (
     findIndicesInRange,
-    addIons, addIonsIP,
+    addIons,
     rsort,
     mvm
   )
@@ -49,6 +49,7 @@ foreign import ccall unsafe "algorithms.h addIons"
   addIons'_ :: Ptr Word32 -> Ptr Float -> Ptr Float -> Ptr Word32 -> Ptr Word32 -> Ptr Word32 -> Word32 -> Word32 -> Word32 -> IO ()
 
 
+#if 0
 addIonsIP
     :: DevicePtr Float                          -- [out] sequence scores
     -> DevicePtr Float                          -- experimental spectrum
@@ -72,7 +73,7 @@ addIonsIP d_score d_spec d_residual d_ions (d_tc, d_tn) d_idx num_idx max_charge
 
 foreign import ccall unsafe "algorithms.h addIons_inplace"
   addIons_ip'_ :: Ptr Float -> Ptr Float -> Ptr Float -> Ptr Float -> Ptr Word32 -> Ptr Word32 -> Ptr Word32 -> Word32 -> Word32 -> Word32 -> IO ()
-
+#endif
 
 
 rsort :: DevicePtr Float -> DevicePtr Word32 -> Int -> IO ()
