@@ -75,7 +75,8 @@ addIons
 (
     uint32_t            *d_spec,
     const float         *d_residual,
-    const float         *d_ions,
+    const float         *d_mass,
+    const uint8_t       *d_ions,
     const uint32_t      *d_tc,
     const uint32_t      *d_tn,
     const uint32_t      *d_idx,
@@ -84,6 +85,7 @@ addIons
     const uint32_t      len_spec
 );
 
+#if 0
 void
 addIons_inplace
 (
@@ -98,6 +100,7 @@ addIons_inplace
     const uint32_t      max_charge,
     const uint32_t      len_spec
 );
+#endif
 
 /*
  * Dense matrix-vector multiplication

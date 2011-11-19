@@ -78,9 +78,9 @@ searchForMatches cp sdb ddb ms2 =
 findCandidates :: ConfigParams -> DeviceSeqDB -> MS2Data -> (Candidates -> IO b) -> IO b
 findCandidates cp db ms2 action =
   CUDA.allocaArray np $ \d_idx ->
-  CUDA.findIndicesInRange (dbResidual db) d_idx np (mass-delta) (mass+delta) >>= \n -> action (d_idx,n)
+  CUDA.findIndicesInRange (devResiduals db) d_idx np (mass-delta) (mass+delta) >>= \n -> action (d_idx,n)
   where
-    np    = dbNumFrag db
+    np    = numFragments db
     delta = massTolerance cp
     mass  = (ms2precursor ms2 * ms2charge ms2) - ((ms2charge ms2 - 1) * massH) - (massH + massH2O)
 
@@ -99,7 +99,7 @@ mkSpecXCorr db (d_idx, nIdx) chrg len action =
     let bytes = fromIntegral $ n * CUDA.sizeOfPtr d_spec
 
     CUDA.memset  d_spec bytes 0
-    CUDA.addIons d_spec (dbResidual db) (dbIonMass db) (dbTerminal db) d_idx nIdx ch len
+    CUDA.addIons d_spec (devResiduals db) (devMassTable db) (devIons db) (devTerminals db) d_idx nIdx ch len
 
     action d_spec
   where
@@ -121,6 +121,8 @@ sequestXC cp (d_idx,nIdx) expr d_thry = let n = max (numMatches cp) (numMatchesD
     -- or if something unexpected happened (out of memory)
     --
     if nIdx == 0 then return [] else do
+
+
 
     -- Score and rank each candidate sequence
     --

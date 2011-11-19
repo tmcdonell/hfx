@@ -8,6 +8,7 @@
 
 #include "utils.h"
 #include "device.h"
+#include "texture.h"
 #include "ion_series.h"
 #include "algorithms.h"
 
@@ -123,6 +124,18 @@ addIons_k(uint32_t *d_spec, const uint32_t N, const float b_mass, const float y_
 
 
 /*
+ * Return the mass of an amino acid residue in atomic mass units, for the given
+ * short abbreviation.
+ */
+template <bool UseCache>
+__device__ float
+getAAMass(const float *d_mass, const char aa)
+{
+    return fetch_x<UseCache>(aa - 'A', d_mass);
+}
+
+
+/*
  * Generate theoretical spectra for a collection of peptide fragments. The
  * 'ions' array contains the individual amino-acid masses for the database
  * entries. We are interested in the sequences generated between the terminal
@@ -131,16 +144,17 @@ addIons_k(uint32_t *d_spec, const uint32_t N, const float b_mass, const float y_
  * A warp of threads iterates between the (tc,tn) indices, generating the b- and
  * y-ion mass ladders. A (long) sequence of (slow) global atomic update requests
  * is subsequently issued. The input d_spec should be initially zero, and on
- * output will contain the theoretical spectra peaks in a square (although
- * mostly sparse) matrix.
+ * output will contain the theoretical spectra peaks in a dense (although
+ * mostly zero) matrix.
  */
-template <uint32_t BlockSize, uint32_t MaxCharge>
+template <uint32_t BlockSize, uint32_t MaxCharge, bool UseCache>
 __global__ static void
 addIons_core
 (
     uint32_t            *d_spec,
     const float         *d_residual,    // peptide residual mass
-    const float         *d_ions,        // individual ion masses
+    const float         *d_mass,        // lookup table for ion character codes ['A'..'Z']
+    const uint8_t       *d_ions,        // individual ion character codes (the database)
     const uint32_t      *d_tc,          // c-terminal indices
     const uint32_t      *d_tn,          // n-terminal indices
     const uint32_t      *d_idx,         // The indices of the data for peptides under consideration
@@ -180,7 +194,7 @@ addIons_core
             /*
              * Load the ion mass, and propagate the partial scan results
              */
-            b_mass = d_ions[j];
+            b_mass = getAAMass<UseCache>(d_mass, d_ions[j]);
 
             if (thread_lane == 0)
                 b_mass += s_data[threadIdx.x + (WARP_SIZE-1)];
@@ -213,13 +227,14 @@ addIons_control(uint32_t N, uint32_t &blocks, uint32_t &threads)
 }
 
 
-template <uint32_t MaxCharge>
+template <uint32_t MaxCharge, bool UseCache>
 static void
 addIons_dispatch
 (
     uint32_t            *d_spec,
     const float         *d_residual,
-    const float         *d_ions,
+    const float         *d_mass,
+    const uint8_t       *d_ions,
     const uint32_t      *d_tc,
     const uint32_t      *d_tn,
     const uint32_t      *d_idx,
@@ -230,17 +245,23 @@ addIons_dispatch
     uint32_t blocks;
     uint32_t threads;
 
+    if (UseCache)
+        bind_x(d_mass);
+
     addIons_control(num_idx, blocks, threads);
     switch (threads)
     {
-//  case 512: addIons_core<512,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
-//  case 256: addIons_core<256,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
-    case 128: addIons_core<128,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
-    case  64: addIons_core< 64,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
-    case  32: addIons_core< 32,MaxCharge><<<blocks,threads>>>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+//  case 512: addIons_core<512,MaxCharge,UseCache><<<blocks,threads>>>(d_spec, d_residual, d_mass, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+//  case 256: addIons_core<256,MaxCharge,UseCache><<<blocks,threads>>>(d_spec, d_residual, d_mass, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+    case 128: addIons_core<128,MaxCharge,UseCache><<<blocks,threads>>>(d_spec, d_residual, d_mass, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+    case  64: addIons_core< 64,MaxCharge,UseCache><<<blocks,threads>>>(d_spec, d_residual, d_mass, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+    case  32: addIons_core< 32,MaxCharge,UseCache><<<blocks,threads>>>(d_spec, d_residual, d_mass, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
     default:
         assert(!"Non-exhaustive patterns in match");
     }
+
+    if (UseCache)
+      unbind_x(d_mass);
 }
 
 
@@ -249,7 +270,8 @@ addIons
 (
     uint32_t            *d_spec,
     const float         *d_residual,
-    const float         *d_ions,
+    const float         *d_mass,
+    const uint8_t       *d_ions,
     const uint32_t      *d_tc,
     const uint32_t      *d_tn,
     const uint32_t      *d_idx,
@@ -260,10 +282,10 @@ addIons
 {
     switch (max_charge)
     {
-    case 1: addIons_dispatch<1>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
-    case 2: addIons_dispatch<2>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
-    case 3: addIons_dispatch<3>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
-    case 4: addIons_dispatch<4>(d_spec, d_residual, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+    case 1: addIons_dispatch<1,true>(d_spec, d_residual, d_mass, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+    case 2: addIons_dispatch<2,true>(d_spec, d_residual, d_mass, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+    case 3: addIons_dispatch<3,true>(d_spec, d_residual, d_mass, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
+    case 4: addIons_dispatch<4,true>(d_spec, d_residual, d_mass, d_ions, d_tc, d_tn, d_idx, num_idx, len_spec); break;
     default:
         assert(!"Non-exhaustive patterns in match");
     }

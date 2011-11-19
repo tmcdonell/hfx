@@ -106,11 +106,12 @@ instance Binary SequenceDB where
 --
 data DeviceSeqDB = DevDB
   {
-    dbNumIon   :: Int,
-    dbNumFrag  :: Int,
-    dbIonMass  :: CUDA.DevicePtr Float,
-    dbResidual :: CUDA.DevicePtr Float,
-    dbTerminal :: (CUDA.DevicePtr Word32, CUDA.DevicePtr Word32)
+    numIons             :: Int,
+    numFragments        :: Int,
+    devIons             :: CUDA.DevicePtr Word8,
+    devMassTable        :: CUDA.DevicePtr Float,
+    devResiduals        :: CUDA.DevicePtr Float,
+    devTerminals        :: (CUDA.DevicePtr Word32, CUDA.DevicePtr Word32)
   }
   deriving Show
 
@@ -166,15 +167,17 @@ withDeviceDB :: ConfigParams -> SequenceDB -> (DeviceSeqDB -> IO a) -> IO a
 {-# INLINE withDeviceDB #-}
 withDeviceDB cp sdb action =
   let (r,c,n) = G.unzip3 (dbFrag sdb)
-      ions    = G.unstream . S.map (getAAMass cp . w2c) . G.stream $ dbIon sdb :: U.Vector Float
+      mt      = aaMassTable cp
+      ions    = dbIon sdb
       numIon  = G.length (dbIon  sdb)
       numFrag = G.length (dbFrag sdb)
   in
     CUDA.withVector r    $ \d_r    ->
     CUDA.withVector c    $ \d_c    ->
     CUDA.withVector n    $ \d_n    ->
+    CUDA.withVector mt   $ \d_mt   ->
     CUDA.withVector ions $ \d_ions ->
-      action (DevDB numIon numFrag d_ions d_r (d_c, d_n))
+      action (DevDB numIon numFrag d_ions d_mt d_r (d_c, d_n))
 
 
 --------------------------------------------------------------------------------

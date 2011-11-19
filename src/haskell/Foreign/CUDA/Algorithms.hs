@@ -35,18 +35,19 @@ foreign import ccall unsafe "algorithms.h findIndicesInRange_f"
   findIndicesInRange'_ :: Ptr Float -> Ptr Word32 -> Word32 -> Float -> Float -> IO Word32
 
 
-addIons :: DevicePtr Word32 -> DevicePtr Float -> DevicePtr Float -> (DevicePtr Word32, DevicePtr Word32) -> DevicePtr Word32 -> Int -> Int -> Int -> IO ()
-addIons a1 a2 a3 (a4,a5) a6 a7 a8 a9 =
+addIons :: DevicePtr Word32 -> DevicePtr Float -> DevicePtr Float -> DevicePtr Word8 -> (DevicePtr Word32, DevicePtr Word32) -> DevicePtr Word32 -> Int -> Int -> Int -> IO ()
+addIons a1 a2 a3 a4 (a5,a6) a7 a8 a9 a10 =
   withDevicePtr a1 $ \a1' ->
   withDevicePtr a2 $ \a2' ->
   withDevicePtr a3 $ \a3' ->
   withDevicePtr a4 $ \a4' ->
   withDevicePtr a5 $ \a5' ->
   withDevicePtr a6 $ \a6' ->
-  addIons'_ a1' a2' a3' a4' a5' a6' (cIntConv a7) (cIntConv a8) (cIntConv a9)
+  withDevicePtr a7 $ \a7' ->
+  addIons'_ a1' a2' a3' a4' a5' a6' a7' (cIntConv a8) (cIntConv a9) (cIntConv a10)
 
 foreign import ccall unsafe "algorithms.h addIons"
-  addIons'_ :: Ptr Word32 -> Ptr Float -> Ptr Float -> Ptr Word32 -> Ptr Word32 -> Ptr Word32 -> Word32 -> Word32 -> Word32 -> IO ()
+  addIons'_ :: Ptr Word32 -> Ptr Float -> Ptr Float -> Ptr Word8 -> Ptr Word32 -> Ptr Word32 -> Ptr Word32 -> Word32 -> Word32 -> Word32 -> IO ()
 
 
 #if 0
