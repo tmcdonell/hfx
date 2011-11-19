@@ -21,11 +21,11 @@ import Config
 import Util.Misc
 import Sequence.Fasta
 
-import Prelude                          hiding (lookup)
-import Data.List                        (unfoldr)
+import Prelude                                  hiding ( lookup )
+import Data.List                                ( unfoldr )
 import Data.Word
 import Data.Binary
-import Data.Vector.Binary ()
+import Data.Vector.Binary                       ()
 import Control.Monad
 import Control.Applicative
 
@@ -127,8 +127,8 @@ makeSeqDB cp fp = do
   ns <- countSeqs fp
   db <- readFasta fp
 
-  let iseg = ionSeg  ns db
-      hdr  = headers ns db
+  let hdr  = headers ns db
+      iseg = ionSeg  ns db
       ions = ionSeq (fromIntegral (U.last iseg)) db
       nf   = countFrags cp ions
 
@@ -150,7 +150,7 @@ makeSeqDB cp fp = do
   -- number and number of fragments generated so far, so we can also fill in the
   -- fragment segmenting information.
   --
-  nf' <- snd <$> foldM fill (0,0) (G.toList (G.zip iseg (G.tail iseg)))
+  nf' <- snd <$> G.foldM' fill (0,0) (G.zip iseg (G.tail iseg))
   GM.unsafeWrite fs ns (fromIntegral nf')
 
   f'  <- G.unsafeFreeze (GM.take nf' f)

@@ -24,10 +24,10 @@ import Util.PrettyPrint
 --
 -- System libraries
 --
-import Data.Char
 import Data.Maybe
 import Control.Monad
 import System.Environment
+import System.FilePath
 import System.IO
 import Prelude                          hiding (lookup)
 
@@ -71,10 +71,10 @@ main = do
 {-# INLINE loadDatabase #-}
 loadDatabase :: ConfigParams -> FilePath -> IO (ConfigParams, SequenceDB)
 loadDatabase cp fp = do
-  (cp',db) <- case suffix fp of
-    "fasta" -> (cp,) `fmap` makeSeqDB cp fp
-    "index" -> readIndex cp fp
-    _       -> error ("Unsupported database type: " ++ show fp)
+  (cp',db) <- case takeExtensions fp of
+    ".fasta" -> (cp,) `fmap` makeSeqDB cp fp
+    ".index" -> readIndex cp fp
+    _        -> error ("Unsupported database type: " ++ show fp)
 
   when (verbose cp) $ do
     hPutStrLn stderr $ "Database: " ++ fp
@@ -83,8 +83,6 @@ loadDatabase cp fp = do
     hPutStrLn stderr $ " # peptides:    " ++ (show . G.length . dbFrag   $ db)
 
   return (cp',db)
-  where
-    suffix = map toLower . reverse . takeWhile (/= '.') . reverse
 
 
 --
