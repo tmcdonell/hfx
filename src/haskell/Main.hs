@@ -1,4 +1,4 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TupleSections, ScopedTypeVariables #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Main
@@ -26,10 +26,11 @@ import Util.PrettyPrint
 --
 import Data.Maybe
 import Control.Monad
+import Control.Exception
 import System.Environment
 import System.FilePath
 import System.IO
-import Prelude                          hiding (lookup)
+import Prelude                          hiding ( lookup, catch )
 
 import qualified Data.Vector.Generic    as G
 import qualified Foreign.CUDA           as CUDA
@@ -100,4 +101,8 @@ search cp db dev fp =
       printResults           $! take (numMatches cp)       matches
       printResultsDetail     $! take (numMatchesDetail cp) matches
       printIonMatchDetail cp $! take (numMatchesIon cp)    matches
+  `catch`
+  \(e :: SomeException) -> hPutStrLn stderr $ unlines
+          [ "file:   " ++ fp
+          , "reason: " ++ show e ]
 
