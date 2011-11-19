@@ -178,6 +178,6 @@ mvm
 void
 mvm_if(float *d_y, const uint32_t *d_A, const float *d_x, const uint32_t m, const uint32_t n)
 {
-    mvm<false>(d_y, d_A, d_x, m, n);
+    mvm<true>(d_y, d_A, d_x, m, n);
 }
 
