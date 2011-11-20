@@ -1,4 +1,4 @@
-{-# LANGUAGE TupleSections, ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections, ScopedTypeVariables, PatternGuards #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module    : Main
@@ -24,6 +24,7 @@ import Util.PrettyPrint
 --
 -- System libraries
 --
+import Data.List
 import Data.Maybe
 import Control.Monad
 import Control.Exception
@@ -73,9 +74,9 @@ main = do
 loadDatabase :: ConfigParams -> FilePath -> IO (ConfigParams, SequenceDB)
 loadDatabase cp fp = do
   (cp',db) <- case takeExtensions fp of
-    ".fasta" -> (cp,) `fmap` makeSeqDB cp fp
-    ".index" -> readIndex cp fp
-    _        -> error ("Unsupported database type: " ++ show fp)
+    ext | ".fasta" `isPrefixOf` ext -> (cp,) `liftM` makeSeqDB cp fp
+    ext | ".index" `isPrefixOf` ext -> readIndex cp fp
+    _                               -> error ("Unsupported database type: " ++ show fp)
 
   when (verbose cp) $ do
     hPutStrLn stderr $ "Database: " ++ fp
