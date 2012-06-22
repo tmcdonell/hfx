@@ -8,6 +8,7 @@
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/device_vector.h>
+#include <thrust/copy.h>
 #include <stdint.h>
 
 #include "algorithms.h"
