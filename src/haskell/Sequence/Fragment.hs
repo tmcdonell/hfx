@@ -25,7 +25,6 @@ import Prelude                                  hiding ( lookup )
 import Data.List                                ( unfoldr )
 import Data.Word
 import Data.Binary
-import Data.Vector.Binary                       ()
 import Control.Monad
 import Control.Applicative
 
@@ -33,6 +32,7 @@ import qualified Bio.Sequence                   as F
 import qualified Data.ByteString.Lazy           as L
 import qualified Data.ByteString.Lazy.Char8     as LC
 
+import Data.Vector.Binary                       ()
 import qualified Data.Vector                    as V
 import qualified Data.Vector.Unboxed            as U
 import qualified Data.Vector.Generic            as G
@@ -78,17 +78,15 @@ fraglabel = head . LC.words . fragheader
 --
 data SequenceDB = SeqDB
   {
-    dbHeader  :: V.Vector L.ByteString,            -- sequence ion description headers
-    dbIon     :: U.Vector Word8,                   -- flattened array of amino character codes
-    dbIonSeg  :: U.Vector Word32,                  -- segmenting information for ions
-    dbFrag    :: U.Vector (Float, Word32, Word32), -- (residual mass, c-idx, n-idx)
-    dbFragSeg :: U.Vector Word32                   -- fragment segmenting information for deriving parent
+    dbHeader  :: !(V.Vector L.ByteString),            -- sequence ion description headers
+    dbIon     :: !(U.Vector Word8),                   -- flattened array of amino character codes
+    dbIonSeg  :: !(U.Vector Word32),                  -- segmenting information for ions
+    dbFrag    :: !(U.Vector (Float, Word32, Word32)), -- (residual mass, c-idx, n-idx)
+    dbFragSeg :: !(U.Vector Word32)                   -- fragment segmenting information for deriving parent
   }
   deriving Show
 
---
 -- Binary instance of the digested sequence database, for serialising to disk
--- and (hopefully) fast retrieval for later reuse.
 --
 instance Binary SequenceDB where
   {-# INLINE put #-}
@@ -106,12 +104,12 @@ instance Binary SequenceDB where
 --
 data DeviceSeqDB = DevDB
   {
-    numIons             :: Int,
-    numFragments        :: Int,
-    devIons             :: CUDA.DevicePtr Word8,
-    devMassTable        :: CUDA.DevicePtr Float,
-    devResiduals        :: CUDA.DevicePtr Float,
-    devTerminals        :: (CUDA.DevicePtr Word32, CUDA.DevicePtr Word32)
+    numIons             :: {-# UNPACK #-} !Int,
+    numFragments        :: {-# UNPACK #-} !Int,
+    devIons             :: !(CUDA.DevicePtr Word8),
+    devMassTable        :: !(CUDA.DevicePtr Float),
+    devResiduals        :: !(CUDA.DevicePtr Float),
+    devTerminals        :: !(CUDA.DevicePtr Word32, CUDA.DevicePtr Word32)
   }
   deriving Show
 
