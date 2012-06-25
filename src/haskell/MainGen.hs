@@ -11,6 +11,8 @@
 module Main where
 
 import Config
+import Util.Show
+import Util.Time
 import Sequence.Index
 import Sequence.Fragment
 
@@ -26,13 +28,15 @@ main = do
   (cp,f) <- sequestConfig "hfx.params" args
   let fp =  fromMaybe (error "Protein database not specified") (databasePath cp)
 
-  db <- makeSeqDB cp fp
-  if null f
-     then writeIndex stdout cp db
-     else withFile (head f) WriteMode (\h -> writeIndex h cp db)
+  (t,db) <- bracketTime $ makeSeqDB cp fp
 
   hPutStrLn stderr $ "Database: " ++ fp
+  hPutStrLn stderr $ "Elapsed time: " ++ showTime t
   hPutStrLn stderr $ " # amino acids: " ++ (show . G.length . dbIon    $ db)
   hPutStrLn stderr $ " # proteins:    " ++ (show . G.length . dbHeader $ db)
   hPutStrLn stderr $ " # peptides:    " ++ (show . G.length . dbFrag   $ db)
+
+  if null f
+     then writeIndex stdout cp db
+     else withFile (head f) WriteMode (\h -> writeIndex h cp db)
 

@@ -73,13 +73,14 @@ main = do
 {-# INLINE loadDatabase #-}
 loadDatabase :: ConfigParams -> FilePath -> IO (ConfigParams, SequenceDB)
 loadDatabase cp fp = do
-  (cp',db) <- case takeExtensions fp of
+  (t,(cp',db)) <- bracketTime $ case takeExtensions fp of
     ext | ".fasta" `isPrefixOf` ext -> (cp,) `liftM` makeSeqDB cp fp
     ext | ".index" `isPrefixOf` ext -> readIndex cp fp
     _                               -> error ("Unsupported database type: " ++ show fp)
 
   when (verbose cp) $ do
     hPutStrLn stderr $ "Database: " ++ fp
+    hPutStrLn stderr $ "Elapsed time: " ++ showTime t
     hPutStrLn stderr $ " # amino acids: " ++ (show . G.length . dbIon    $ db)
     hPutStrLn stderr $ " # proteins:    " ++ (show . G.length . dbHeader $ db)
     hPutStrLn stderr $ " # peptides:    " ++ (show . G.length . dbFrag   $ db)
