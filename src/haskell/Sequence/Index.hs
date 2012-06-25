@@ -17,12 +17,12 @@ import Sequence.Fragment
 
 import Data.Ix
 import Data.Char
+import Data.List
 import Data.Maybe
 import Data.Binary
 import Data.Binary.Get
-import Codec.Compression.GZip
-import System.IO
 
+import qualified Codec.Compression.GZip     as GZip
 import qualified Data.ByteString.Lazy.Char8 as L
 import qualified Data.Vector.Generic        as G
 
@@ -35,11 +35,15 @@ import qualified Data.Vector.Generic        as G
 -- into a ByteString first. Probably not too bad, as 'encode' would have done
 -- this anyway.
 --
-writeIndex :: Handle -> ConfigParams -> SequenceDB -> IO ()
-writeIndex hdl cp db = L.hPut hdl header >> L.hPut hdl content
+writeIndex :: ConfigParams -> FilePath -> SequenceDB -> IO ()
+writeIndex cp fp db
+  = L.writeFile fp
+  . compress
+  $ L.concat [header, content]
   where
-    content = compress (encode db)
-    header  = encode . L.pack . ('\n':) . unlines $
+    compress    = if ".gz" `isSuffixOf` fp then GZip.compress else id
+    content     = encode db
+    header      = encode . L.pack . ('\n':) . unlines $
       [ "database         = " ++ (fromJust (databasePath cp))
       , "missed-cleavages = " ++ (show (missedCleavages cp))
       , "digestion-rule   = " ++ (takeWhile isDigit . dropWhile isSpace . snd $ digestionRule cp)
@@ -62,11 +66,15 @@ writeIndex hdl cp db = L.hPut hdl header >> L.hPut hdl content
 -- those used to generate the database.
 --
 readIndex :: ConfigParams -> FilePath -> IO (ConfigParams, SequenceDB)
+{-# INLINE readIndex #-}
 readIndex cp fp = do
-  f   <- L.readFile fp
+  let decompress = if ".gz" `isSuffixOf` fp then GZip.decompress else id
+
+  f     <- decompress `fmap` L.readFile fp
   let (opt,f',_) = runGetState get f 0
-      db         = decode (decompress f')
+      db         = decode f'
       table      = G.replicate (rangeSize ('A','Z')) 0
 
-  (,db) `fmap` readConfig (L.unpack opt) fp (cp {aaMassTable = table, databasePath = Just fp})
+  cp'   <- readConfig (L.unpack opt) fp (cp {aaMassTable = table, databasePath = Just fp})
+  cp' `seq` db `seq` return (cp', db)
 

@@ -25,8 +25,10 @@ import qualified Data.Vector.Generic as G
 main :: IO ()
 main = do
   args   <- getArgs
-  (cp,f) <- sequestConfig "hfx.params" args
-  let fp =  fromMaybe (error "Protein database not specified") (databasePath cp)
+  (cp,r) <- sequestConfig "hfx.params" args
+  let fp  = fromMaybe (error "Protein database not specified") (databasePath cp)
+      out = if null r then error "Output file not specified"
+                      else head r
 
   (t,db) <- bracketTime $ makeSeqDB cp fp
 
@@ -36,7 +38,5 @@ main = do
   hPutStrLn stderr $ " # proteins:    " ++ (show . G.length . dbHeader $ db)
   hPutStrLn stderr $ " # peptides:    " ++ (show . G.length . dbFrag   $ db)
 
-  if null f
-     then writeIndex stdout cp db
-     else withFile (head f) WriteMode (\h -> writeIndex h cp db)
+  writeIndex cp out db
 
